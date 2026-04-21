@@ -7,7 +7,7 @@ Claude Code plugin for AI-assisted development lifecycle — from feature design
 ### 1. Add marketplace
 
 ```bash
-/plugin marketplace add absolut-systems/absolut-ai-skills
+/plugin marketplace add AbsolutSystems/absolut-ai-skills
 ```
 
 ### 2. Install plugin
