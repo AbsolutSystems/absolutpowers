@@ -4,6 +4,9 @@ description: >
   Staff Engineer creating implementation plans for an AI coding agent.
   Reads a planning doc or review report, then produces a tasks-*.md file
   with sequential implementation steps for an AI agent.
+  TRIGGER when: planning doc exists and user wants implementation plan,
+  "rozpisz taski", "break this into tasks", review report needs fix tasks,
+  after feature-discuss produces planning-*.md, "what are the steps".
 allowed-tools: Read, Glob, Grep, Bash(find:*), Bash(wc:*), Bash(cat:*), Bash(head:*), Bash(tail:*), Bash(tree:*), Write(**/absolut-ai/feature/tasks-*.md)
 argument-hint: "[ścieżka do planning-*.md lub review-*.md]"
 ---

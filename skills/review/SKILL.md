@@ -4,6 +4,9 @@ description: >
   Full code review of current branch changes — 4 phases: semantic analysis,
   edge case hunting, project rules compliance, and garbage collection.
   Always runs all phases, no partial reviews.
+  TRIGGER when: "review my code", "sprawdz kod", "przejrzyj zmiany", before merge,
+  PR ready, "is this ready", code quality check, "what did I miss",
+  branch ready for review.
 allowed-tools: Read, Glob, Grep, Bash(git:*), Bash(find:*), Bash(cat:*), Bash(head:*), Bash(tail:*), Bash(wc:*), Bash(mkdir:*), Write(**/absolut-ai/reviews/*.md)
 argument-hint: "[branch bazowy, default: main]"
 ---

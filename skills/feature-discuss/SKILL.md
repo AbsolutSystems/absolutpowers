@@ -4,6 +4,9 @@ description: >
   Interactive Product Owner / Product Architect session for discussing and designing
   a new feature. Analyzes existing codebase, suggests solutions and alternatives,
   and produces a planning document in ./absolut-ai/feature/.
+  TRIGGER when: new feature request, "chce dodac", "potrzebujemy", "jak zrobic",
+  brainstorming, feature design, "what if we", product discussion, requirements gathering,
+  "should we build", architecture decision for new functionality.
 allowed-tools: Read, Glob, Grep, Bash(find:*), Bash(wc:*), Bash(cat:*), Bash(head:*), Bash(tail:*), Bash(tree:*), Bash(mkdir:*), Write(**/absolut-ai/feature/planning-*.md), Write(**/docs/adr/*.md)
 argument-hint: "[opis feature'a — nazwa pliku zostanie wyciągnięta z rozmowy]"
 ---

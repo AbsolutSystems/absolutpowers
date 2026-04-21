@@ -4,6 +4,9 @@ description: >
   Creates or updates hierarchical CLAUDE.md files, discovers and saves project
   patterns to ./absolut-ai/patterns.md, and proposes or audits project rules
   in ./absolut-ai/rules.md. Auto-detects bootstrap vs update mode.
+  TRIGGER when: new project setup, "bootstrap AI docs", "zaktualizuj CLAUDE.md",
+  "update AI context", project onboarding, missing CLAUDE.md detected,
+  significant codebase changes, "refresh patterns", "discover conventions".
 allowed-tools: Read, Glob, Grep, Bash(find:*), Bash(git:*), Bash(wc:*), Bash(cat:*), Bash(head:*), Bash(tail:*), Bash(tree:*), Bash(ls:*), Bash(mkdir:*), Write, Edit
 argument-hint: "[ścieżka do projektu, default: .]"
 ---

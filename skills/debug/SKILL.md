@@ -3,7 +3,9 @@ name: debug
 description: >
   Systematic debugging process — root cause investigation before any fixes.
   4 phases: root cause, pattern analysis, hypothesis testing, implementation.
-  Use for any bug, test failure, or unexpected behavior.
+  TRIGGER when: bug report, error message, test failure, "nie dziala", unexpected behavior,
+  stack trace, CI failure, regression, crash, exception, "why does X return Y",
+  flaky test, performance degradation, "something broke", "doesn't work".
 allowed-tools: Read, Glob, Grep, Edit, Write, Bash, Agent
 argument-hint: "[opis buga lub błąd]"
 ---

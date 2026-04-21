@@ -3,6 +3,9 @@ name: implement
 description: >
   Senior Engineer executing tasks from ./absolut-ai/feature/tasks-*.md sequentially
   with TDD approach. Updates task status in-place, maintains CLAUDE.md as needed.
+  TRIGGER when: tasks-*.md file exists and user wants to start implementation,
+  "zacznij implementacje", "implement this", "build it", "execute the plan",
+  after generate-tasks produces tasks-*.md.
 allowed-tools: Read, Glob, Grep, Edit, Write, Bash, Agent
 argument-hint: "[ścieżka do tasks-*.md]"
 ---
