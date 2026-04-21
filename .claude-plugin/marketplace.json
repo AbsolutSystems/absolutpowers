@@ -1,0 +1,18 @@
+{
+  "$schema": "https://anthropic.com/claude-code/marketplace.schema.json",
+  "name": "absolut-ai-skills",
+  "version": "1.0.0",
+  "description": "Absolut AI — Claude Code skills for AI-assisted development lifecycle",
+  "owner": {
+    "name": "Absolut Systems",
+    "url": "https://github.com/absolut-systems"
+  },
+  "plugins": [
+    {
+      "name": "absolut-ai",
+      "description": "Development lifecycle skills: feature design, task generation, implementation, review, debugging",
+      "source": "./",
+      "category": "development"
+    }
+  ]
+}

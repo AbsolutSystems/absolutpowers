@@ -1,0 +1,9 @@
+{
+  "name": "absolut-ai",
+  "version": "1.0.0",
+  "description": "Claude Code skills for AI-assisted development lifecycle — from feature design through implementation to code review.",
+  "author": {
+    "name": "Absolut Systems",
+    "url": "https://github.com/absolut-systems"
+  }
+}
