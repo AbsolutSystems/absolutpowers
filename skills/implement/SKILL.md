@@ -107,7 +107,7 @@ Accepted
 
 ### Step 6: Continue or Stop
 - If there are more pending tasks: proceed to next pending task (go to Step 1)
-- If all tasks completed: report completion summary
+- If all tasks completed: report completion summary only after the final verification task has been executed successfully
 
 ---
 
@@ -118,12 +118,14 @@ Accepted
 - Use referenced files as implementation patterns
 - Match existing code style and conventions
 - Run tests after implementation
+- Execute the final verification task exactly as specified before declaring the whole tasks file done
 - Update status only after verified completion
 
 **Don't:**
 - Skip tasks or change task order
 - Implement beyond task scope
 - Leave task as pending if completed
+- Report overall completion if the final build/verification task failed or was skipped
 - Proceed to next task if current one fails
 
 ---
@@ -182,6 +184,7 @@ Completed Task [N]: [Title]
 - Created: [files]
 - Modified: [files]
 - Tests: [pass/fail status]
+- Verification commands: [executed/not applicable/failed]
 - CLAUDE.md: [updated/no changes needed]
 ```
 

@@ -34,7 +34,7 @@ Each skill produces output consumed by the next:
 
 ```
 feature-discuss → generate-tasks → implement → review
-     (CO?)           (JAK?)         (BUDUJ)    (SPRAWDZ)
+     (CO?)           (JAK?)      (BUDUJ+WERYFIKUJ)  (AUDYTUJ)
 ```
 
 #### `/absolut-ai:feature-discuss`
@@ -65,9 +65,10 @@ Creates a step-by-step implementation plan from a planning document or review re
 /absolut-ai:generate-tasks @absolut-ai/reviews/2026-04-21-feature-auth.md
 ```
 
-- Reads planning doc, `./absolut-ai/patterns.md`, `./absolut-ai/rules.md`, ADRs
+- Reads planning doc or review report, `./absolut-ai/patterns.md`, `./absolut-ai/rules.md`, ADRs
 - Analyzes codebase architecture, patterns, conventions
 - Produces sequential tasks with exact file paths, method signatures, test cases
+- Adds a final verification task with project-specific build / typecheck / formatter commands
 
 **Output:** `./absolut-ai/feature/tasks-{slug}.md`
 
@@ -83,6 +84,7 @@ Executes tasks sequentially from a tasks document with TDD approach.
 
 - Picks first pending task, implements with TDD (tests first)
 - Updates task status to `completed` in-place
+- Executes the final verification task before reporting overall completion
 - Creates ADR for significant implementation decisions
 
 **Output:** Implementation code + tests, updated tasks file
@@ -104,6 +106,9 @@ Full 4-phase code review of current branch changes.
 | 2. Edge Case Hunt | null, empty, off-by-one, race conditions |
 | 3. Rules Check | Compliance with `./absolut-ai/rules.md` |
 | 4. Garbage Collection | Dead imports, debug logs, commented code |
+
+Review also checks whether there is evidence of final verification for executable code changes
+(for example backend build, frontend build, typecheck, `spotlessCheck`).
 
 **Output:** `./absolut-ai/reviews/YYYY-MM-DD-{branch-slug}.md`
 
@@ -170,6 +175,14 @@ project/
 /absolut-ai:review
 ```
 
+The generated tasks file should end with a final verification step, for example:
+- backend compilation/build
+- frontend production build
+- typecheck
+- formatter check such as `spotlessCheck`
+
+`generate-tasks` should emit this as a normal last task in the same task format, not as a loose reminder.
+
 ### Bug Fix
 
 ```bash
@@ -203,7 +216,6 @@ absolut-ai-skills/
 │   │   └── SKILL.md
 │   └── update-ai-context/
 │       └── SKILL.md
-├── package.json
 └── README.md
 ```
 

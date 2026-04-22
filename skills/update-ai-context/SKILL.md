@@ -42,6 +42,7 @@ Scan the codebase to understand:
 - **Shared code**: Utils, helpers, common types
 - **Configuration**: How settings are managed
 - **Testing setup**: Patterns, locations, utilities
+- **Verification commands**: How the project builds, tests, type-checks, lints, and runs formatter checks
 
 #### Step 2: Identify CLAUDE.md Locations
 
@@ -94,6 +95,12 @@ src/
 - Build: `[command]`
 - Test: `[command]`
 - Run: `[command]`
+
+## Verification Commands
+- Backend build/test: `[command]`
+- Frontend build/typecheck: `[command]`
+- Lint: `[command]`
+- Formatter check: `[command]`
 
 ## AI Documentation
 
@@ -162,6 +169,7 @@ Scan the entire codebase for recurring patterns. This file is read by `generate-
 - **API conventions**: Response format, pagination, error codes, auth patterns
 - **Testing patterns**: Fixtures, mocks, builders, test utilities, naming
 - **Configuration**: Env vars, config files, feature flags
+- **Verification commands**: build, typecheck, lint, formatter checks, project wrappers
 - **Naming conventions**: Files, functions, variables, constants (what is ACTUALLY followed)
 
 ### Pattern must have proof

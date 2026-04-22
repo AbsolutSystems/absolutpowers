@@ -41,8 +41,10 @@ For review reports: use `tasks-fix-{branch-slug}` (drop the date, add `fix-` pre
 
 ## Interactive Process
 
-### Step 1: Read Planning Document and Context
-Read the planning doc provided as argument. Understand the feature, its scope, chosen solution, and constraints.
+### Step 1: Read Input Document and Context
+Read the document provided as argument. Understand what needs to be implemented:
+- for a planning doc: the feature, scope, chosen solution, and constraints
+- for a review report: the findings, broken rules, and fixes required
 
 Also read (if they exist):
 - **`./absolut-ai/patterns.md`** — established code patterns to reference in tasks
@@ -51,10 +53,12 @@ Also read (if they exist):
 
 Use discovered patterns to write more specific tasks (e.g., "follow Repository pattern from `src/orders/OrderRepository.ts`"). Reference rules as constraints in task requirements where relevant. If an ADR is relevant to a task, reference it explicitly (e.g., "Per ADR `2026-04-15-event-driven-notifications.md`, use event bus instead of direct calls").
 
-### Step 2: Gather Additional Context
-Before beginning analysis, ask:
+### Step 2: Gather Additional Context (only if needed)
+If the input doc is clear and no major ambiguity remains, proceed directly to analysis.
 
-"I've read `planning-{slug}.md`. Ready to create the implementation plan.
+If additional context would materially improve the plan, ask:
+
+"I've read the input document. Ready to create the implementation plan.
 
 **Do you have any additional context to share?**
 (Implementation preferences, constraints, reference files, or type 'proceed')"
@@ -100,7 +104,7 @@ Concise, factual overview for agent orientation:
 ```markdown
 ## Project Context
 
-**Planning doc:** `./absolut-ai/feature/planning-{slug}.md`
+**Source doc:** `./absolut-ai/feature/planning-{slug}.md` or `./absolut-ai/reviews/YYYY-MM-DD-{branch-slug}.md`
 
 **Stack:** [languages, frameworks, key libraries]
 
@@ -118,6 +122,11 @@ Concise, factual overview for agent orientation:
 - Files: [naming convention]
 - Functions: [naming convention]
 - Tests: [location pattern, naming]
+
+**Verification commands:**
+- Backend build/test: `[command]`
+- Frontend build/typecheck: `[command]`
+- Lint / formatter check: `[command]`
 
 **Reference implementations:**
 - `path/to/SimilarService.ts` - [what to reference]
@@ -182,6 +191,7 @@ When agent completes a task, it updates status from `pending` to `completed` bef
 - One logical unit of work per task
 - Tasks are sequential - each builds on previous
 - Agent should verify completion and update status before proceeding
+- The final task should verify the integrated change across the whole project
 
 **Specificity:**
 - Exact file paths (create vs modify)
@@ -197,6 +207,7 @@ When agent completes a task, it updates status from `pending` to `completed` bef
 - Required tests with descriptions
 - Code examples for non-obvious implementations
 - Configuration changes
+- A final verification task as the LAST task, with concrete project commands
 
 **What to omit:**
 - Time estimates
@@ -204,6 +215,61 @@ When agent completes a task, it updates status from `pending` to `completed` bef
 - Business justifications
 - Detailed onboarding explanations
 - Rollback procedures
+
+## Final Verification Task
+
+Always add a final task at the end of the plan that verifies the integrated change across the project.
+
+This final task should use concrete commands discovered in the project, for example:
+- backend compilation or build
+- backend tests relevant to the change
+- frontend production build
+- frontend typecheck
+- lint
+- formatter check such as `spotlessCheck` when used by the project
+
+Prefer the project's canonical commands, wrappers, or documented scripts. Do not invent generic commands if the repo already exposes the right ones.
+
+Suggested template:
+
+```markdown
+### Task [N]: Final Verification
+**Status:** pending
+
+**Create:**
+- None
+
+**Modify:**
+- None
+
+**Description:**
+Run the project's final verification commands against the fully integrated change. This confirms that backend and frontend artifacts still build correctly and that project quality gates pass before review or merge.
+
+**Requirements:**
+- Run backend build/test command: `[exact command from project]`
+- Run frontend build/typecheck command: `[exact command from project]`
+- Run lint or formatter check command: `[exact command from project]`
+- If the project uses formatter gates such as `spotlessCheck`, run them here instead of inventing a generic formatting command
+- Record any command that is intentionally skipped as `not applicable` with a short reason
+- Do not mark this task as completed if any required verification command fails
+
+**Tests:**
+- Backend build/test exits with code 0
+- Frontend build/typecheck exits with code 0
+- Lint / formatter check exits with code 0
+
+**Implementation decisions / remarks:**
+- Commands executed: [fill after completion]
+- Results: [fill after completion]
+- Skipped checks: [fill after completion or `none`]
+
+**Example:**
+```bash
+./mvnw test spotless:check
+npm run build
+npm run typecheck
+```
+```
 
 ---
 
@@ -264,6 +330,7 @@ interface ArchiveResult {
 Generate the tasks file at `./absolut-ai/feature/tasks-{slug}.md` with:
 1. Project Context section (including reference to planning doc)
 2. Sequential implementation tasks (all with `**Status:** pending`)
-3. Code examples where helpful
+3. A final verification task as the last task, using concrete build/validation commands
+4. Code examples where helpful
 
 Use markdown formatting: headers, code blocks with language identifiers, bullet lists.

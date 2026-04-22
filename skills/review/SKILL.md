@@ -17,6 +17,8 @@ Wykonaj PEŁNY review zmian w bieżącym BRANCHU (w porównaniu do main/master).
 
 ## Krok 0: Przygotowanie
 
+Ustal branch bazowy i używaj go konsekwentnie jako `<base>` w dalszych komendach.
+
 Ustal nazwę aktualnego brancha:
 ```bash
 git branch --show-current
@@ -34,8 +36,8 @@ git rev-parse --verify main 2>/dev/null && echo "main" || echo "master"
 Pobierz PEŁNY diff (commitowane zmiany vs baza + lokalne nieskomitowane):
 
 ```bash
-# Zmiany commitowane na branchu vs main
-git diff main...HEAD
+# Zmiany commitowane na branchu vs <base>
+git diff <base>...HEAD
 # Zmiany staged (dodane przez git add, jeszcze nieskomitowane)
 git diff --cached
 # Zmiany unstaged (edytowane ale jeszcze nie git add)
@@ -47,8 +49,8 @@ Połącz wyniki wszystkich trzech — to jest Twój PEŁNY obraz zmian.
 Pobierz listę WSZYSTKICH zmienionych/nowych plików:
 
 ```bash
-# Pliki zmienione na branchu vs main
-git diff main...HEAD --name-only
+# Pliki zmienione na branchu vs <base>
+git diff <base>...HEAD --name-only
 # Pliki staged
 git diff --cached --name-only
 # Pliki unstaged
@@ -155,6 +157,7 @@ Sprawdź CAŁY plik (nie tylko diff) dla każdego zmienionego pliku:
 - Ryzyka do sprawdzenia: [liczba]
 - Śmieci do usunięcia: [liczba]
 - Złamane reguły: [liczba]
+- Weryfikacja końcowa: [potwierdzona / brak dowodu / nie dotyczy]
 - Ogólna ocena: [1-2 zdania — czy ten diff jest gotowy do merge'a]
 ```
 
@@ -189,4 +192,5 @@ Dużo do poprawki. Sugeruję wygenerować taski:
 - Bądź konkretny — podawaj pliki i linie
 - Nie wymyślaj problemów na siłę — jeśli jest czysto, napisz że jest czysto
 - Jeśli diff jest duży (>500 linii), skup się na najważniejszych zmianach i zaznacz co pominąłeś
+- Jeśli zmiana dotyczy kodu wykonywalnego, sprawdź czy istnieje dowód końcowej weryfikacji (np. build backendu, build frontendu, typecheck, `spotlessCheck`). Jeśli nie ma dowodu, zaznacz to jako ryzyko procesowe
 - ZAWSZE zapisuj raport do pliku — nawet jeśli review jest czysty (audit trail)
