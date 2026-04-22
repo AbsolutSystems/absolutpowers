@@ -29,7 +29,16 @@ and the installable Codex plugin bundle at:
 
 Open the repository in Codex, use the repo marketplace, and install the `absolutpowers` plugin from there.
 
-In Codex, invoke the same workflow through plugin skill names such as `feature-discuss`, `generate-tasks`, `implement`, `review`, `debug`, and `update-ai-context` rather than Claude slash commands.
+In Codex, invoke the workflow through the plugin handle `&absolutpowers` plus the skill name or task context, for example:
+
+```text
+&absolutpowers feature-discuss zaprojektuj system powiadomien push
+&absolutpowers generate-tasks ./absolutpowers/feature/planning-push-notifications.md
+&absolutpowers implement ./absolutpowers/feature/tasks-push-notifications.md
+&absolutpowers review
+&absolutpowers debug test auth pada tylko na CI
+&absolutpowers update-ai-context
+```
 
 ### Updating
 
