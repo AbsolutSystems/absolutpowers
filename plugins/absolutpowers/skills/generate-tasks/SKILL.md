@@ -7,8 +7,6 @@ description: >
   TRIGGER when: planning doc exists and user wants implementation plan,
   "rozpisz taski", "break this into tasks", review report needs fix tasks,
   after feature-discuss produces planning-*.md, "what are the steps".
-allowed-tools: Read, Glob, Grep, Bash(find:*), Bash(wc:*), Bash(cat:*), Bash(head:*), Bash(tail:*), Bash(tree:*), Write(**/absolutpowers/feature/tasks-*.md)
-argument-hint: "[ścieżka do planning-*.md lub review-*.md]"
 ---
 
 # Generate Tasks — Implementation Plan Creator

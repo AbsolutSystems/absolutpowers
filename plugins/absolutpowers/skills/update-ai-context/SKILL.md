@@ -9,8 +9,6 @@ description: >
   "zaktualizuj AGENTS.md", "update AI context", project onboarding, missing
   CLAUDE.md detected,
   significant codebase changes, "refresh patterns", "discover conventions".
-allowed-tools: Read, Glob, Grep, Bash(find:*), Bash(git:*), Bash(wc:*), Bash(cat:*), Bash(head:*), Bash(tail:*), Bash(tree:*), Bash(ls:*), Bash(mkdir:*), Write, Edit
-argument-hint: "[ścieżka do projektu, default: .]"
 ---
 
 # Update AI Context — CLAUDE.md, AGENTS.md, Patterns & Rules

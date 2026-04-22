@@ -7,8 +7,6 @@ description: >
   TRIGGER when: "review my code", "sprawdz kod", "przejrzyj zmiany", before merge,
   PR ready, "is this ready", code quality check, "what did I miss",
   branch ready for review.
-allowed-tools: Read, Glob, Grep, Bash(git:*), Bash(find:*), Bash(cat:*), Bash(head:*), Bash(tail:*), Bash(wc:*), Bash(mkdir:*), Write(**/absolutpowers/reviews/*.md)
-argument-hint: "[branch bazowy, default: main]"
 ---
 
 # Review — Full Code Review

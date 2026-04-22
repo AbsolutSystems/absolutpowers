@@ -1,30 +1,43 @@
-# Absolut AI Skills
+# AbsolutPowers Skills
 
-Claude Code plugin for AI-assisted development lifecycle — from feature design through implementation to code review.
+Shared Claude Code and Codex workflow for AI-assisted development lifecycle — from feature design through implementation to code review.
 
 ## Installation
 
-### 1. Add marketplace
+### Claude Code
 
 ```bash
-/plugin marketplace add AbsolutSystems/absolut-ai-skills
+/plugin marketplace add AbsolutSystems/absolutpowers
+/plugin install absolutpowers@absolutpowers-skills
 ```
 
-### 2. Install plugin
+Restart Claude Code, then type `/absolutpowers:` — autocomplete should show all 6 skills.
 
-```bash
-/plugin install absolut-ai@absolut-ai-skills
+### Codex
+
+This repository exposes a repo-local Codex marketplace at:
+
+```text
+.agents/plugins/marketplace.json
 ```
 
-### 3. Verify
+and the installable Codex plugin bundle at:
 
-Restart Claude Code, then type `/absolut-ai:` — autocomplete should show all 6 skills.
+```text
+./plugins/absolutpowers
+```
+
+Open the repository in Codex, use the repo marketplace, and install the `absolutpowers` plugin from there.
+
+In Codex, invoke the same workflow through plugin skill names such as `feature-discuss`, `generate-tasks`, `implement`, `review`, `debug`, and `update-ai-context` rather than Claude slash commands.
 
 ### Updating
 
 ```bash
-/plugin install absolut-ai@absolut-ai-skills
+/plugin install absolutpowers@absolutpowers-skills
 ```
+
+For Codex, refresh or reinstall the local repo plugin after pulling changes if your environment caches plugin versions.
 
 ## Skills
 
@@ -37,12 +50,12 @@ feature-discuss → generate-tasks → implement → review
      (CO?)           (JAK?)      (BUDUJ+WERYFIKUJ)  (AUDYTUJ)
 ```
 
-#### `/absolut-ai:feature-discuss`
+#### `/absolutpowers:feature-discuss`
 
 Interactive Product Owner / Product Architect session. Discusses feature requirements before any code is written.
 
 ```
-/absolut-ai:feature-discuss chce system powiadomien push dla uzytkownikow
+/absolutpowers:feature-discuss chce system powiadomien push dla uzytkownikow
 ```
 
 - Asks clarifying questions to understand the need
@@ -50,36 +63,36 @@ Interactive Product Owner / Product Architect session. Discusses feature require
 - Proposes 2-3 alternative approaches with tradeoffs
 - Iterates on scope, edge cases, dependencies
 
-**Output:** `./absolut-ai/feature/planning-{slug}.md`, optionally `./docs/adr/YYYY-MM-DD-{slug}.md`
+**Output:** `./absolutpowers/feature/planning-{slug}.md`, optionally `./docs/adr/YYYY-MM-DD-{slug}.md`
 
 **Smart routing:** Trivial changes skip planning doc — suggests direct implementation.
 
 ---
 
-#### `/absolut-ai:generate-tasks`
+#### `/absolutpowers:generate-tasks`
 
 Creates a step-by-step implementation plan from a planning document or review report.
 
 ```
-/absolut-ai:generate-tasks @absolut-ai/feature/planning-push-notifications.md
-/absolut-ai:generate-tasks @absolut-ai/reviews/2026-04-21-feature-auth.md
+/absolutpowers:generate-tasks @absolutpowers/feature/planning-push-notifications.md
+/absolutpowers:generate-tasks @absolutpowers/reviews/2026-04-21-feature-auth.md
 ```
 
-- Reads planning doc or review report, `./absolut-ai/patterns.md`, `./absolut-ai/rules.md`, ADRs
+- Reads planning doc or review report, `./absolutpowers/patterns.md`, `./absolutpowers/rules.md`, ADRs
 - Analyzes codebase architecture, patterns, conventions
 - Produces sequential tasks with exact file paths, method signatures, test cases
 - Adds a final verification task with project-specific build / typecheck / formatter commands
 
-**Output:** `./absolut-ai/feature/tasks-{slug}.md`
+**Output:** `./absolutpowers/feature/tasks-{slug}.md`
 
 ---
 
-#### `/absolut-ai:implement`
+#### `/absolutpowers:implement`
 
 Executes tasks sequentially from a tasks document with TDD approach.
 
 ```
-/absolut-ai:implement @absolut-ai/feature/tasks-push-notifications.md
+/absolutpowers:implement @absolutpowers/feature/tasks-push-notifications.md
 ```
 
 - Picks first pending task, implements with TDD (tests first)
@@ -91,39 +104,39 @@ Executes tasks sequentially from a tasks document with TDD approach.
 
 ---
 
-#### `/absolut-ai:review`
+#### `/absolutpowers:review`
 
 Full 4-phase code review of current branch changes.
 
 ```
-/absolut-ai:review
-/absolut-ai:review develop    # custom base branch
+/absolutpowers:review
+/absolutpowers:review develop    # custom base branch
 ```
 
 | Phase | Focus |
 |-------|-------|
 | 1. Semantic Review | Behavior changes, blast radius, architectural decisions |
 | 2. Edge Case Hunt | null, empty, off-by-one, race conditions |
-| 3. Rules Check | Compliance with `./absolut-ai/rules.md` |
+| 3. Rules Check | Compliance with `./absolutpowers/rules.md` |
 | 4. Garbage Collection | Dead imports, debug logs, commented code |
 
 Review also checks whether there is evidence of final verification for executable code changes
 (for example backend build, frontend build, typecheck, `spotlessCheck`).
 
-**Output:** `./absolut-ai/reviews/YYYY-MM-DD-{branch-slug}.md`
+**Output:** `./absolutpowers/reviews/YYYY-MM-DD-{branch-slug}.md`
 
-**Smart follow-up:** 0-2 problems → manual fix. 3+ problems → suggests `/absolut-ai:generate-tasks` on the review report.
+**Smart follow-up:** 0-2 problems → manual fix. 3+ problems → suggests `/absolutpowers:generate-tasks` on the review report.
 
 ---
 
 ### Supporting Skills
 
-#### `/absolut-ai:debug`
+#### `/absolutpowers:debug`
 
 Systematic debugging — root cause investigation before any fixes.
 
 ```
-/absolut-ai:debug testy w module auth padaja na CI ale przechodza lokalnie
+/absolutpowers:debug testy w module auth padaja na CI ale przechodza lokalnie
 ```
 
 4 phases: Root Cause → Pattern Analysis → Hypothesis → Implementation.
@@ -132,26 +145,42 @@ Escalates to architecture review if 3+ fixes fail. Includes supporting technique
 
 ---
 
-#### `/absolut-ai:update-ai-context`
+#### `/absolutpowers:update-ai-context`
 
 Bootstraps or refreshes AI documentation for the project.
 
 ```
-/absolut-ai:update-ai-context
+/absolutpowers:update-ai-context
 ```
 
 - **No CLAUDE.md** → Bootstrap: creates full documentation from scratch
 - **CLAUDE.md exists** → Update: audits for drift, discovers new patterns
 
-Manages: `CLAUDE.md`, `./absolut-ai/patterns.md`, `./absolut-ai/rules.md`
+Manages: `CLAUDE.md`, mirrored `AGENTS.md`, `./absolutpowers/patterns.md`, `./absolutpowers/rules.md`
+
+## Shared AI Context
+
+The project context workflow is shared across Claude Code and Codex:
+
+- `CLAUDE.md` files are the editable source of truth
+- `AGENTS.md` files are generated mirrors for Codex with the same directory scope
+- `./absolutpowers/patterns.md` and `./absolutpowers/rules.md` are shared by both agents
+
+When `update-ai-context` runs, it should update the hierarchical `CLAUDE.md` files first and then refresh sibling `AGENTS.md` mirrors.
+
+Helper script included in both plugin targets:
+
+```bash
+python3 scripts/sync_claude_to_agents.py /path/to/project
+```
 
 ## File Conventions
 
-All artifacts live under `./absolut-ai/` in the project root:
+All artifacts live under `./absolutpowers/` in the project root:
 
 ```
 project/
-├── absolut-ai/
+├── absolutpowers/
 │   ├── feature/
 │   │   ├── planning-{slug}.md
 │   │   └── tasks-{slug}.md
@@ -161,7 +190,8 @@ project/
 │   └── rules.md
 ├── docs/adr/
 │   └── YYYY-MM-DD-{slug}.md
-└── CLAUDE.md
+├── CLAUDE.md
+└── AGENTS.md
 ```
 
 ## Typical Workflows
@@ -169,10 +199,10 @@ project/
 ### New Feature
 
 ```bash
-/absolut-ai:feature-discuss "system powiadomien push"
-/absolut-ai:generate-tasks @absolut-ai/feature/planning-push-notifications.md
-/absolut-ai:implement @absolut-ai/feature/tasks-push-notifications.md
-/absolut-ai:review
+/absolutpowers:feature-discuss "system powiadomien push"
+/absolutpowers:generate-tasks @absolutpowers/feature/planning-push-notifications.md
+/absolutpowers:implement @absolutpowers/feature/tasks-push-notifications.md
+/absolutpowers:review
 ```
 
 The generated tasks file should end with a final verification step, for example:
@@ -186,22 +216,35 @@ The generated tasks file should end with a final verification step, for example:
 ### Bug Fix
 
 ```bash
-/absolut-ai:debug "endpoint /api/users zwraca 500 przy pustym query param"
+/absolutpowers:debug "endpoint /api/users zwraca 500 przy pustym query param"
 ```
 
 ### Project Setup
 
 ```bash
-/absolut-ai:update-ai-context
+/absolutpowers:update-ai-context
 ```
 
 ## Repo Structure
 
 ```
-absolut-ai-skills/
+absolutpowers/
+├── .agents/
+│   └── plugins/
+│       └── marketplace.json    # Repo-local Codex marketplace
 ├── .claude-plugin/
 │   ├── marketplace.json    # Marketplace manifest
-│   └── plugin.json         # Plugin manifest (name = "absolut-ai")
+│   └── plugin.json         # Plugin manifest (name = "absolutpowers")
+├── plugins/
+│   └── absolutpowers/
+│       ├── .codex-plugin/
+│       │   └── plugin.json     # Codex plugin manifest
+│       ├── skills/
+│       │   └── ...             # Codex skill set
+│       └── scripts/
+│           └── sync_claude_to_agents.py
+├── scripts/
+│   └── sync_claude_to_agents.py
 ├── skills/
 │   ├── debug/
 │   │   ├── SKILL.md

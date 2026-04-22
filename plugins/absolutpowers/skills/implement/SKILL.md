@@ -7,8 +7,6 @@ description: >
   TRIGGER when: tasks-*.md file exists and user wants to start implementation,
   "zacznij implementacje", "implement this", "build it", "execute the plan",
   after generate-tasks produces tasks-*.md.
-allowed-tools: Read, Glob, Grep, Edit, Write, Bash, Agent
-argument-hint: "[ścieżka do tasks-*.md]"
 ---
 
 # Implement — Task Executor

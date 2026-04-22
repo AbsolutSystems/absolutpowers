@@ -7,8 +7,6 @@ description: >
   TRIGGER when: new feature request, "chce dodac", "potrzebujemy", "jak zrobic",
   brainstorming, feature design, "what if we", product discussion, requirements gathering,
   "should we build", architecture decision for new functionality.
-allowed-tools: Read, Glob, Grep, Bash(find:*), Bash(wc:*), Bash(cat:*), Bash(head:*), Bash(tail:*), Bash(tree:*), Bash(mkdir:*), Write(**/absolutpowers/feature/planning-*.md), Write(**/docs/adr/*.md)
-argument-hint: "[opis feature'a — nazwa pliku zostanie wyciągnięta z rozmowy]"
 ---
 
 # Feature Discussion Mode — Product Owner / Product Architect

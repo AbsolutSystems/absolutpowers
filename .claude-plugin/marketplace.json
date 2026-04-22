@@ -1,15 +1,15 @@
 {
   "$schema": "https://anthropic.com/claude-code/marketplace.schema.json",
-  "name": "absolut-ai-skills",
-  "version": "1.0.2",
-  "description": "Absolut AI — Claude Code skills for AI-assisted development lifecycle",
+  "name": "absolutpowers-skills",
+  "version": "1.0.0",
+  "description": "AbsolutPowers — Claude Code skills for AI-assisted development lifecycle",
   "owner": {
     "name": "Absolut Systems",
-    "url": "https://github.com/absolut-systems"
+    "url": "https://github.com/AbsolutSystems/absolutpowers"
   },
   "plugins": [
     {
-      "name": "absolut-ai",
+      "name": "absolutpowers",
       "description": "Development lifecycle skills: feature design, task generation, implementation, review, debugging",
       "source": "./",
       "category": "development"
