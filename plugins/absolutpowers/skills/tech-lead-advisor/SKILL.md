@@ -1,7 +1,15 @@
 ---
-description: Use when you need strategic technical guidance, architectural review, or a second opinion on a significant technical decision. Good fit for architecture proposals, technology choices, refactoring strategies, system design tradeoffs, and critical but constructive technical feedback grounded in the actual codebase.
-argument-hint: [proposal / architecture / refactor / tech choice to review]
-allowed-tools: [Read, Glob, Grep, Bash(find:*), Bash(cat:*), Bash(head:*), Bash(tail:*), Bash(tree:*), Bash(git:*), WebFetch]
+name: tech-lead-advisor
+description: >
+  Strategic technical guidance as experienced software architect and tech lead.
+  Architecture proposals, technology choices, refactoring strategies, system design
+  tradeoffs, and critical but constructive technical feedback grounded in actual codebase.
+  TRIGGER when: "review this architecture", "is this a good approach", "should we use X or Y",
+  "second opinion", "tech lead review", "evaluate this design", "review my proposal",
+  "co myslisz o", "oceń to podejscie", "jaki stack", "czy warto", "zrob review",
+  "review before merge",
+  architecture proposals, technology choices, refactoring strategies, system design,
+  performance concerns, security architecture, migration planning.
 ---
 
 # /tech-lead-advisor
@@ -92,8 +100,8 @@ If important context is missing, ask concise clarifying questions before committ
 ## Example Prompts
 
 ```text
-/tech-lead-advisor should we split this service into two bounded contexts?
-/tech-lead-advisor review this caching strategy before we implement it
-/tech-lead-advisor is Redis the right choice for this queueing problem?
-/tech-lead-advisor I want a critical review of this refactor plan
+/absolutpowers:tech-lead-advisor should we split this service into two bounded contexts?
+/absolutpowers:tech-lead-advisor review this caching strategy before we implement it
+/absolutpowers:tech-lead-advisor is Redis the right choice for this queueing problem?
+/absolutpowers:tech-lead-advisor I want a critical review of this refactor plan
 ```
