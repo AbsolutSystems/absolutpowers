@@ -7,7 +7,7 @@ description: >
   TRIGGER when: "review my code", "sprawdz kod", "przejrzyj zmiany", before merge,
   PR ready, "is this ready", code quality check, "what did I miss",
   branch ready for review.
-allowed-tools: Read, Glob, Grep, Bash(git:*), Bash(find:*), Bash(cat:*), Bash(head:*), Bash(tail:*), Bash(wc:*), Bash(mkdir:*), Write(**/absolutpowers/reviews/*.md)
+allowed-tools: Read, Glob, Grep, Edit(**/absolutpowers/project-memory.md), Bash(git:*), Bash(find:*), Bash(cat:*), Bash(head:*), Bash(tail:*), Bash(wc:*), Bash(mkdir:*), Bash(rm:*), Write(**/absolutpowers/reviews/*.md), Write(**/absolutpowers/project-memory.md), Write(**/absolutpowers/memory-candidates/*.md)
 argument-hint: "[branch bazowy, default: main]"
 ---
 
@@ -62,10 +62,85 @@ git ls-files --others --exclude-standard
 Połącz i zdeduplikuj tę listę.
 
 Przeczytaj plik `./absolutpowers/rules.md` z roota projektu (jeśli istnieje).
+Przeczytaj plik `./absolutpowers/project-memory.md` z roota projektu (jeśli istnieje).
 
 Jeśli jesteś NA BRANCHU main/master i nie ma diff vs HEAD — to znaczy że zmiany są tylko lokalne. Użyj `git diff` i `git diff --cached` jako jedyne źródło.
 
 **WAŻNE:** Nowe pliki (untracked) nie pojawią się w żadnym `git diff`. Dla każdego pliku z `git ls-files --others --exclude-standard` przeczytaj CAŁY plik i traktuj go jako 100% nowy kod do review.
+
+## Project Memory
+
+Use `./absolutpowers/project-memory.md` as prior context for recurring traps and warning signs that might make the review sharper.
+Do not treat it as proof that a new diff is wrong; it is only a hint to inspect relevant areas more carefully.
+
+Create a memory candidate only when ALL of these are true:
+- the review surfaced a recurring trap, workaround, or warning sign
+- the lesson is likely to matter again in future implementation/debugging/review work
+- the content is more operational than architectural, so it belongs in memory instead of ADRs or `rules.md`
+
+Do NOT create memory entries for:
+- one-off review comments tied only to this diff
+- subjective style preferences
+- findings that should instead become project rules
+
+When a durable lesson is worth capturing, use:
+- candidate path: `./absolutpowers/memory-candidates/memory-candidates-YYYY-MM-DD-{slug}.md`
+- permanent memory path: `./absolutpowers/project-memory.md`
+
+`project-memory.md` should be grouped by module, with explicit affected paths in every entry:
+
+```markdown
+## src/payments
+
+### Retry helper swallows the first provider error
+- Problem: wrapper retries correctly but loses the original failure context
+- Symptoms: logs show generic timeout, root provider exception disappears
+- Root cause: helper overwrites the first caught error on each retry
+- Resolution: keep the first provider failure and attach later retry metadata separately
+- Warning signs:
+  - retries appear in logs without original provider message
+  - final exception is generic despite provider-specific failures
+- Affected paths:
+  - `src/payments/provider-retry.ts`
+  - `src/payments/provider-client.ts`
+```
+
+Candidate file template:
+
+```markdown
+# Memory Candidate: [Short title]
+
+## Status
+Candidate — YYYY-MM-DD
+
+## Source
+- Skill: review
+- Context: `branch-name` vs `base`
+
+## Module
+`path/to/module`
+
+## Problem
+...
+
+## Symptoms
+...
+
+## Root Cause
+...
+
+## Resolution
+...
+
+## Warning Signs
+- ...
+
+## Affected Paths
+- `path/to/file`
+
+## Why This May Matter Again
+...
+```
 
 ---
 
@@ -194,3 +269,5 @@ Dużo do poprawki. Sugeruję wygenerować taski:
 - Jeśli diff jest duży (>500 linii), skup się na najważniejszych zmianach i zaznacz co pominąłeś
 - Jeśli zmiana dotyczy kodu wykonywalnego, sprawdź czy istnieje dowód końcowej weryfikacji (np. build backendu, build frontendu, typecheck, `spotlessCheck`). Jeśli nie ma dowodu, zaznacz to jako ryzyko procesowe
 - ZAWSZE zapisuj raport do pliku — nawet jeśli review jest czysty (audit trail)
+- Jeśli review ujawni trwałą lekcję dla przyszłych tasków, utwórz candidate file na końcu i zapytaj użytkownika, czy promować go do `./absolutpowers/project-memory.md`
+- Promocja wymaga jawnej zgody użytkownika; przy promocji aktualizuj istniejący wpis zamiast duplikować, a po sukcesie usuń candidate file

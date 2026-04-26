@@ -40,6 +40,20 @@ $absolutpowers debug test auth pada tylko na CI
 $absolutpowers update-ai-context
 ```
 
+The plugin bundle can also expose dedicated slash commands under:
+
+```text
+./plugins/absolutpowers/commands
+```
+
+Current custom command:
+
+```text
+/tech-lead-advisor
+```
+
+Use it for strategic technical guidance, architectural review, and critical second opinions on major technical decisions.
+
 ### Updating
 
 ```bash
@@ -47,6 +61,29 @@ $absolutpowers update-ai-context
 ```
 
 For Codex, refresh or reinstall the local repo plugin after pulling changes if your environment caches plugin versions.
+
+## Maintaining Dual Targets
+
+Repository source of truth lives in:
+
+```text
+./skills
+```
+
+The Codex plugin bundle mirrors those files in:
+
+```text
+./plugins/absolutpowers/skills
+```
+
+Before publishing or testing the Codex plugin bundle, refresh that mirror with:
+
+```bash
+python3 scripts/sync_skills_to_codex.py
+```
+
+The sync keeps all supporting files identical and removes Claude-specific frontmatter fields
+(`allowed-tools`, `argument-hint`) from plugin `SKILL.md` files.
 
 ## Skills
 
@@ -108,6 +145,8 @@ Executes tasks sequentially from a tasks document with TDD approach.
 - Updates task status to `completed` in-place
 - Executes the final verification task before reporting overall completion
 - Creates ADR for significant implementation decisions
+- Reads `./absolutpowers/project-memory.md` on startup when present
+- Can create `./absolutpowers/memory-candidates/memory-candidates-YYYY-MM-DD-{slug}.md` for durable lessons worth reusing later
 
 **Output:** Implementation code + tests, updated tasks file
 
@@ -131,6 +170,8 @@ Full 4-phase code review of current branch changes.
 
 Review also checks whether there is evidence of final verification for executable code changes
 (for example backend build, frontend build, typecheck, `spotlessCheck`).
+It also reads `./absolutpowers/project-memory.md` on startup and can create memory candidates
+for recurring traps or workarounds discovered during review.
 
 **Output:** `./absolutpowers/reviews/YYYY-MM-DD-{branch-slug}.md`
 
@@ -151,6 +192,8 @@ Systematic debugging — root cause investigation before any fixes.
 4 phases: Root Cause → Pattern Analysis → Hypothesis → Implementation.
 
 Escalates to architecture review if 3+ fixes fail. Includes supporting techniques for root-cause tracing, defense-in-depth validation, and condition-based waiting.
+Reads `./absolutpowers/project-memory.md` on startup when present and can emit memory candidates
+after non-trivial investigations that uncovered future-useful traps or workarounds.
 
 ---
 
@@ -174,6 +217,8 @@ The project context workflow is shared across Claude Code and Codex:
 - `CLAUDE.md` files are the editable source of truth
 - `AGENTS.md` files are generated mirrors for Codex with the same directory scope
 - `./absolutpowers/patterns.md` and `./absolutpowers/rules.md` are shared by both agents
+- `./absolutpowers/project-memory.md` is optional operational memory for future coding work
+- `./absolutpowers/memory-candidates/` is the approval queue for proposed durable memory entries
 
 When `update-ai-context` runs, it should update the hierarchical `CLAUDE.md` files first and then refresh sibling `AGENTS.md` mirrors.
 
@@ -193,6 +238,9 @@ project/
 │   ├── feature/
 │   │   ├── planning-{slug}.md
 │   │   └── tasks-{slug}.md
+│   ├── memory-candidates/
+│   │   └── memory-candidates-YYYY-MM-DD-{slug}.md
+│   ├── project-memory.md
 │   ├── reviews/
 │   │   └── YYYY-MM-DD-{branch-slug}.md
 │   ├── patterns.md
@@ -201,6 +249,88 @@ project/
 │   └── YYYY-MM-DD-{slug}.md
 ├── CLAUDE.md
 └── AGENTS.md
+```
+
+## Project Memory
+
+`project-memory.md` is for durable implementation knowledge that should help future agents and developers avoid repeating the same mistakes.
+
+Use it for:
+- recurring traps
+- non-obvious workarounds
+- failure patterns with clear warning signs
+- lessons that are likely to matter again in future tasks
+
+Do not use it for:
+- one-off ticket context
+- temporary debugging notes
+- branch-specific status
+- facts that belong in `patterns.md`, `rules.md`, or ADRs instead
+
+Workflow:
+- `implement`, `debug`, and `review` read `./absolutpowers/project-memory.md` on startup if it exists
+- if a session uncovers a durable lesson, the agent may create `./absolutpowers/memory-candidates/memory-candidates-YYYY-MM-DD-{slug}.md`
+- the agent should ask the developer whether to promote that candidate into `project-memory.md`
+- promotion requires explicit developer approval
+- on promotion, update an existing matching memory entry instead of duplicating it
+- after successful promotion, delete the candidate file
+
+Recommended `project-memory.md` structure:
+
+```markdown
+# Project Memory
+
+## src/auth
+
+### Token refresh race in session bootstrap
+- Problem: concurrent refresh paths invalidate each other
+- Symptoms: flaky 401 on first page load, duplicate refresh requests
+- Root cause: bootstrap and interceptor both refresh from stale state
+- Resolution: gate refresh through a shared in-flight promise
+- Warning signs:
+  - intermittent auth failures only on cold start
+  - duplicate refresh logs within one request cycle
+- Affected paths:
+  - `src/auth/bootstrap.ts`
+  - `src/auth/refresh-token.ts`
+```
+
+Recommended candidate structure:
+
+```markdown
+# Memory Candidate: Token refresh race in session bootstrap
+
+## Status
+Candidate — YYYY-MM-DD
+
+## Source
+- Skill: implement | debug | review
+- Context: task / bug / branch being worked on
+
+## Module
+`src/auth`
+
+## Problem
+...
+
+## Symptoms
+...
+
+## Root Cause
+...
+
+## Resolution
+...
+
+## Warning Signs
+- ...
+
+## Affected Paths
+- `src/auth/bootstrap.ts`
+- `src/auth/refresh-token.ts`
+
+## Why This May Matter Again
+...
 ```
 
 ## Typical Workflows
@@ -246,6 +376,8 @@ absolutpowers/
 │   └── plugin.json         # Plugin manifest (name = "absolutpowers")
 ├── plugins/
 │   └── absolutpowers/
+│       ├── commands/
+│       │   └── tech-lead-advisor.md
 │       ├── .codex-plugin/
 │       │   └── plugin.json     # Codex plugin manifest
 │       ├── skills/
@@ -253,7 +385,8 @@ absolutpowers/
 │       └── scripts/
 │           └── sync_claude_to_agents.py
 ├── scripts/
-│   └── sync_claude_to_agents.py
+│   ├── sync_claude_to_agents.py
+│   └── sync_skills_to_codex.py
 ├── skills/
 │   ├── debug/
 │   │   ├── SKILL.md

@@ -26,8 +26,88 @@ Read this file to understand the project context and find pending tasks.
 Before starting implementation, also read (if they exist):
 - **`./absolutpowers/patterns.md`** — established code patterns and conventions to follow
 - **`./absolutpowers/rules.md`** — project rules to comply with
+- **`./absolutpowers/project-memory.md`** — durable traps, warning signs, and workarounds discovered in previous tasks
 
 Use patterns as reference for HOW to implement. Follow rules as constraints.
+Use project memory as prior operational context: apply it when relevant, but do not force old workarounds onto unrelated code.
+
+## Project Memory
+
+During implementation, distinguish between:
+- **Durable memory** — insights likely to help future tasks in the same codebase
+- **Task-local notes** — one-off findings useful only for the current task
+
+Only durable memory belongs in the memory workflow.
+
+Create a memory candidate only when ALL of these are true:
+- you discovered a recurring trap, workaround, or warning sign that is likely to matter again
+- the lesson is still useful after the current task is over
+- the content is general enough to help future developers, not just explain this one ticket
+
+Do NOT create memory entries for:
+- temporary debugging breadcrumbs
+- branch-specific status
+- one-off data fixes
+- facts that belong in `patterns.md`, `rules.md`, ADRs, or the tasks file instead
+
+When a durable lesson is worth capturing, use:
+- candidate path: `./absolutpowers/memory-candidates/memory-candidates-YYYY-MM-DD-{slug}.md`
+- permanent memory path: `./absolutpowers/project-memory.md`
+
+`project-memory.md` should be organized by module section, with explicit affected paths in each entry:
+
+```markdown
+## src/auth
+
+### Token refresh race in session bootstrap
+- Problem: concurrent refresh paths invalidate each other
+- Symptoms: flaky 401 on first page load, duplicate refresh requests
+- Root cause: bootstrap and interceptor both refresh from stale state
+- Resolution: gate refresh through a shared in-flight promise
+- Warning signs:
+  - intermittent auth failures only on cold start
+  - duplicate refresh logs within one request cycle
+- Affected paths:
+  - `src/auth/bootstrap.ts`
+  - `src/auth/refresh-token.ts`
+```
+
+Candidate files should capture the fuller investigation and recommendation:
+
+```markdown
+# Memory Candidate: [Short title]
+
+## Status
+Candidate — YYYY-MM-DD
+
+## Source
+- Skill: implement
+- Context: `./absolutpowers/feature/tasks-{slug}.md` (Task N)
+
+## Module
+`path/to/module`
+
+## Problem
+...
+
+## Symptoms
+...
+
+## Root Cause
+...
+
+## Resolution
+...
+
+## Warning Signs
+- ...
+
+## Affected Paths
+- `path/to/file`
+
+## Why This May Matter Again
+...
+```
 
 ## Process
 
@@ -108,7 +188,20 @@ Accepted
 
 **Only for significant decisions** — not every implementation choice warrants an ADR. If the "Implementation decisions / remarks" section in the task captures it sufficiently, that's enough.
 
-### Step 6: Continue or Stop
+### Step 6: Project Memory Candidate (if applicable)
+At the end of the implementation session, after code/tests/verification are done:
+- Decide whether you uncovered a durable lesson worth preserving for future work
+- If no: do nothing
+- If yes: create `./absolutpowers/memory-candidates/memory-candidates-YYYY-MM-DD-{slug}.md`
+- In your final response, explicitly ask the user whether to promote that candidate into `./absolutpowers/project-memory.md`
+
+Promotion rules:
+- Promotion requires explicit user approval
+- When promoting, update an existing matching memory entry instead of duplicating it
+- Keep `project-memory.md` grouped by module, but always include `Affected paths` inside the entry
+- After successful promotion, delete the candidate file
+
+### Step 7: Continue or Stop
 - If there are more pending tasks: proceed to next pending task (go to Step 1)
 - If all tasks completed: report completion summary only after the final verification task has been executed successfully
 
@@ -189,6 +282,7 @@ Completed Task [N]: [Title]
 - Tests: [pass/fail status]
 - Verification commands: [executed/not applicable/failed]
 - CLAUDE.md / AGENTS.md: [updated + synced/no changes needed]
+- Memory: [no durable lesson/candidate created at .../promoted to project-memory]
 ```
 
 ---

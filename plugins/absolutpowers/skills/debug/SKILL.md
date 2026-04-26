@@ -10,6 +10,87 @@ description: >
 
 # Systematic Debugging
 
+## Context Files
+
+Before starting investigation, also read (if they exist):
+- **`./absolutpowers/project-memory.md`** — durable traps, warning signs, and workarounds discovered in earlier tasks
+
+Use project memory as prior context, not as a substitute for fresh evidence. If memory conflicts with current evidence, trust the evidence.
+
+## Project Memory
+
+Debugging often uncovers high-value lessons, but most raw notes should NOT become permanent memory.
+
+Create a memory candidate only when ALL of these are true:
+- the investigation was non-trivial
+- it uncovered a recurring trap, workaround, or warning sign
+- the lesson is likely to help future debugging or implementation in the same codebase
+
+Do NOT create memory entries for:
+- temporary hypotheses that were disproven
+- one-off incident timelines
+- environment states that are unlikely to recur
+- details that belong only in the current bug report or commit history
+
+When a durable lesson is worth capturing, use:
+- candidate path: `./absolutpowers/memory-candidates/memory-candidates-YYYY-MM-DD-{slug}.md`
+- permanent memory path: `./absolutpowers/project-memory.md`
+
+`project-memory.md` should be grouped by module, but each entry must also include explicit affected paths:
+
+```markdown
+## infra/ci
+
+### Signing identity missing inside nested build step
+- Problem: workflow secret exists, but nested script cannot see it
+- Symptoms: signing fails only in CI, env looks correct in top-level workflow
+- Root cause: env var was never passed into the nested build invocation
+- Resolution: forward the variable explicitly through the wrapper script
+- Warning signs:
+  - secret shows as set in workflow logs
+  - nested process prints env as missing
+- Affected paths:
+  - `.github/workflows/release.yml`
+  - `scripts/build-release.sh`
+```
+
+Candidate file template:
+
+```markdown
+# Memory Candidate: [Short title]
+
+## Status
+Candidate — YYYY-MM-DD
+
+## Source
+- Skill: debug
+- Context: [bug / failing test / CI issue]
+
+## Module
+`path/to/module`
+
+## Problem
+...
+
+## Symptoms
+...
+
+## Root Cause
+...
+
+## Resolution
+...
+
+## Warning Signs
+- ...
+
+## Affected Paths
+- `path/to/file`
+
+## Why This May Matter Again
+...
+```
+
 ## Overview
 
 Random fixes waste time and create new bugs. Quick patches mask underlying issues.
@@ -275,3 +356,15 @@ Available in this directory:
 - **`root-cause-tracing.md`** — Trace bugs backward through call stack to find original trigger
 - **`defense-in-depth.md`** — Add validation at multiple layers after finding root cause
 - **`condition-based-waiting.md`** — Replace arbitrary timeouts with condition polling
+
+## Memory Capture at the End
+
+After the debugging session is complete:
+- If you did NOT uncover a durable, reusable lesson: do nothing
+- If you DID uncover one: create `./absolutpowers/memory-candidates/memory-candidates-YYYY-MM-DD-{slug}.md`
+- In your final response, explicitly ask the user whether to promote that candidate into `./absolutpowers/project-memory.md`
+
+Promotion rules:
+- Promotion requires explicit user approval
+- Update an existing matching memory entry instead of duplicating it
+- After successful promotion, delete the candidate file
