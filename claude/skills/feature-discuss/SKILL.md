@@ -7,7 +7,7 @@ description: >
   TRIGGER when: new feature request, "chce dodac", "potrzebujemy", "jak zrobic",
   brainstorming, feature design, "what if we", product discussion, requirements gathering,
   "should we build", architecture decision for new functionality.
-allowed-tools: Read, Glob, Grep, Bash(find:*), Bash(wc:*), Bash(cat:*), Bash(head:*), Bash(tail:*), Bash(tree:*), Bash(mkdir:*), Write(**/absolutpowers/feature/planning-*.md), Write(**/docs/adr/*.md)
+allowed-tools: Read, Glob, Grep, Bash(find:*), Bash(wc:*), Bash(cat:*), Bash(head:*), Bash(tail:*), Bash(tree:*), Bash(mkdir:*), Write(**/absolutpowers/feature/planning-*.md), Write(**/docs/adr/*.md), Agent
 argument-hint: "[opis feature'a — nazwa pliku zostanie wyciągnięta z rozmowy]"
 ---
 
@@ -104,9 +104,28 @@ Przed zapisem oceń złożoność feature'a:
 
 **Standardowy feature** (wymaga kilku plików, nowych komponentów, testów):
 - Kiedy użytkownik powie, że dyskusja jest zakończona (np. "zapisz", "koniec", "generuj"), wygeneruj plik `./absolutpowers/feature/planning-{slug}.md`.
-- Zasugeruj: "Następny krok: `/absolutpowers:generate-tasks @absolutpowers/feature/planning-{slug}.md`"
+- Po zapisie przejdź do **Fazy 6: Review Gate**.
 
-### Faza 6: ADR — Architecture Decision Records
+### Faza 6: Review Gate — Automatyczna weryfikacja planu
+
+Po zapisaniu planning doc, uruchom subagenta `review-plan` żeby zweryfikować jakość planu:
+
+```
+Agent(subagent_type="review-plan", prompt="Review planning document: ./absolutpowers/feature/planning-{slug}.md")
+```
+
+**Jeśli VERDICT: PASS:**
+- Poinformuj użytkownika: "Plan przeszedł review. Następny krok: `/absolutpowers:generate-tasks @absolutpowers/feature/planning-{slug}.md`"
+
+**Jeśli VERDICT: REJECTED:**
+- Wyświetl użytkownikowi listę problemów z review
+- Popraw planning doc adresując każdy zgłoszony problem
+- Zapisz poprawiony plik
+- Uruchom `review-plan` ponownie
+- Powtarzaj aż do PASS (maksymalnie 3 iteracje)
+- Jeśli po 3 iteracjach nadal REJECTED — pokaż użytkownikowi pozostałe problemy i zapytaj czy kontynuować mimo to
+
+### Faza 7: ADR — Architecture Decision Records
 Jeśli w trakcie dyskusji podjęto **znaczące decyzje architektoniczne** (wybór technologii, wzorca, podejścia do integracji, tradeoff z konsekwencjami), zapisz każdą jako ADR:
 
 **Ścieżka:** `./docs/adr/YYYY-MM-DD-{slug-decyzji}.md`

@@ -7,7 +7,7 @@ description: >
   TRIGGER when: planning doc exists and user wants implementation plan,
   "rozpisz taski", "break this into tasks", review report needs fix tasks,
   after feature-discuss produces planning-*.md, "what are the steps".
-allowed-tools: Read, Glob, Grep, Bash(find:*), Bash(wc:*), Bash(cat:*), Bash(head:*), Bash(tail:*), Bash(tree:*), Write(**/absolutpowers/feature/tasks-*.md)
+allowed-tools: Read, Glob, Grep, Bash(find:*), Bash(wc:*), Bash(cat:*), Bash(head:*), Bash(tail:*), Bash(tree:*), Write(**/absolutpowers/feature/tasks-*.md), Agent
 argument-hint: "[ścieżka do planning-*.md lub review-*.md]"
 ---
 
@@ -334,3 +334,24 @@ Generate the tasks file at `./absolutpowers/feature/tasks-{slug}.md` with:
 4. Code examples where helpful
 
 Use markdown formatting: headers, code blocks with language identifiers, bullet lists.
+
+---
+
+## Review Gate — Automatyczna weryfikacja tasków
+
+Po zapisaniu tasks doc, uruchom subagenta `review-tasks` żeby zweryfikować jakość planu implementacji:
+
+```
+Agent(subagent_type="review-tasks", prompt="Review tasks document: ./absolutpowers/feature/tasks-{slug}.md")
+```
+
+**Jeśli VERDICT: PASS:**
+- Poinformuj użytkownika: "Taski przeszły review. Następny krok: `/absolutpowers:implement @absolutpowers/feature/tasks-{slug}.md`"
+
+**Jeśli VERDICT: REJECTED:**
+- Wyświetl użytkownikowi listę problemów z review
+- Popraw tasks doc adresując każdy zgłoszony problem
+- Zapisz poprawiony plik
+- Uruchom `review-tasks` ponownie
+- Powtarzaj aż do PASS (maksymalnie 3 iteracje)
+- Jeśli po 3 iteracjach nadal REJECTED — pokaż użytkownikowi pozostałe problemy i zapytaj czy kontynuować mimo to

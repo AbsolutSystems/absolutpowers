@@ -8,7 +8,7 @@
       "name": "absolutpowers",
       "source": {
         "source": "local",
-        "path": "./plugins/absolutpowers"
+        "path": "./codex"
       },
       "policy": {
         "installation": "AVAILABLE",

@@ -1,413 +1,395 @@
-# AbsolutPowers Skills
+# AbsolutPowers
 
-Shared Claude Code and Codex workflow for AI-assisted development lifecycle — from feature design through implementation to code review.
+AI-assisted development lifecycle — from feature design through implementation to code review. Works with Claude Code and Codex.
 
-## Installation
+AbsolutPowers gives your AI coding agent a structured workflow instead of ad-hoc prompting. Each skill handles one phase of the development process. Skills connect into a pipeline with automated quality gates that catch problems before they cascade.
 
-### Claude Code
+## Quick Start
+
+### 1. Install
+
+**Claude Code:**
 
 ```bash
 /plugin marketplace add AbsolutSystems/absolutpowers
 /plugin install absolutpowers@absolutpowers-skills
 ```
 
-Restart Claude Code, then type `/absolutpowers:` — autocomplete should show all 6 skills.
+Restart Claude Code. Type `/absolutpowers:` — autocomplete shows all skills.
 
-### Codex
+**Codex:**
 
-This repository exposes a repo-local Codex marketplace at:
+Open repo in Codex → repo marketplace (`.agents/plugins/marketplace.json`) → install `absolutpowers`.
 
-```text
-.agents/plugins/marketplace.json
-```
+### 2. Prepare your project
 
-and the installable Codex plugin bundle at:
-
-```text
-./plugins/absolutpowers
-```
-
-Open the repository in Codex, use the repo marketplace, and install the `absolutpowers` plugin from there.
-
-In Codex, invoke the workflow through the plugin handle `$absolutpowers` plus the skill name or task context, for example:
-
-```text
-$absolutpowers feature-discuss zaprojektuj system powiadomien push
-$absolutpowers generate-tasks ./absolutpowers/feature/planning-push-notifications.md
-$absolutpowers implement ./absolutpowers/feature/tasks-push-notifications.md
-$absolutpowers review
-$absolutpowers debug test auth pada tylko na CI
-$absolutpowers update-ai-context
-```
-
-The plugin bundle can also expose dedicated slash commands under:
-
-```text
-./plugins/absolutpowers/commands
-```
-
-Current custom command:
-
-```text
-/tech-lead-advisor
-```
-
-Use it for strategic technical guidance, architectural review, and critical second opinions on major technical decisions.
-
-### Updating
+Run this once in your project to generate AI context files:
 
 ```bash
-/plugin install absolutpowers@absolutpowers-skills
-```
-
-For Codex, refresh or reinstall the local repo plugin after pulling changes if your environment caches plugin versions.
-
-## Maintaining Dual Targets
-
-Repository source of truth lives in:
-
-```text
-./skills
-```
-
-The Codex plugin bundle mirrors those files in:
-
-```text
-./plugins/absolutpowers/skills
-```
-
-Before publishing or testing the Codex plugin bundle, refresh that mirror with:
-
-```bash
-python3 scripts/sync_skills_to_codex.py
-```
-
-The sync keeps all supporting files identical and removes Claude-specific frontmatter fields
-(`allowed-tools`, `argument-hint`) from plugin `SKILL.md` files.
-
-## Skills
-
-### Development Pipeline
-
-Each skill produces output consumed by the next:
-
-```
-feature-discuss → generate-tasks → implement → review
-     (CO?)           (JAK?)      (BUDUJ+WERYFIKUJ)  (AUDYTUJ)
-```
-
-#### `/absolutpowers:feature-discuss`
-
-Interactive Product Owner / Product Architect session. Discusses feature requirements before any code is written.
-
-```
-/absolutpowers:feature-discuss chce system powiadomien push dla uzytkownikow
-```
-
-- Asks clarifying questions to understand the need
-- Analyzes existing codebase for relevant patterns and components
-- Proposes 2-3 alternative approaches with tradeoffs
-- Iterates on scope, edge cases, dependencies
-
-**Output:** `./absolutpowers/feature/planning-{slug}.md`, optionally `./docs/adr/YYYY-MM-DD-{slug}.md`
-
-**Smart routing:** Trivial changes skip planning doc — suggests direct implementation.
-
----
-
-#### `/absolutpowers:generate-tasks`
-
-Creates a step-by-step implementation plan from a planning document or review report.
-
-```
-/absolutpowers:generate-tasks @absolutpowers/feature/planning-push-notifications.md
-/absolutpowers:generate-tasks @absolutpowers/reviews/2026-04-21-feature-auth.md
-```
-
-- Reads planning doc or review report, `./absolutpowers/patterns.md`, `./absolutpowers/rules.md`, ADRs
-- Analyzes codebase architecture, patterns, conventions
-- Produces sequential tasks with exact file paths, method signatures, test cases
-- Adds a final verification task with project-specific build / typecheck / formatter commands
-
-**Output:** `./absolutpowers/feature/tasks-{slug}.md`
-
----
-
-#### `/absolutpowers:implement`
-
-Executes tasks sequentially from a tasks document with TDD approach.
-
-```
-/absolutpowers:implement @absolutpowers/feature/tasks-push-notifications.md
-```
-
-- Picks first pending task, implements with TDD (tests first)
-- Updates task status to `completed` in-place
-- Executes the final verification task before reporting overall completion
-- Creates ADR for significant implementation decisions
-- Reads `./absolutpowers/project-memory.md` on startup when present
-- Can create `./absolutpowers/memory-candidates/memory-candidates-YYYY-MM-DD-{slug}.md` for durable lessons worth reusing later
-
-**Output:** Implementation code + tests, updated tasks file
-
----
-
-#### `/absolutpowers:review`
-
-Full 4-phase code review of current branch changes.
-
-```
-/absolutpowers:review
-/absolutpowers:review develop    # custom base branch
-```
-
-| Phase | Focus |
-|-------|-------|
-| 1. Semantic Review | Behavior changes, blast radius, architectural decisions |
-| 2. Edge Case Hunt | null, empty, off-by-one, race conditions |
-| 3. Rules Check | Compliance with `./absolutpowers/rules.md` |
-| 4. Garbage Collection | Dead imports, debug logs, commented code |
-
-Review also checks whether there is evidence of final verification for executable code changes
-(for example backend build, frontend build, typecheck, `spotlessCheck`).
-It also reads `./absolutpowers/project-memory.md` on startup and can create memory candidates
-for recurring traps or workarounds discovered during review.
-
-**Output:** `./absolutpowers/reviews/YYYY-MM-DD-{branch-slug}.md`
-
-**Smart follow-up:** 0-2 problems → manual fix. 3+ problems → suggests `/absolutpowers:generate-tasks` on the review report.
-
----
-
-### Supporting Skills
-
-#### `/absolutpowers:debug`
-
-Systematic debugging — root cause investigation before any fixes.
-
-```
-/absolutpowers:debug testy w module auth padaja na CI ale przechodza lokalnie
-```
-
-4 phases: Root Cause → Pattern Analysis → Hypothesis → Implementation.
-
-Escalates to architecture review if 3+ fixes fail. Includes supporting techniques for root-cause tracing, defense-in-depth validation, and condition-based waiting.
-Reads `./absolutpowers/project-memory.md` on startup when present and can emit memory candidates
-after non-trivial investigations that uncovered future-useful traps or workarounds.
-
----
-
-#### `/absolutpowers:update-ai-context`
-
-Bootstraps or refreshes AI documentation for the project.
-
-```
 /absolutpowers:update-ai-context
 ```
 
-- **No CLAUDE.md** → Bootstrap: creates full documentation from scratch
-- **CLAUDE.md exists** → Update: audits for drift, discovers new patterns
+This creates `CLAUDE.md`, `AGENTS.md`, `./absolutpowers/patterns.md`, and `./absolutpowers/rules.md`. These files help all other skills understand your codebase.
 
-Manages: `CLAUDE.md`, mirrored `AGENTS.md`, `./absolutpowers/patterns.md`, `./absolutpowers/rules.md`
-
-## Shared AI Context
-
-The project context workflow is shared across Claude Code and Codex:
-
-- `CLAUDE.md` files are the editable source of truth
-- `AGENTS.md` files are generated mirrors for Codex with the same directory scope
-- `./absolutpowers/patterns.md` and `./absolutpowers/rules.md` are shared by both agents
-- `./absolutpowers/project-memory.md` is optional operational memory for future coding work
-- `./absolutpowers/memory-candidates/` is the approval queue for proposed durable memory entries
-
-When `update-ai-context` runs, it should update the hierarchical `CLAUDE.md` files first and then refresh sibling `AGENTS.md` mirrors.
-
-Helper script included in both plugin targets:
+### 3. Build a feature
 
 ```bash
-python3 scripts/sync_claude_to_agents.py /path/to/project
+# Step 1: Discuss and plan
+/absolutpowers:feature-discuss "system powiadomień push dla użytkowników"
+
+# Step 2: Generate implementation tasks
+/absolutpowers:generate-tasks @absolutpowers/feature/planning-push-notifications.md
+
+# Step 3: Implement
+/absolutpowers:implement @absolutpowers/feature/tasks-push-notifications.md
+
+# Step 4: Final code review
+/absolutpowers:review
 ```
 
-## File Conventions
+Each step produces a file that feeds into the next. Review gates between steps catch issues automatically.
 
-All artifacts live under `./absolutpowers/` in the project root:
+## The Pipeline
 
 ```
-project/
+feature-discuss → generate-tasks → implement → review
+     CO?              JAK?        BUDUJ+TEST    AUDYTUJ
+      │                 │              │
+      ▼                 ▼              ▼
+  review-plan      review-tasks   review-implementation
+   (gate)            (gate)           (gate)
+```
+
+### How gates work
+
+After each skill produces its output, a subagent reviews the result automatically:
+
+1. Subagent reviews the output against specific criteria
+2. Returns **PASS** or **REJECTED** with a list of specific issues
+3. If REJECTED → the skill fixes the issues and resubmits (up to 3 iterations)
+4. If still REJECTED after 3 tries → shows remaining issues and asks you what to do
+
+Gates are Claude Code only. Codex skills run without gates.
+
+## Skills Reference
+
+### `/absolutpowers:feature-discuss`
+
+Interactive Product Owner / Product Architect session. Discusses feature requirements before any code is written.
+
+**What it does:**
+- Asks clarifying questions one at a time (with options to choose from)
+- Analyzes your codebase for relevant patterns and components
+- Proposes 2-3 alternative approaches with tradeoffs
+- Iterates on scope, edge cases, dependencies
+- Writes a planning document
+- Runs `review-plan` gate before finishing
+
+**When to use:** Starting a new feature, brainstorming, "chcę dodać...", "potrzebujemy..."
+
+**Input:** Feature description in natural language
+
+**Output:** `./absolutpowers/feature/planning-{slug}.md`, optionally `./docs/adr/YYYY-MM-DD-{slug}.md`
+
+**Example:**
+```bash
+/absolutpowers:feature-discuss "eksport danych użytkowników do CSV z filtrowaniem"
+```
+
+**Smart routing:** Trivial changes (one-liner, config change) skip the planning doc — the skill suggests direct implementation instead.
+
+---
+
+### `/absolutpowers:generate-tasks`
+
+Reads a planning doc or review report and creates a step-by-step implementation plan for an AI agent.
+
+**What it does:**
+- Reads the planning doc and analyzes your codebase
+- Discovers patterns, conventions, and existing code to reference
+- Produces sequential tasks with exact file paths, method signatures, test cases
+- Adds a final verification task with your project's build/test commands
+- Runs `review-tasks` gate before finishing
+
+**When to use:** After `feature-discuss` produces a planning doc, or after `review` produces a report with 3+ issues
+
+**Input:** Path to a planning doc or review report
+
+**Output:** `./absolutpowers/feature/tasks-{slug}.md`
+
+**Examples:**
+```bash
+# From planning doc
+/absolutpowers:generate-tasks @absolutpowers/feature/planning-push-notifications.md
+
+# From review report (generates fix tasks)
+/absolutpowers:generate-tasks @absolutpowers/reviews/2026-04-21-feature-auth.md
+```
+
+---
+
+### `/absolutpowers:implement`
+
+Senior engineer executing tasks sequentially with TDD approach.
+
+**What it does:**
+- Picks first pending task, implements with TDD (tests first where appropriate)
+- Updates task status to `completed` in-place after each task
+- Proposes alternatives if it finds a better approach (asks before changing)
+- Executes the final verification task (build, typecheck, lint)
+- Runs `review-implementation` gate after all tasks pass
+- Creates ADRs for significant implementation decisions
+- Can create memory candidates for durable lessons
+
+**When to use:** After `generate-tasks` produces a tasks file
+
+**Input:** Path to a tasks file
+
+**Output:** Implementation code + tests, updated tasks file
+
+**Example:**
+```bash
+/absolutpowers:implement @absolutpowers/feature/tasks-push-notifications.md
+```
+
+---
+
+### `/absolutpowers:review`
+
+Full 4-phase code review of current branch changes.
+
+**What it does:**
+
+| Phase | Focus |
+|-------|-------|
+| 1. Semantic Review | What changed in behavior, blast radius, architectural decisions |
+| 2. Edge Case Hunt | null, empty, off-by-one, race conditions, missing error handling |
+| 3. Rules Check | Compliance with `./absolutpowers/rules.md` |
+| 4. Garbage Collection | Dead imports, debug logs, commented code, stale TODOs |
+
+**When to use:** Before merge, PR ready, "sprawdź kod", "is this ready"
+
+**Input:** Optional base branch (default: main)
+
+**Output:** `./absolutpowers/reviews/YYYY-MM-DD-{branch-slug}.md`
+
+**Examples:**
+```bash
+/absolutpowers:review              # compare against main
+/absolutpowers:review develop      # compare against develop
+```
+
+**Smart follow-up:**
+- 0-2 issues → fix manually
+- 3+ issues → suggests `/absolutpowers:generate-tasks` on the review report
+
+---
+
+### `/absolutpowers:debug`
+
+Systematic debugging — root cause investigation before any fixes.
+
+**What it does:**
+- Phase 1: Root cause investigation (read errors, reproduce, trace data flow)
+- Phase 2: Pattern analysis (find working examples, compare differences)
+- Phase 3: Hypothesis and testing (one change at a time)
+- Phase 4: Implementation (failing test → fix → verify)
+- Escalates to architecture review if 3+ fixes fail
+
+**When to use:** Bug report, test failure, "nie działa", unexpected behavior, CI failure
+
+**Input:** Bug description or error message
+
+**Output:** Fix + optional memory candidate
+
+**Example:**
+```bash
+/absolutpowers:debug "endpoint /api/users zwraca 500 przy pustym query param"
+/absolutpowers:debug "testy auth padają na CI ale przechodzą lokalnie"
+```
+
+---
+
+### `/absolutpowers:update-ai-context`
+
+Bootstraps or refreshes project documentation for AI agents.
+
+**What it does:**
+- **No CLAUDE.md** → creates full documentation from scratch (bootstrap)
+- **CLAUDE.md exists** → audits for drift, discovers new patterns (update)
+- Manages: `CLAUDE.md`, `AGENTS.md` mirrors, `./absolutpowers/patterns.md`, `./absolutpowers/rules.md`
+- Proposes rules for human approval (never auto-imposes)
+
+**When to use:** New project setup, after significant codebase changes, onboarding
+
+**Input:** Optional project path (default: current directory)
+
+**Output:** Updated documentation files + change report
+
+**Example:**
+```bash
+/absolutpowers:update-ai-context
+```
+
+## Agents (Claude Code only)
+
+Agents are subagents that skills spawn automatically. You don't invoke them directly — they're part of the pipeline.
+
+| Agent | Spawned by | Purpose |
+|-------|-----------|---------|
+| `review-plan` | feature-discuss | Validates planning doc completeness, feasibility, architecture |
+| `review-tasks` | generate-tasks | Validates task granularity, ordering, specificity, code references |
+| `review-implementation` | implement | Validates code correctness, patterns, tests, safety |
+| `tech-lead-advisor` | (available for manual use) | Strategic architecture guidance, technology choices, tradeoff analysis |
+
+### Review agent criteria
+
+**review-plan** checks: completeness, feasibility, architectural soundness, actionability
+
+**review-tasks** checks: traceability to planning doc, granularity, ordering & dependencies, specificity of file paths and signatures, verification task presence, code reference accuracy
+
+**review-implementation** checks: correctness, patterns compliance, rules compliance, test coverage, completeness, safety (no secrets, no injection vectors)
+
+## Project Structure in Your Repo
+
+After using AbsolutPowers, your project will contain:
+
+```
+your-project/
 ├── absolutpowers/
 │   ├── feature/
-│   │   ├── planning-{slug}.md
-│   │   └── tasks-{slug}.md
-│   ├── memory-candidates/
-│   │   └── memory-candidates-YYYY-MM-DD-{slug}.md
-│   ├── project-memory.md
+│   │   ├── planning-{slug}.md      # Feature plans
+│   │   └── tasks-{slug}.md         # Implementation tasks
 │   ├── reviews/
-│   │   └── YYYY-MM-DD-{branch-slug}.md
-│   ├── patterns.md
-│   └── rules.md
+│   │   └── YYYY-MM-DD-{branch}.md  # Code review reports
+│   ├── memory-candidates/
+│   │   └── memory-candidates-*.md  # Proposed durable lessons
+│   ├── project-memory.md           # Approved operational memory
+│   ├── patterns.md                 # Discovered code patterns
+│   └── rules.md                    # Project rules for review
 ├── docs/adr/
-│   └── YYYY-MM-DD-{slug}.md
-├── CLAUDE.md
-└── AGENTS.md
+│   └── YYYY-MM-DD-{slug}.md        # Architecture Decision Records
+├── CLAUDE.md                        # AI context (Claude Code)
+└── AGENTS.md                        # AI context mirror (Codex)
+```
+
+**Recommended `.gitignore` additions:**
+```gitignore
+# Keep planning docs and reviews in git (they're documentation)
+# Exclude memory candidates (approval queue, not permanent)
+absolutpowers/memory-candidates/
 ```
 
 ## Project Memory
 
-`project-memory.md` is for durable implementation knowledge that should help future agents and developers avoid repeating the same mistakes.
+Skills can discover durable lessons during work — recurring traps, non-obvious workarounds, failure patterns. These are captured as memory candidates.
 
-Use it for:
-- recurring traps
-- non-obvious workarounds
-- failure patterns with clear warning signs
-- lessons that are likely to matter again in future tasks
+**Workflow:**
+1. Skill discovers a lesson worth preserving
+2. Creates `./absolutpowers/memory-candidates/memory-candidates-YYYY-MM-DD-{slug}.md`
+3. Asks you whether to promote it to `./absolutpowers/project-memory.md`
+4. Promotion requires your explicit approval
+5. After promotion, candidate file is deleted
 
-Do not use it for:
-- one-off ticket context
-- temporary debugging notes
-- branch-specific status
-- facts that belong in `patterns.md`, `rules.md`, or ADRs instead
+**What belongs in project memory:**
+- Recurring traps with clear warning signs
+- Non-obvious workarounds
+- Failure patterns that are likely to recur
 
-Workflow:
-- `implement`, `debug`, and `review` read `./absolutpowers/project-memory.md` on startup if it exists
-- if a session uncovers a durable lesson, the agent may create `./absolutpowers/memory-candidates/memory-candidates-YYYY-MM-DD-{slug}.md`
-- the agent should ask the developer whether to promote that candidate into `project-memory.md`
-- promotion requires explicit developer approval
-- on promotion, update an existing matching memory entry instead of duplicating it
-- after successful promotion, delete the candidate file
+**What does NOT belong:**
+- One-off debugging notes
+- Branch-specific status
+- Facts that belong in `patterns.md`, `rules.md`, or ADRs
 
-Recommended `project-memory.md` structure:
+## Workflows
 
-```markdown
-# Project Memory
-
-## src/auth
-
-### Token refresh race in session bootstrap
-- Problem: concurrent refresh paths invalidate each other
-- Symptoms: flaky 401 on first page load, duplicate refresh requests
-- Root cause: bootstrap and interceptor both refresh from stale state
-- Resolution: gate refresh through a shared in-flight promise
-- Warning signs:
-  - intermittent auth failures only on cold start
-  - duplicate refresh logs within one request cycle
-- Affected paths:
-  - `src/auth/bootstrap.ts`
-  - `src/auth/refresh-token.ts`
-```
-
-Recommended candidate structure:
-
-```markdown
-# Memory Candidate: Token refresh race in session bootstrap
-
-## Status
-Candidate — YYYY-MM-DD
-
-## Source
-- Skill: implement | debug | review
-- Context: task / bug / branch being worked on
-
-## Module
-`src/auth`
-
-## Problem
-...
-
-## Symptoms
-...
-
-## Root Cause
-...
-
-## Resolution
-...
-
-## Warning Signs
-- ...
-
-## Affected Paths
-- `src/auth/bootstrap.ts`
-- `src/auth/refresh-token.ts`
-
-## Why This May Matter Again
-...
-```
-
-## Typical Workflows
-
-### New Feature
+### New feature (full pipeline)
 
 ```bash
-/absolutpowers:feature-discuss "system powiadomien push"
-/absolutpowers:generate-tasks @absolutpowers/feature/planning-push-notifications.md
-/absolutpowers:implement @absolutpowers/feature/tasks-push-notifications.md
+/absolutpowers:feature-discuss "opis feature'a"
+# → dyskusja → planning doc → review-plan gate → PASS
+
+/absolutpowers:generate-tasks @absolutpowers/feature/planning-{slug}.md
+# → analiza kodu → tasks doc → review-tasks gate → PASS
+
+/absolutpowers:implement @absolutpowers/feature/tasks-{slug}.md
+# → TDD → kod + testy → verification → review-implementation gate → PASS
+
 /absolutpowers:review
+# → 4-phase review → report
 ```
 
-The generated tasks file should end with a final verification step, for example:
-- backend compilation/build
-- frontend production build
-- typecheck
-- formatter check such as `spotlessCheck`
-
-`generate-tasks` should emit this as a normal last task in the same task format, not as a loose reminder.
-
-### Bug Fix
+### Quick bug fix
 
 ```bash
-/absolutpowers:debug "endpoint /api/users zwraca 500 przy pustym query param"
+/absolutpowers:debug "opis błędu"
+# → root cause → fix → test
 ```
 
-### Project Setup
+### Fix review findings
+
+```bash
+/absolutpowers:review
+# → report z 5 problemami
+
+/absolutpowers:generate-tasks @absolutpowers/reviews/2026-05-04-feature-auth.md
+# → tasks doc z fixami
+
+/absolutpowers:implement @absolutpowers/feature/tasks-fix-feature-auth.md
+# → fix → verify
+```
+
+### Onboard a new project
 
 ```bash
 /absolutpowers:update-ai-context
+# → CLAUDE.md, AGENTS.md, patterns.md, rules.md (draft for approval)
 ```
 
-## Repo Structure
+## Platform Differences
+
+| Feature | Claude Code | Codex |
+|---------|------------|-------|
+| Skills | 6 skills | 6 skills + tech-lead-advisor |
+| Agents | 4 agents (review gates + tech-lead-advisor) | none |
+| Review gates | Automatic after each pipeline step | Not available |
+| Skill invocation | `/absolutpowers:skill-name` | `$absolutpowers skill-name` |
+| AI context | CLAUDE.md (source) | AGENTS.md (mirror) |
+
+## Repo Structure (this repository)
 
 ```
-absolutpowers/
-├── .agents/
-│   └── plugins/
-│       └── marketplace.json    # Repo-local Codex marketplace
-├── .claude-plugin/
-│   ├── marketplace.json    # Marketplace manifest
-│   └── plugin.json         # Plugin manifest (name = "absolutpowers")
-├── plugins/
-│   └── absolutpowers/
-│       ├── commands/
-│       │   └── tech-lead-advisor.md
-│       ├── .codex-plugin/
-│       │   └── plugin.json     # Codex plugin manifest
-│       ├── skills/
-│       │   └── ...             # Codex skill set
-│       └── scripts/
-│           └── sync_claude_to_agents.py
+absolut-ai-skills/
+├── claude/                         # Claude Code plugin
+│   ├── .claude-plugin/plugin.json
+│   ├── skills/                     # 6 skills with agent gates
+│   └── agents/                     # 4 subagent definitions
+├── codex/                          # Codex plugin
+│   ├── .codex-plugin/plugin.json
+│   ├── skills/                     # 7 skills (no agent gates)
+│   └── scripts/
+├── .claude-plugin/marketplace.json # Claude marketplace → claude/
+├── .agents/plugins/marketplace.json # Codex marketplace → codex/
 ├── scripts/
-│   ├── sync_claude_to_agents.py
-│   └── sync_skills_to_codex.py
-├── skills/
-│   ├── debug/
-│   │   ├── SKILL.md
-│   │   └── *.md            # Supporting techniques
-│   ├── feature-discuss/
-│   │   └── SKILL.md
-│   ├── generate-tasks/
-│   │   └── SKILL.md
-│   ├── implement/
-│   │   └── SKILL.md
-│   ├── review/
-│   │   └── SKILL.md
-│   └── update-ai-context/
-│       └── SKILL.md
+│   ├── diff-skills.sh              # Drift detection between platforms
+│   └── sync_claude_to_agents.py    # CLAUDE.md → AGENTS.md sync
 └── README.md
+```
+
+## Updating
+
+```bash
+# Claude Code
+/plugin install absolutpowers@absolutpowers-skills
+
+# Codex — pull repo and reinstall from local marketplace
 ```
 
 ## Requirements
 
 - [Claude Code](https://docs.anthropic.com/en/docs/claude-code) CLI or IDE extension
+- [Codex](https://github.com/openai/codex) (optional, for Codex target)
 
 ## License
 
-MIT — Absolut Systems
+MIT — [Absolut Systems](https://github.com/AbsolutSystems)

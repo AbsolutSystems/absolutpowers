@@ -203,7 +203,26 @@ Promotion rules:
 
 ### Step 7: Continue or Stop
 - If there are more pending tasks: proceed to next pending task (go to Step 1)
-- If all tasks completed: report completion summary only after the final verification task has been executed successfully
+- If all tasks completed (including final verification task): proceed to **Step 8: Review Gate**
+
+### Step 8: Review Gate — Automatyczna weryfikacja implementacji
+
+Po zakończeniu WSZYSTKICH tasków (włącznie z final verification), uruchom subagenta `review-implementation`:
+
+```
+Agent(subagent_type="review-implementation", prompt="Review implementation for tasks: ./absolutpowers/feature/tasks-{slug}.md")
+```
+
+**Jeśli VERDICT: PASS:**
+- Raportuj completion summary użytkownikowi
+- Implementacja gotowa
+
+**Jeśli VERDICT: REJECTED:**
+- Wyświetl użytkownikowi listę problemów z review
+- Napraw każdy zgłoszony problem (popraw kod, dodaj testy, usuń martwy kod)
+- Uruchom `review-implementation` ponownie
+- Powtarzaj aż do PASS (maksymalnie 3 iteracje)
+- Jeśli po 3 iteracjach nadal REJECTED — pokaż użytkownikowi pozostałe problemy i zapytaj czy kontynuować mimo to
 
 ---
 

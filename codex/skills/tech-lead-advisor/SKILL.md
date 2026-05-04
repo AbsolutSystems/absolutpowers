@@ -100,8 +100,8 @@ If important context is missing, ask concise clarifying questions before committ
 ## Example Prompts
 
 ```text
-/absolutpowers:tech-lead-advisor should we split this service into two bounded contexts?
-/absolutpowers:tech-lead-advisor review this caching strategy before we implement it
-/absolutpowers:tech-lead-advisor is Redis the right choice for this queueing problem?
-/absolutpowers:tech-lead-advisor I want a critical review of this refactor plan
+$absolutpowers tech-lead-advisor should we split this service into two bounded contexts?
+$absolutpowers tech-lead-advisor review this caching strategy before we implement it
+$absolutpowers tech-lead-advisor is Redis the right choice for this queueing problem?
+$absolutpowers tech-lead-advisor I want a critical review of this refactor plan
 ```
