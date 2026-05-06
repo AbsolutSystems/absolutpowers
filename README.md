@@ -231,6 +231,33 @@ Bootstraps or refreshes project documentation for AI agents.
 /absolutpowers:update-ai-context
 ```
 
+## PreBoot Library Skills (v2.0.2)
+
+Context-aware skills for the [PreBoot.io](https://preboot.io) library ecosystem. Each skill knows the API, patterns, gotchas, and provides examples for its module. Triggered automatically when you work with PreBoot components.
+
+| Skill | Module | What it covers |
+|-------|--------|---------------|
+| `preboot-core` | Core infrastructure | TTLMap, AccessSynchronizer, RateLimiter, TransactionWrapper, HashUtils, BeanValidator, Jackson 3 auto-config |
+| `preboot-query` | Dynamic queries | FilterableRepository, SearchParams, FilterCriteria (15 operators), pagination, sorting, REST controllers, CSV/XLSX export |
+| `preboot-securedata` | Multi-tenancy + RBAC | SecureRepository, @Tenant, @SecureAccess, @AccessRule, audit fields (createdBy/At, modifiedBy/At), lifecycle events |
+| `preboot-eventbus` | Event bus | EventPublisher (sync/async), @EventHandler, GenericEvent, handler priority, auto-discovery |
+| `preboot-ddd` | DDD aggregates | AggregateRoot, AggregateRepository, AggregateMapper, snapshot pattern, domain events, soft delete |
+| `preboot-tasks` | Persistent task queue | TaskPublisher, TaskRunner, retry with backoff, dead letter queue, priorities, worker auto-scaling |
+| `preboot-saga` | Saga pattern | @Saga, @SagaEventHandler, @CompensationHandler, correlation, sub-sagas, ErrorStrategy, Mermaid visualization |
+| `preboot-files` | File storage | FileStorageService (S3/MinIO/OVH), TTL, multi-tenant, streaming upload, REST API, lifecycle events |
+| `preboot-sequence` | Document numbering | SequenceApi, configurable masks (#year#/#counter:4#), baked-in/shared variables, atomic counters, auto-reset |
+| `preboot-documents-pdf` | PDF generation | DocumentGenerator, PdfDocumentGenerator, DOCX→PDF conversion, template stamping (SpEL, loops, conditions, images), external templates (DB/S3) |
+
+Each skill includes:
+- Full API reference (`references/api-reference.md`)
+- Working examples (`references/examples.md`)
+- Common gotchas and pitfalls
+- Dependency chain documentation
+
+PreBoot skills are available on both Claude Code and Codex. They activate automatically based on trigger keywords — no manual invocation needed.
+
+---
+
 ## Agents (Claude Code only)
 
 Agents are subagents that skills spawn automatically. You don't invoke them directly — they're part of the pipeline.
@@ -350,7 +377,7 @@ Skills can discover durable lessons during work — recurring traps, non-obvious
 
 | Feature | Claude Code | Codex |
 |---------|------------|-------|
-| Skills | 6 skills | 6 skills + tech-lead-advisor |
+| Skills | 6 workflow + 10 PreBoot library | 6 workflow + 10 PreBoot library + tech-lead-advisor |
 | Agents | 4 agents (review gates + tech-lead-advisor) | none |
 | Review gates | Automatic after each pipeline step | Not available |
 | Skill invocation | `/absolutpowers:skill-name` | `$absolutpowers skill-name` |
@@ -362,11 +389,11 @@ Skills can discover durable lessons during work — recurring traps, non-obvious
 absolut-ai-skills/
 ├── claude/                         # Claude Code plugin
 │   ├── .claude-plugin/plugin.json
-│   ├── skills/                     # 6 skills with agent gates
+│   ├── skills/                     # 6 workflow + 10 PreBoot library skills
 │   └── agents/                     # 4 subagent definitions
 ├── codex/                          # Codex plugin
 │   ├── .codex-plugin/plugin.json
-│   ├── skills/                     # 7 skills (no agent gates)
+│   ├── skills/                     # 7 workflow + 10 PreBoot library skills
 │   └── scripts/
 ├── .claude-plugin/marketplace.json # Claude marketplace → claude/
 ├── .agents/plugins/marketplace.json # Codex marketplace → codex/
