@@ -426,6 +426,7 @@ Controller sprawdza `SecurityContextProvider.getCurrentContext()` — zwraca 401
 | `secret-access-key` | String | null | AWS secret key |
 | `max-file-size` | long | 52428800 (50MB) | Maks. rozmiar pliku w bajtach |
 | `path-style-access-enabled` | boolean | false | Path-style access (true dla MinIO) |
+| `auto-create-bucket` | boolean | false | Tworzy bucket przy starcie jeśli nie istnieje |
 | `multipart-part-size` | long | 10485760 (10MB) | Rozmiar chunka multipart (min 5MB) |
 
 ### TTL Config (`preboot.files.s3.ttl`)

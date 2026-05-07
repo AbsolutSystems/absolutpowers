@@ -1,7 +1,7 @@
 {
-  "name": "absolutpowers-skills",
+  "name": "absolutpowers",
   "interface": {
-    "displayName": "AbsolutPowers Skills"
+    "displayName": "AbsolutPowers"
   },
   "plugins": [
     {
