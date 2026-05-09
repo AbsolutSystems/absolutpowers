@@ -12,6 +12,18 @@ generate-tasks ──zapisuje──▶ tasks doc ────▶ review-tasks �
 implement ──kończy taski──▶ kod + testy ──▶ review-implementation ──▶ PASS / REJECTED
 ```
 
+Dla większych tasków w Claude Code `implement` może działać w trybie orchestrated:
+
+```
+main tasks file ──▶ implementation-worker ──▶ phase-review ──▶ PASS / REJECTED
+                         │                       │
+                         └──── next phase ◀──────┘
+
+all phases + final verification ──▶ review-implementation ──▶ PASS / REJECTED
+```
+
+`phase-review` jest lekkim gate'em jednej fazy. Pełny `review-implementation` nadal działa dopiero po zakończeniu wszystkich faz i final verification.
+
 ## Mechanizm działania
 
 1. Skill kończy swoją pracę i zapisuje output (planning doc / tasks doc / kod)
@@ -27,7 +39,7 @@ implement ──kończy taski──▶ kod + testy ──▶ review-implementati
 
 | Platforma | Review gates |
 |-----------|-------------|
-| Claude Code | Tak (subagenty w `claude/agents/`) |
+| Claude Code | Tak (subagenty w `claude/agents/`, w tym `phase-review` dla orchestrated implementation) |
 | Codex | Nie (brak wsparcia dla plugin-level agentów) |
 
 ## review-plan
@@ -68,6 +80,8 @@ implement ──kończy taski──▶ kod + testy ──▶ review-implementati
 
 **Uruchamiany przez:** `generate-tasks` (po zapisie tasks doc)
 
+Dla orchestrated tasks czyta główny `tasks-{slug}.md`, wszystkie referenced phase files, `99-final-verification.md` i `implementation-context.md`.
+
 **Sprawdza:**
 
 ### Traceability
@@ -103,9 +117,43 @@ implement ──kończy taski──▶ kod + testy ──▶ review-implementati
 
 **Maksymalnie 7 issues per review.**
 
+## phase-review
+
+**Uruchamiany przez:** `implement` po zakończeniu jednej fazy orchestrated implementation
+
+**Sprawdza:**
+
+### Scope
+- Zmienione pliki mieszczą się w Write Scope fazy
+- Każde wyjście poza Write Scope jest jawnie uzasadnione
+
+### Completeness
+- Wszystkie taski w phase file są oznaczone jako completed
+- Wymagania fazy mają odpowiadającą implementację
+- Parent tasks file nie jest oznaczany jako completed przez workera
+
+### Tests
+- Phase verification commands zostały uruchomione
+- Wynik weryfikacji jest zapisany w phase file albo handoffie
+
+### Handoff
+- `implementation-context.md` zawiera tylko krótkie fakty potrzebne kolejnym fazom
+- Brak pełnych diffów, debug notes i generycznej narracji
+
+### Correctness / Garbage / Rules
+- Brak oczywistych bugów w zakresie fazy
+- Brak debug logs, martwego kodu, stale TODO/FIXME
+- Brak jasnych naruszeń `rules.md`
+
+**Nie zastępuje `review-implementation`.** Ma łapać problemy lokalne przed przejściem do następnej fazy.
+
+**Maksymalnie 7 issues per review.**
+
 ## review-implementation
 
 **Uruchamiany przez:** `implement` (po zakończeniu wszystkich tasków)
+
+Dla orchestrated tasks czyta main tasks file, wszystkie phase files, `implementation-context.md` i `99-final-verification.md`.
 
 **Sprawdza:**
 
@@ -152,6 +200,7 @@ Każdy issue w REJECTED verdict ma kategorię:
 |------|-----------|
 | review-plan | COMPLETENESS, FEASIBILITY, ARCHITECTURE, ACTIONABILITY |
 | review-tasks | TRACEABILITY, GRANULARITY, ORDERING, SPECIFICITY, VERIFICATION, CODE_REFERENCE |
+| phase-review | SCOPE, COMPLETENESS, TESTS, HANDOFF, CORRECTNESS, GARBAGE, RULES |
 | review-implementation | CORRECTNESS, PATTERNS, RULES, TESTS, COMPLETENESS, SAFETY |
 
 ## Co jeśli gate ciągle odrzuca?

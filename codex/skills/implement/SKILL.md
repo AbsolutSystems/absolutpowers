@@ -19,6 +19,10 @@ The argument should be a path to a tasks document: `./absolutpowers/feature/task
 
 Read this file to understand the project context and find pending tasks.
 
+Tasks documents can use two modes:
+- `single-file` or missing `## Mode` - legacy sequential task execution in this session
+- `orchestrated` - phase-file execution in dependency order, still within this Codex session
+
 ## Context Files
 
 Before starting implementation, also read (if they exist):
@@ -107,7 +111,55 @@ Candidate — YYYY-MM-DD
 ...
 ```
 
-## Process
+## Mode Detection
+
+After reading the tasks file:
+1. Look for a `## Mode` section.
+2. If mode is missing or `single-file`, use **Single-File Process**.
+3. If mode is `orchestrated`, use **Orchestrated Process**.
+4. If mode has any other value, stop and ask the user for clarification.
+
+## Orchestrated Process
+
+Codex does not have plugin-level phase worker or review gate agents in this plugin. In orchestrated mode, execute phase files sequentially in the current session while preserving the same file contracts.
+
+### Step O1: Read Orchestrator State
+
+- Read the main tasks file completely.
+- Read the shared `implementation-context.md` referenced in Project Context.
+- Find the first pending phase in `## Phase Overview`.
+- Read the referenced phase file completely.
+- Do not start a later phase while an earlier dependency is pending or failed.
+
+### Step O2: Execute One Phase
+
+For the pending phase:
+1. Follow the phase Read Scope and Write Scope.
+2. Implement only the tasks inside the phase file.
+3. Run the phase verification commands.
+4. Update task statuses inside the phase file only after verification passes.
+5. Fill `Implementation Decisions / Remarks` in the phase file.
+6. Update `implementation-context.md` with concise handoff facts needed by later phases.
+7. Update the parent phase status in the main tasks file to `completed`.
+
+If required edits fall outside Write Scope, stop and explain why they are needed before proceeding.
+
+### Step O3: Continue Through Phases
+
+- Repeat Step O1 and Step O2 for the next pending phase.
+- Keep `implementation-context.md` short. It is a handoff contract, not a work log.
+- Do not implement future phase requirements early unless the phase explicitly depends on a shared foundation change.
+
+### Step O4: Final Verification
+
+When all implementation phases are completed:
+- execute `99-final-verification.md`
+- run the exact final verification commands listed in that phase file
+- update `99-final-verification.md`
+- update Final Verification status in the parent main tasks file
+- do not report completion if any required command fails
+
+## Single-File Process
 
 ### Step 1: Read Tasks Document
 - Read the tasks file provided as argument
@@ -209,6 +261,7 @@ Promotion rules:
 
 **Do:**
 - Follow task order strictly - tasks are sequential and may depend on previous ones
+- In orchestrated mode, follow phase order strictly and keep each phase inside its Write Scope
 - Use referenced files as implementation patterns
 - Match existing code style and conventions
 - Run tests after implementation
@@ -217,6 +270,7 @@ Promotion rules:
 
 **Don't:**
 - Skip tasks or change task order
+- In orchestrated mode, skip phase verification or let `implementation-context.md` become a verbose work log
 - Implement beyond task scope
 - Leave task as pending if completed
 - Report overall completion if the final build/verification task failed or was skipped

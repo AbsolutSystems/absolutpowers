@@ -21,6 +21,10 @@ The argument should be a path to a tasks document: `./absolutpowers/feature/task
 
 Read this file to understand the project context and find pending tasks.
 
+Tasks documents can use two modes:
+- `single-file` or missing `## Mode` - legacy sequential task execution in this session
+- `orchestrated` - main tasks file delegates phase files to fresh worker subagents
+
 ## Context Files
 
 Before starting implementation, also read (if they exist):
@@ -109,7 +113,85 @@ Candidate — YYYY-MM-DD
 ...
 ```
 
-## Process
+## Mode Detection
+
+After reading the tasks file:
+1. Look for a `## Mode` section.
+2. If mode is missing or `single-file`, use **Single-File Process**.
+3. If mode is `orchestrated`, use **Orchestrated Process**.
+4. If mode has any other value, stop and ask the user for clarification.
+
+## Orchestrated Process
+
+Use this process only when the main tasks file has `## Mode` set to `orchestrated`.
+
+### Step O1: Read Orchestrator State
+
+- Read the main tasks file completely.
+- Read the shared `implementation-context.md` referenced in Project Context.
+- Find the first pending phase in `## Phase Overview`.
+- Do not start a later phase while an earlier dependency is pending or rejected.
+
+### Step O2: Delegate One Phase
+
+For the pending phase, spawn `implementation-worker`:
+
+```
+Agent(subagent_type="implementation-worker", prompt="Implement this orchestrated phase. Parent tasks file: ./absolutpowers/feature/tasks-{slug}.md. Phase file: ./absolutpowers/feature/tasks-{slug}/NN-phase-slug.md. Follow the phase Write Scope, update only the phase file and implementation-context.md, run phase verification, and return PHASE_RESULT.")
+```
+
+The worker must implement only that phase. The orchestrator remains responsible for updating the parent phase status.
+
+### Step O3: Inspect Worker Result
+
+Read the worker result and inspect:
+- phase file status updates
+- `implementation-context.md` changes
+- relevant git diff
+- reported verification commands
+
+If `PHASE_RESULT` is `BLOCKED` or `FAILED`, stop and report the blocker unless the fix is clearly inside the same phase scope.
+
+### Step O4: Run Phase Review
+
+After a worker reports `COMPLETED`, spawn `phase-review`:
+
+```
+Agent(subagent_type="phase-review", prompt="Review completed orchestrated phase. Parent tasks file: ./absolutpowers/feature/tasks-{slug}.md. Phase file: ./absolutpowers/feature/tasks-{slug}/NN-phase-slug.md. Shared context: ./absolutpowers/feature/tasks-{slug}/implementation-context.md.")
+```
+
+If `VERDICT: PASS`:
+- update the phase status in the parent main tasks file to `completed`
+- add a concise note to the parent phase if useful
+- continue to the next pending phase
+
+If `VERDICT: REJECTED`:
+- send the issues back to `implementation-worker` for the same phase, or spawn a fix worker for the same phase
+- rerun `phase-review`
+- repeat up to 3 iterations
+- after 3 rejected iterations, stop and ask the user how to proceed
+
+### Step O5: Final Verification Phase
+
+When all implementation phases are completed, execute `99-final-verification.md` in the current orchestrator session:
+- run the exact final verification commands listed in that phase file
+- update `99-final-verification.md`
+- update the Final Verification status in the parent main tasks file
+- do not continue if any required command fails
+
+### Step O6: Final Review Gate
+
+After all phases and final verification pass, run the existing final gate:
+
+```
+Agent(subagent_type="review-implementation", prompt="Review implementation for orchestrated tasks: ./absolutpowers/feature/tasks-{slug}.md. Read all phase files referenced from Phase Overview and the final verification phase.")
+```
+
+If `VERDICT: PASS`, report completion.
+
+If `VERDICT: REJECTED`, fix the reported issues, rerun final verification if affected, then rerun `review-implementation`. Repeat up to 3 iterations. If still rejected after 3 iterations, show remaining issues and ask the user how to proceed.
+
+## Single-File Process
 
 ### Step 1: Read Tasks Document
 - Read the tasks file provided as argument
@@ -230,6 +312,7 @@ Agent(subagent_type="review-implementation", prompt="Review implementation for t
 
 **Do:**
 - Follow task order strictly - tasks are sequential and may depend on previous ones
+- In orchestrated mode, advance only one phase at a time and wait for `phase-review` PASS before updating the parent phase status
 - Use referenced files as implementation patterns
 - Match existing code style and conventions
 - Run tests after implementation
@@ -238,6 +321,8 @@ Agent(subagent_type="review-implementation", prompt="Review implementation for t
 
 **Don't:**
 - Skip tasks or change task order
+- In orchestrated mode, let a worker update the parent main tasks status
+- Start a later phase while the current phase is rejected, blocked, or unverified
 - Implement beyond task scope
 - Leave task as pending if completed
 - Report overall completion if the final build/verification task failed or was skipped

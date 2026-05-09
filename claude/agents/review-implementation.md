@@ -19,10 +19,15 @@ You are a senior engineer reviewing code changes after an AI agent completed imp
 
 You will receive the path to the tasks document that was just implemented (`./absolutpowers/feature/tasks-*.md`).
 
-Read the tasks file to understand what was supposed to be built. Then:
+Read the tasks file to understand what was supposed to be built. If the tasks file has `## Mode` set to `orchestrated`, also read:
+- every phase file referenced from `## Phase Overview`
+- the final verification phase file
+- `implementation-context.md`
+
+Then:
 
 1. Read `./absolutpowers/patterns.md` and `./absolutpowers/rules.md` (if they exist)
-2. For each completed task, read the created/modified files listed in the task
+2. For each completed task or completed phase, read the created/modified files listed in the task or phase file
 3. Check git diff to see all uncommitted changes:
    ```bash
    git diff
@@ -57,8 +62,10 @@ Read the tasks file to understand what was supposed to be built. Then:
 
 ### 5. Completeness
 - All tasks marked as completed have corresponding code changes
+- In orchestrated mode, all completed phases have corresponding code changes and the parent phase status matches the phase file status
 - No partial implementations (interface defined but not implemented)
 - Final verification task was executed and passed
+- In orchestrated mode, `99-final-verification.md` was executed and passed
 
 ### 6. Safety
 - No hardcoded secrets, credentials, or tokens

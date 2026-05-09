@@ -142,6 +142,23 @@ Utwórz skill w obu katalogach. Użyj drift detection żeby sprawdzić różnice
 3. Napisz prompt
 4. W SKILL.md odpowiedniego skilla: dodaj `Agent` do `allowed-tools` i instrukcję spawnu
 
+### Agenci orchestrated implementation
+
+`implement` może używać dwóch dodatkowych agentów Claude-only:
+
+| Agent | Rola |
+|-------|------|
+| `implementation-worker` | Implementuje dokładnie jeden phase file z `tasks-{slug}/NN-{phase}.md` |
+| `phase-review` | Lekko sprawdza zakończoną fazę przed oznaczeniem jej jako completed w parent tasks file |
+
+Kontrakt ownership:
+- `implementation-worker` aktualizuje tylko swój phase file i `implementation-context.md`
+- główny `implement` orchestrator aktualizuje status fazy w parent `tasks-{slug}.md`
+- `phase-review` jest read-only i zwraca tylko `VERDICT: PASS` albo `VERDICT: REJECTED`
+- pełny `review-implementation` zostaje końcowym gate'em po wszystkich fazach
+
+Codex nie ma plugin-level agentów, więc jego `implement` wykonuje phase files sekwencyjnie w tej samej sesji.
+
 ## Modyfikacja istniejącego skilla
 
 1. Edytuj SKILL.md w `claude/skills/` lub `codex/skills/` (albo w obu)
@@ -149,14 +166,42 @@ Utwórz skill w obu katalogach. Użyj drift detection żeby sprawdzić różnice
 3. Jeśli zmiana dotyczy obu platform — ręcznie zsynchronizuj
 4. Jeśli zmiana jest Claude-only (np. agent gate) — edytuj tylko `claude/`
 
+### Zmiany w formacie tasków
+
+`generate-tasks` obsługuje dwa tryby:
+- `single-file` — jeden `tasks-{slug}.md` dla małych zmian
+- `orchestrated` — parent `tasks-{slug}.md`, katalog `tasks-{slug}/`, phase files, `implementation-context.md`, `99-final-verification.md`
+
+Przy zmianach w tym formacie aktualizuj razem:
+- `claude/skills/generate-tasks/SKILL.md`
+- `claude/skills/implement/SKILL.md`
+- `claude/agents/review-tasks.md`
+- `claude/agents/review-implementation.md`
+- `codex/skills/generate-tasks/SKILL.md`
+- `codex/skills/implement/SKILL.md`
+- dokumentację w `README.md` i `docs/`
+
+### PreBoot skill
+
+PreBoot jest obsługiwany przez jeden skill:
+- `claude/skills/preboot/SKILL.md`
+- `codex/skills/preboot/SKILL.md`
+
+Nie dodawaj z powrotem osobnych skilli `preboot-core`, `preboot-query`, `preboot-saga` itd. `preboot` ma tylko wykrywać moduł i routować agenta do lokalnej dokumentacji projektu w `./preboot-docs/`.
+
+Zasady:
+- plugin nie dostarcza bundlowanej dokumentacji API PreBoot
+- plugin nie tworzy `preboot-docs/`
+- jeśli lokalny plik dokumentacji modułu nie istnieje, skill ma zatrzymać pracę i poprosić o dokumentację
+- generic keywords typu `task`, `file`, `event`, `sequence`, `document` nie powinny aktywować PreBoot bez jawnego dependency/import/API signal
+
 ## Wersjonowanie
 
-Wersja w trzech miejscach — wszystkie muszą być zgodne:
+Wersja w manifestach platform — wszystkie deklarowane wersje muszą być zgodne:
 
 ```
 claude/.claude-plugin/plugin.json     → "version"
 codex/.codex-plugin/plugin.json       → "version"
-.claude-plugin/marketplace.json       → "version"
 ```
 
 Konwencja SemVer:
@@ -187,6 +232,15 @@ Konwencja SemVer:
 3. Celowo wprowadź problem w output — sprawdź czy gate go łapie
 4. Sprawdź czy iteracja (fix → re-review) działa
 
+### Testowanie orchestrated implementation
+
+1. Wygeneruj większy planning doc, który powinien uruchomić tryb `orchestrated`
+2. Sprawdź czy `generate-tasks` tworzy parent tasks file, phase files, `implementation-context.md` i `99-final-verification.md`
+3. Uruchom `implement` w Claude Code
+4. Sprawdź czy `implementation-worker` działa tylko na jednej fazie
+5. Sprawdź czy `phase-review` blokuje przejście dalej przy scope/test/handoff problemach
+6. Sprawdź czy finalny `review-implementation` czyta wszystkie phase files
+
 ## Drift management
 
 Skille Claude i Codex będą z czasem coraz bardziej się różnić — to zamierzone. Żeby trzymać kontrolę:
@@ -202,6 +256,9 @@ Skille Claude i Codex będą z czasem coraz bardziej się różnić — to zamie
 Oczekiwane różnice:
 - Frontmatter (`allowed-tools`, `argument-hint`) — Claude only
 - Sekcje agent gate — Claude only
+- Orchestrated execution przez `implementation-worker` i `phase-review` — Claude only
+- Codex fallback wykonuje phase files sekwencyjnie bez plugin-level agentów
+- `preboot` powinien pozostać zsynchronizowany między Claude i Codex, bo nie używa Claude-only agentów
 - `$ARGUMENTS` vs nieco inna składnia — platform-specific
 
 Nieoczekiwane różnice do zsynchronizowania:

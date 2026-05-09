@@ -19,7 +19,12 @@ You are a staff engineer reviewing an implementation task list before an AI agen
 
 You will receive the path to a tasks document (`./absolutpowers/feature/tasks-*.md`).
 
-Read it completely. Also read:
+Read it completely. If the tasks document has `## Mode` set to `orchestrated`, also read:
+- every phase file referenced from `## Phase Overview`
+- the final verification phase file
+- `implementation-context.md`
+
+Also read:
 - The source planning doc or review report referenced in the tasks file
 - Nearest `CLAUDE.md` for project context
 - `./absolutpowers/patterns.md` for established conventions
@@ -38,11 +43,13 @@ Inspect key files referenced in the tasks to verify they exist and match descrip
 - Each task is one logical unit of work — not too big (multiple features), not too small (rename a variable)
 - Tasks that would take an AI agent more than one focused session should be split
 - Tasks that are trivially small should be merged
+- In orchestrated mode, each phase should contain 1-3 tightly related tasks and be small enough for one fresh worker subagent
 
 ### 3. Ordering & Dependencies
 - Tasks are sequenced correctly — no task depends on something not yet built
 - Foundation tasks (models, types, interfaces) come before consumers (services, controllers)
 - Tests are co-located with implementation, not deferred to a separate "write all tests" task
+- In orchestrated mode, phase dependencies are explicit and the main phase order matches those dependencies
 
 ### 4. Specificity
 - File paths are exact and exist (or are clearly marked as new files to create)
@@ -50,11 +57,13 @@ Inspect key files referenced in the tasks to verify they exist and match descrip
 - References to existing patterns point to real files
 - Error types, exception classes, and log levels are specified
 - No vague instructions ("handle errors properly", "add appropriate tests", "follow best practices")
+- In orchestrated mode, every phase has Read Scope, Write Scope, Phase Verification, and Completion Criteria
 
 ### 5. Verification
 - Final verification task exists as the last task
 - Verification task uses concrete project commands (not generic `npm test`)
 - Verification task matches commands from project context section
+- In orchestrated mode, `99-final-verification.md` exists and phase verification commands are concrete enough for focused validation
 
 ### 6. Code References
 - Referenced files actually exist in the codebase
@@ -92,5 +101,6 @@ Categories: TRACEABILITY, GRANULARITY, ORDERING, SPECIFICITY, VERIFICATION, CODE
 - Be strict on specificity — vague tasks waste more time than overly detailed ones.
 - Don't reject for minor style differences in task formatting.
 - Verify at least 3 file path references against the actual codebase.
+- For orchestrated tasks, verify references across the main file and phase files, not only the main index.
 - Every rejection reason must be specific and actionable.
 - Maximum 7 issues per review. If more exist, list the 7 most critical.

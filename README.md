@@ -47,7 +47,7 @@ This creates `CLAUDE.md`, `AGENTS.md`, `./absolutpowers/patterns.md`, and `./abs
 /absolutpowers:review
 ```
 
-Each step produces a file that feeds into the next. Review gates between steps catch issues automatically.
+Each step produces files that feed into the next. Small features usually get one `tasks-{slug}.md`; larger features can get an orchestrated phase plan with `tasks-{slug}/NN-phase.md` files and a shared `implementation-context.md`. Review gates between steps catch issues automatically.
 
 ## The Pipeline
 
@@ -59,6 +59,18 @@ feature-discuss → generate-tasks → implement → review
   review-plan      review-tasks   review-implementation
    (gate)            (gate)           (gate)
 ```
+
+For larger Claude Code implementations, `implement` becomes an orchestrator:
+
+```
+tasks-{slug}.md
+  ├─ implementation-worker → phase-review
+  ├─ implementation-worker → phase-review
+  ├─ final verification
+  └─ review-implementation
+```
+
+Each implementation worker gets one phase file and a fresh, smaller context. `implementation-context.md` carries only concise handoff facts between phases.
 
 ### How gates work
 
@@ -107,7 +119,9 @@ Reads a planning doc or review report and creates a step-by-step implementation 
 **What it does:**
 - Reads the planning doc and analyzes your codebase
 - Discovers patterns, conventions, and existing code to reference
-- Produces sequential tasks with exact file paths, method signatures, test cases
+- Produces either a single sequential tasks file or an orchestrated phase plan for larger features
+- For orchestrated plans, creates phase files with read scope, write scope, focused verification, and completion criteria
+- Creates `implementation-context.md` as a concise handoff contract between phases
 - Adds a final verification task with your project's build/test commands
 - Runs `review-tasks` gate before finishing
 
@@ -115,7 +129,7 @@ Reads a planning doc or review report and creates a step-by-step implementation 
 
 **Input:** Path to a planning doc or review report
 
-**Output:** `./absolutpowers/feature/tasks-{slug}.md`
+**Output:** `./absolutpowers/feature/tasks-{slug}.md`; for larger features also `./absolutpowers/feature/tasks-{slug}/`
 
 **Examples:**
 ```bash
@@ -133,7 +147,9 @@ Reads a planning doc or review report and creates a step-by-step implementation 
 Senior engineer executing tasks sequentially with TDD approach.
 
 **What it does:**
-- Picks first pending task, implements with TDD (tests first where appropriate)
+- Picks first pending task or, for orchestrated plans, the first pending phase
+- In Claude Code, delegates each orchestrated phase to `implementation-worker` and runs `phase-review` before advancing
+- In Codex, executes phase files sequentially in the same session
 - Updates task status to `completed` in-place after each task
 - Proposes alternatives if it finds a better approach (asks before changing)
 - Executes the final verification task (build, typecheck, lint)
@@ -231,30 +247,34 @@ Bootstraps or refreshes project documentation for AI agents.
 /absolutpowers:update-ai-context
 ```
 
-## PreBoot Library Skills (v2.0.2)
+## PreBoot Skill
 
-Context-aware skills for the [PreBoot.io](https://preboot.io) library ecosystem. Each skill knows the API, patterns, gotchas, and provides examples for its module. Triggered automatically when you work with PreBoot components.
+AbsolutPowers includes one general `preboot` skill for the [PreBoot.io](https://preboot.io) library ecosystem. It is a documentation router and guardrail, not a bundled API reference.
 
-| Skill | Module | What it covers |
-|-------|--------|---------------|
-| `preboot-core` | Core infrastructure | TTLMap, AccessSynchronizer, RateLimiter, TransactionWrapper, HashUtils, BeanValidator, Jackson 3 auto-config |
-| `preboot-query` | Dynamic queries | FilterableRepository, SearchParams, FilterCriteria (15 operators), pagination, sorting, REST controllers, CSV/XLSX export |
-| `preboot-securedata` | Multi-tenancy + RBAC | SecureRepository, @Tenant, @SecureAccess, @AccessRule, audit fields (createdBy/At, modifiedBy/At), lifecycle events |
-| `preboot-eventbus` | Event bus | EventPublisher (sync/async), @EventHandler, GenericEvent, handler priority, auto-discovery |
-| `preboot-ddd` | DDD aggregates | AggregateRoot, AggregateRepository, AggregateMapper, snapshot pattern, domain events, soft delete |
-| `preboot-tasks` | Persistent task queue | TaskPublisher, TaskRunner, retry with backoff, dead letter queue, priorities, worker auto-scaling |
-| `preboot-saga` | Saga pattern | @Saga, @SagaEventHandler, @CompensationHandler, correlation, sub-sagas, ErrorStrategy, Mermaid visualization |
-| `preboot-files` | File storage | FileStorageService (S3/MinIO/OVH), TTL, multi-tenant, streaming upload, REST API, lifecycle events |
-| `preboot-sequence` | Document numbering | SequenceApi, configurable masks (#year#/#counter:4#), baked-in/shared variables, atomic counters, auto-reset |
-| `preboot-documents-pdf` | PDF generation | DocumentGenerator, PdfDocumentGenerator, DOCX→PDF conversion, template stamping (SpEL, loops, conditions, images), external templates (DB/S3) |
+This replaces the old per-module `preboot-*` skills. Projects using PreBoot should keep their module documentation in `./preboot-docs/`.
 
-Each skill includes:
-- Full API reference (`references/api-reference.md`)
-- Working examples (`references/examples.md`)
-- Common gotchas and pitfalls
-- Dependency chain documentation
+When the agent detects PreBoot usage, it maps the API or module to local project documentation under `./preboot-docs/`, reads the relevant file, and only then advises or implements. If the required local docs are missing, the skill stops instead of guessing the API.
 
-PreBoot skills are available on both Claude Code and Codex. They activate automatically based on trigger keywords — no manual invocation needed.
+Expected project documentation:
+
+```text
+preboot-docs/
+├── index.md
+├── preboot-core.md
+├── preboot-query.md
+├── preboot-securedata.md
+├── preboot-eventbus.md
+├── preboot-ddd.md
+├── preboot-tasks.md
+├── preboot-saga.md
+├── preboot-files.md
+├── preboot-sequence.md
+└── preboot-documents-pdf.md
+```
+
+`index.md` is optional but recommended. Module files are required when the corresponding PreBoot API is used. The plugin does not create `preboot-docs/` and no longer ships per-module PreBoot reference docs.
+
+The `preboot` skill triggers broadly on explicit PreBoot mentions, PreBoot dependencies/imports, and known APIs such as `FilterableRepository`, `SecureRepository`, `EventPublisher`, `TaskPublisher`, `@Saga`, `FileStorageService`, `SequenceApi`, and `DocumentGenerator`. Generic words like task, file, sequence, event, cache, or document require an explicit PreBoot dependency/import/API signal.
 
 ---
 
@@ -266,6 +286,8 @@ Agents are subagents that skills spawn automatically. You don't invoke them dire
 |-------|-----------|---------|
 | `review-plan` | feature-discuss | Validates planning doc completeness, feasibility, architecture |
 | `review-tasks` | generate-tasks | Validates task granularity, ordering, specificity, code references |
+| `implementation-worker` | implement | Implements one orchestrated phase with a fresh, narrow context |
+| `phase-review` | implement | Lightweight quality gate after one orchestrated phase |
 | `review-implementation` | implement | Validates code correctness, patterns, tests, safety |
 | `tech-lead-advisor` | (available for manual use) | Strategic architecture guidance, technology choices, tradeoff analysis |
 
@@ -274,6 +296,8 @@ Agents are subagents that skills spawn automatically. You don't invoke them dire
 **review-plan** checks: completeness, feasibility, architectural soundness, actionability
 
 **review-tasks** checks: traceability to planning doc, granularity, ordering & dependencies, specificity of file paths and signatures, verification task presence, code reference accuracy
+
+**phase-review** checks: phase write scope, completion, phase verification, handoff quality, obvious correctness issues, garbage, rules
 
 **review-implementation** checks: correctness, patterns compliance, rules compliance, test coverage, completeness, safety (no secrets, no injection vectors)
 
@@ -286,7 +310,11 @@ your-project/
 ├── absolutpowers/
 │   ├── feature/
 │   │   ├── planning-{slug}.md      # Feature plans
-│   │   └── tasks-{slug}.md         # Implementation tasks
+│   │   ├── tasks-{slug}.md         # Implementation tasks or orchestrator index
+│   │   └── tasks-{slug}/           # Phase files for larger orchestrated plans
+│   │       ├── implementation-context.md
+│   │       ├── 01-{phase}.md
+│   │       └── 99-final-verification.md
 │   ├── reviews/
 │   │   └── YYYY-MM-DD-{branch}.md  # Code review reports
 │   ├── memory-candidates/
@@ -337,10 +365,10 @@ Skills can discover durable lessons during work — recurring traps, non-obvious
 # → dyskusja → planning doc → review-plan gate → PASS
 
 /absolutpowers:generate-tasks @absolutpowers/feature/planning-{slug}.md
-# → analiza kodu → tasks doc → review-tasks gate → PASS
+# → analiza kodu → tasks doc or phase plan → review-tasks gate → PASS
 
 /absolutpowers:implement @absolutpowers/feature/tasks-{slug}.md
-# → TDD → kod + testy → verification → review-implementation gate → PASS
+# → TDD or phase workers → phase-review gates → verification → review-implementation gate → PASS
 
 /absolutpowers:review
 # → 4-phase review → report
@@ -377,9 +405,10 @@ Skills can discover durable lessons during work — recurring traps, non-obvious
 
 | Feature | Claude Code | Codex |
 |---------|------------|-------|
-| Skills | 6 workflow + 10 PreBoot library | 6 workflow + 10 PreBoot library + tech-lead-advisor |
-| Agents | 4 agents (review gates + tech-lead-advisor) | none |
-| Review gates | Automatic after each pipeline step | Not available |
+| Skills | 6 workflow + 1 PreBoot | 6 workflow + tech-lead-advisor + 1 PreBoot |
+| Agents | 6 agents (review gates + phase worker + tech-lead-advisor) | none |
+| Review gates | Automatic after each pipeline step, plus `phase-review` for orchestrated phases | Not available |
+| Orchestrated implementation | Worker subagent per phase | Sequential phase files in one session |
 | Skill invocation | `/absolutpowers:skill-name` | `$absolutpowers skill-name` |
 | AI context | CLAUDE.md (source) | AGENTS.md (mirror) |
 
@@ -389,11 +418,11 @@ Skills can discover durable lessons during work — recurring traps, non-obvious
 absolut-ai-skills/
 ├── claude/                         # Claude Code plugin
 │   ├── .claude-plugin/plugin.json
-│   ├── skills/                     # 6 workflow + 10 PreBoot library skills
-│   └── agents/                     # 4 subagent definitions
+│   ├── skills/                     # 6 workflow + 1 PreBoot skill
+│   └── agents/                     # 6 subagent definitions
 ├── codex/                          # Codex plugin
 │   ├── .codex-plugin/plugin.json
-│   ├── skills/                     # 7 workflow + 10 PreBoot library skills
+│   ├── skills/                     # 6 workflow + tech-lead-advisor + 1 PreBoot skill
 │   └── scripts/
 ├── .claude-plugin/marketplace.json # Claude marketplace → claude/
 ├── .agents/plugins/marketplace.json # Codex marketplace → codex/

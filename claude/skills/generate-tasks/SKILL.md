@@ -7,7 +7,7 @@ description: >
   TRIGGER when: planning doc exists and user wants implementation plan,
   "rozpisz taski", "break this into tasks", review report needs fix tasks,
   after feature-discuss produces planning-*.md, "what are the steps".
-allowed-tools: Read, Glob, Grep, Bash(find:*), Bash(wc:*), Bash(cat:*), Bash(head:*), Bash(tail:*), Bash(tree:*), Write(**/absolutpowers/feature/tasks-*.md), Agent
+allowed-tools: Read, Glob, Grep, Bash(find:*), Bash(wc:*), Bash(cat:*), Bash(head:*), Bash(tail:*), Bash(tree:*), Write(**/absolutpowers/feature/**), Agent
 argument-hint: "[ścieżka do planning-*.md lub review-*.md]"
 ---
 
@@ -38,6 +38,35 @@ Output file is always in `./absolutpowers/feature/`:
 
 For planning docs: replace `planning-` prefix with `tasks-`.
 For review reports: use `tasks-fix-{branch-slug}` (drop the date, add `fix-` prefix).
+
+## Output Mode
+
+Choose one output mode before writing files:
+
+### `single-file`
+Use for small, low-risk changes:
+- 1-3 implementation tasks
+- one layer or one module
+- no migration, public API change, security boundary, shared core change, or external integration
+- expected implementation fits in one focused agent session
+
+Output only:
+- `./absolutpowers/feature/tasks-{slug}.md`
+
+### `orchestrated`
+Use for larger or riskier changes:
+- more than 3-4 implementation tasks
+- multiple application layers or modules
+- migrations, public API, security/multi-tenancy, shared core, or external integrations
+- expected implementation would overload a single agent context
+
+Output:
+- `./absolutpowers/feature/tasks-{slug}.md` - main orchestrator index
+- `./absolutpowers/feature/tasks-{slug}/implementation-context.md` - concise shared handoff between phase workers
+- `./absolutpowers/feature/tasks-{slug}/NN-{phase-slug}.md` - phase files
+- `./absolutpowers/feature/tasks-{slug}/99-final-verification.md` - final verification phase
+
+For orchestrated mode, group work into phases of 1-3 tightly related tasks. Each phase must have a narrow Read Scope, Write Scope, Phase Verification, and Completion Criteria. Prefer a module/layer write scope, but keep the phase small enough for one fresh worker subagent.
 
 ## Interactive Process
 
@@ -97,6 +126,12 @@ Before creating tasks, analyze:
 ---
 
 ## Tasks Document Structure
+
+Always include `## Mode` near the top of the main tasks file with either `single-file` or `orchestrated`.
+
+### `single-file` structure
+
+Use the existing sequential task format below.
 
 ### Section 1: Project Context
 Concise, factual overview for agent orientation:
@@ -179,6 +214,138 @@ Sequential tasks the agent executes in order. Each task:
 When agent completes a task, it updates status from `pending` to `completed` before proceeding to next task.
 
 ---
+
+### `orchestrated` structure
+
+The main `tasks-{slug}.md` file is an index for the orchestrator, not the full implementation prompt. It must point to every phase file.
+
+```markdown
+# Tasks: [Feature Name]
+
+## Status
+pending
+
+## Source
+- Planning doc: `./absolutpowers/feature/planning-{slug}.md`
+
+## Mode
+orchestrated
+
+## Project Context
+**Stack:** [languages, frameworks, key libraries]
+**Verification commands:** [canonical commands]
+**Shared implementation context:** `./absolutpowers/feature/tasks-{slug}/implementation-context.md`
+
+## Phase Overview
+
+### Phase 1: [Action-Oriented Title]
+**Status:** pending
+**File:** `./absolutpowers/feature/tasks-{slug}/01-{phase-slug}.md`
+**Depends on:** none
+**Write scope:** `path/glob`, `path/File.ext`
+**Risk:** low | medium | high
+
+### Phase 2: [Action-Oriented Title]
+**Status:** pending
+**File:** `./absolutpowers/feature/tasks-{slug}/02-{phase-slug}.md`
+**Depends on:** Phase 1
+**Write scope:** `path/glob`, `path/File.ext`
+**Risk:** low | medium | high
+
+## Final Verification
+**Status:** pending
+**File:** `./absolutpowers/feature/tasks-{slug}/99-final-verification.md`
+
+## Orchestrator Notes
+- Orchestrator updates statuses in this file.
+- Workers update only their phase file and `implementation-context.md`.
+- Do not mark a phase completed until phase verification and `phase-review` pass.
+```
+
+Each phase file must follow this structure:
+
+```markdown
+# Phase N: [Action-Oriented Title]
+
+## Status
+pending
+
+## Parent
+`./absolutpowers/feature/tasks-{slug}.md`
+
+## Shared Context
+Read before starting:
+- `./absolutpowers/feature/tasks-{slug}/implementation-context.md`
+
+## Read Scope
+- `path/to/reference/File.ext`
+
+## Write Scope
+- `path/to/change/File.ext`
+- `path/to/change/**/*Test.ext`
+
+## Objective
+[2-4 concrete sentences describing what this phase must produce.]
+
+## Tasks
+
+### Task 1: [Action]
+**Status:** pending
+
+**Requirements:**
+- [specific requirement]
+
+**Tests:**
+- [specific test]
+
+## Phase Verification
+Run:
+- `[focused command for this phase]`
+
+## Completion Criteria
+- All phase tasks are completed.
+- All changes are within Write Scope unless explicitly justified.
+- Phase verification commands pass.
+- `implementation-context.md` is updated with only durable handoff facts.
+
+## Implementation Decisions / Remarks
+- [to be completed after phase completion]
+```
+
+Create `implementation-context.md` with this structure:
+
+```markdown
+# Implementation Context: [Feature Name]
+
+## Purpose
+Short handoff for phase workers. Keep this file concise. Add only facts that future phases need.
+
+## Completed Phases
+- None yet.
+
+## Created / Changed API
+- None yet.
+
+## Decisions Made
+- None yet.
+
+## Test Utilities / Fixtures
+- None yet.
+
+## Constraints For Next Phases
+- None yet.
+
+## Verification History
+- None yet.
+```
+
+Rules for `implementation-context.md`:
+- It is a handoff contract, not a work log.
+- Include only facts that later phases need.
+- Do not paste full diffs, temporary debugging hypotheses, or obvious restatements of the phase file.
+- Keep entries short and link concrete files, symbols, commands, or decisions.
+
+The final verification phase file `99-final-verification.md` must contain the same concrete project commands required by the main tasks file. It is completed by the implement orchestrator after all implementation phases pass.
 
 ## Task Guidelines
 
@@ -327,11 +494,21 @@ interface ArchiveResult {
 
 ## Output
 
-Generate the tasks file at `./absolutpowers/feature/tasks-{slug}.md` with:
+Generate output in the selected mode.
+
+For `single-file`, generate the tasks file at `./absolutpowers/feature/tasks-{slug}.md` with:
 1. Project Context section (including reference to planning doc)
-2. Sequential implementation tasks (all with `**Status:** pending`)
-3. A final verification task as the last task, using concrete build/validation commands
-4. Code examples where helpful
+2. `## Mode` set to `single-file`
+3. Sequential implementation tasks (all with `**Status:** pending`)
+4. A final verification task as the last task, using concrete build/validation commands
+5. Code examples where helpful
+
+For `orchestrated`, generate:
+1. Main tasks index at `./absolutpowers/feature/tasks-{slug}.md`
+2. Phase directory at `./absolutpowers/feature/tasks-{slug}/`
+3. `implementation-context.md`
+4. One phase file per phase, with 1-3 related tasks each
+5. `99-final-verification.md`
 
 Use markdown formatting: headers, code blocks with language identifiers, bullet lists.
 
@@ -339,10 +516,10 @@ Use markdown formatting: headers, code blocks with language identifiers, bullet 
 
 ## Review Gate — Automatyczna weryfikacja tasków
 
-Po zapisaniu tasks doc, uruchom subagenta `review-tasks` żeby zweryfikować jakość planu implementacji:
+Po zapisaniu tasks doc, uruchom subagenta `review-tasks` żeby zweryfikować jakość planu implementacji. Dla `orchestrated` podaj mu main tasks file i poinformuj, że ma przeczytać wszystkie referenced phase files oraz `implementation-context.md`:
 
 ```
-Agent(subagent_type="review-tasks", prompt="Review tasks document: ./absolutpowers/feature/tasks-{slug}.md")
+Agent(subagent_type="review-tasks", prompt="Review tasks document: ./absolutpowers/feature/tasks-{slug}.md. If Mode is orchestrated, also review all phase files referenced from Phase Overview and implementation-context.md.")
 ```
 
 **Jeśli VERDICT: PASS:**

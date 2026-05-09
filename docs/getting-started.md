@@ -24,13 +24,14 @@ Otwórz dowolne repozytorium w Codex. Repo AbsolutPowers Skills eksponuje market
 
 ### Weryfikacja instalacji
 
-**Claude Code:** wpisz `/absolutpowers:` i sprawdź czy widzisz 6 skilli:
+**Claude Code:** wpisz `/absolutpowers:` i sprawdź czy widzisz 6 workflow skilli oraz `preboot`:
 - feature-discuss
 - generate-tasks
 - implement
 - review
 - debug
 - update-ai-context
+- preboot
 
 **Codex:** wpisz `$absolutpowers` i sprawdź autouzupełnianie.
 
@@ -61,6 +62,29 @@ absolutpowers/memory-candidates/
 ```
 
 Planning docs, tasks, reviews i project-memory warto trzymać w git — to dokumentacja projektu.
+
+### Projekty używające PreBoot
+
+Jeśli projekt używa bibliotek PreBoot, dodaj lokalną dokumentację pod `./preboot-docs/`. AbsolutPowers nie dostarcza już bundlowanych reference docs dla modułów PreBoot i nie zgaduje API.
+
+Minimalny oczekiwany układ:
+
+```text
+preboot-docs/
+├── index.md
+├── preboot-core.md
+├── preboot-query.md
+├── preboot-securedata.md
+├── preboot-eventbus.md
+├── preboot-ddd.md
+├── preboot-tasks.md
+├── preboot-saga.md
+├── preboot-files.md
+├── preboot-sequence.md
+└── preboot-documents-pdf.md
+```
+
+`index.md` jest opcjonalny, ale przydatny jako mapa wersji i modułów. Plik modułu jest wymagany dopiero wtedy, gdy agent ma pracować z tym modułem.
 
 ## Krok 2: Twój pierwszy feature
 
@@ -94,6 +118,20 @@ Skill czyta plan, analizuje kod, i generuje sekwencyjne taski z:
 - Referencjami do istniejących wzorców
 - Finalnym taskiem weryfikacyjnym (build, typecheck, lint)
 
+Małe zmiany dostają jeden plik `tasks-{slug}.md`. Większe feature'y mogą dostać tryb orchestrated:
+
+```text
+absolutpowers/feature/
+├── tasks-csv-export.md
+└── tasks-csv-export/
+    ├── implementation-context.md
+    ├── 01-domain-foundation.md
+    ├── 02-service-behavior.md
+    └── 99-final-verification.md
+```
+
+W tym trybie główny plik jest indeksem faz, a konkretna implementacja jest w małych phase files po 1-3 powiązane taski. `implementation-context.md` jest krótkim handoffem między fazami, nie dziennikiem pracy.
+
 Potem automatyczny review gate sprawdza jakość tasków.
 
 ### Implementacja
@@ -109,6 +147,16 @@ Skill realizuje taski po kolei z podejściem TDD:
 4. Uruchamia testy
 5. Oznacza task jako `completed`
 6. Przechodzi do następnego
+
+W Claude Code dla orchestrated tasków `implement` działa jako orkiestrator:
+1. Czyta główny `tasks-{slug}.md`
+2. Odpala `implementation-worker` dla pierwszej pending fazy
+3. Worker implementuje tylko swój phase file i aktualizuje `implementation-context.md`
+4. Orkiestrator uruchamia `phase-review`
+5. Dopiero po `VERDICT: PASS` oznacza fazę jako `completed`
+6. Po wszystkich fazach uruchamia final verification i pełny `review-implementation`
+
+W Codex phase files są wykonywane sekwencyjnie w tej samej sesji, bez plugin-level subagentów.
 
 Po ukończeniu wszystkich tasków — automatyczny review gate sprawdza kod.
 
@@ -151,6 +199,10 @@ Skill pokaże pozostałe problemy i zapyta Cię co robić. Możesz:
 
 Tak. To pliki Markdown — możesz je edytować w dowolnym edytorze. Skill `implement` czyta plik as-is.
 
+### Czym jest implementation-context.md?
+
+To krótki handoff między fazami orchestrated implementation. Powinien zawierać tylko fakty potrzebne kolejnym fazom: nowe API, decyzje techniczne, wspólne test fixtures, ograniczenia i wyniki weryfikacji. Nie powinien zawierać pełnych diffów ani długiego opisu procesu.
+
 ### Jak zaktualizować patterns.md po zmianach w kodzie?
 
 ```bash
@@ -162,6 +214,10 @@ W trybie update skill wykryje nowe wzorce i zaproponuje aktualizację.
 ### Czym jest project-memory.md?
 
 Trwała wiedza operacyjna — recurring traps, workaroundy, failure patterns. Skille czytają ją na starcie żeby nie powtarzać błędów. Nowe wpisy wymagają Twojej akceptacji.
+
+### Co jeśli agent wykryje PreBoot, ale nie ma preboot-docs?
+
+Skill `preboot` zatrzyma pracę i wskaże brakujący plik, np. `./preboot-docs/preboot-query.md`. To celowe: API PreBoot ma pochodzić z lokalnej dokumentacji projektu, nie z pamięci modelu ani starej dokumentacji bundlowanej w pluginie.
 
 ### Czy to działa z monorepo?
 
