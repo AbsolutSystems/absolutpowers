@@ -33,7 +33,7 @@ Otwórz dowolne repozytorium w Codex. Repo AbsolutPowers Skills eksponuje market
 - update-ai-context
 - preboot
 
-**Codex:** wpisz `$absolutpowers` i sprawdź autouzupełnianie.
+**Codex:** wpisz `$absolutpowers` i sprawdź autouzupełnianie. Poza workflow skillami dostępny jest też `explain`, który generuje HTML-owy raport onboardingowy dla planu albo aktualnych zmian.
 
 ## Krok 1: Przygotuj projekt
 
@@ -181,6 +181,16 @@ Skill wymusza systematyczne podejście:
 - Jedno rozwiązanie na raz
 - Test przed fixem
 - Eskalacja po 3 nieudanych próbach
+
+## Krok 4: Wyjaśnienie planu lub zmian
+
+Gdy chcesz szybko przekazać człowiekowi kontekst po planowaniu, implementacji albo review, użyj:
+
+```bash
+/absolutpowers:explain @absolutpowers/feature/tasks-csv-export.md
+```
+
+W Codex użyj odpowiedniego skilla `explain` z pluginu `absolutpowers`. Wynikiem jest samodzielny plik HTML w `./docs/onboarding/`, z oddzieleniem faktów zweryfikowanych od założeń oraz sekcją pytań i decyzji dla człowieka.
 
 ## Typowe pytania
 

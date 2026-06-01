@@ -247,6 +247,29 @@ Bootstraps or refreshes project documentation for AI agents.
 /absolutpowers:update-ai-context
 ```
 
+---
+
+### `/absolutpowers:explain`
+
+Generates a standalone HTML onboarding report for a plan or current code changes.
+
+**What it does:**
+- Reads a provided planning/tasks document or inspects the current git diff
+- Separates verified facts from assumptions
+- Highlights human decisions and open questions near the top
+- Produces a self-contained HTML report with file map, risks, and optional Mermaid diagrams
+
+**When to use:** After a plan, feature, refactor, or review when a human needs a fast, auditable explanation of what changed.
+
+**Input:** Optional path or scope description; defaults to current repository changes.
+
+**Output:** `./docs/onboarding/<slug>-<YYYY-MM-DD>.html`
+
+**Example:**
+```bash
+/absolutpowers:explain @absolutpowers/feature/tasks-push-notifications.md
+```
+
 ## PreBoot Skill
 
 AbsolutPowers includes one general `preboot` skill for the [PreBoot.io](https://preboot.io) library ecosystem. It is a documentation router and guardrail, not a bundled API reference.
@@ -405,7 +428,8 @@ Skills can discover durable lessons during work — recurring traps, non-obvious
 
 | Feature | Claude Code | Codex |
 |---------|------------|-------|
-| Skills | 6 workflow + 1 PreBoot | 6 workflow + tech-lead-advisor + 1 PreBoot |
+| Skills | 6 workflow + 1 PreBoot | 6 workflow + explain + tech-lead-advisor + 1 PreBoot |
+| Onboarding reports | `explain` command | `explain` skill |
 | Agents | 6 agents (review gates + phase worker + tech-lead-advisor) | none |
 | Review gates | Automatic after each pipeline step, plus `phase-review` for orchestrated phases | Not available |
 | Orchestrated implementation | Worker subagent per phase | Sequential phase files in one session |
@@ -418,11 +442,12 @@ Skills can discover durable lessons during work — recurring traps, non-obvious
 absolut-ai-skills/
 ├── claude/                         # Claude Code plugin
 │   ├── .claude-plugin/plugin.json
+│   ├── commands/                   # Claude slash commands
 │   ├── skills/                     # 6 workflow + 1 PreBoot skill
 │   └── agents/                     # 6 subagent definitions
 ├── codex/                          # Codex plugin
 │   ├── .codex-plugin/plugin.json
-│   ├── skills/                     # 6 workflow + tech-lead-advisor + 1 PreBoot skill
+│   ├── skills/                     # 6 workflow + explain + tech-lead-advisor + 1 PreBoot skill
 │   └── scripts/
 ├── .claude-plugin/marketplace.json # Claude marketplace → claude/
 ├── .agents/plugins/marketplace.json # Codex marketplace → codex/
