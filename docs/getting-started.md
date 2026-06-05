@@ -101,7 +101,8 @@ Skill zadaje pytania pojedynczo, z opcjami do wyboru. Odpowiadaj literką (a/b/c
 3. **Propozycja rozwiązań** — 2-3 opcje z tradeoffami
 4. **Doprecyzowanie** — edge case'y, zależności
 5. **Zapis** — generuje `planning-csv-export.md`
-6. **Review gate** — subagent weryfikuje plan (automatycznie)
+6. **QA Enrichment** — QA enrichment analizuje plan i dopisuje Acceptance Criteria (AC-1, AC-2, ...)
+7. **Review gate** — subagent weryfikuje plan (automatycznie)
 
 Na końcu zobaczysz `VERDICT: PASS` albo listę poprawek (skill naprawia sam, do 3 iteracji).
 
@@ -116,6 +117,7 @@ Skill czyta plan, analizuje kod, i generuje sekwencyjne taski z:
 - Sygnaturami metod z typami
 - Przypadkami testowymi
 - Referencjami do istniejących wzorców
+- Polem `Traces to: AC-N` łączącym każdy task z Acceptance Criteria z planning doc
 - Finalnym taskiem weryfikacyjnym (build, typecheck, lint)
 
 Małe zmiany dostają jeden plik `tasks-{slug}.md`. Większe feature'y mogą dostać tryb orchestrated:
@@ -228,6 +230,10 @@ Trwała wiedza operacyjna — recurring traps, workaroundy, failure patterns. Sk
 ### Co jeśli agent wykryje PreBoot, ale nie ma preboot-docs?
 
 Skill `preboot` zatrzyma pracę i wskaże brakujący plik, np. `./preboot-docs/preboot-query.md`. To celowe: API PreBoot ma pochodzić z lokalnej dokumentacji projektu, nie z pamięci modelu ani starej dokumentacji bundlowanej w pluginie.
+
+### Co jeśli planning doc nie ma Acceptance Criteria?
+
+Pipeline działa normalnie — traceability AC jest opcjonalne. Starsze planning docs bez sekcji AC nie powodują błędów. Generate-tasks, review-tasks i implement gracefully pomijają AC checks.
 
 ### Czy to działa z monorepo?
 

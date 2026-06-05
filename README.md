@@ -52,12 +52,12 @@ Each step produces files that feed into the next. Small features usually get one
 ## The Pipeline
 
 ```
-feature-discuss → generate-tasks → implement → review
-     CO?              JAK?        BUDUJ+TEST    AUDYTUJ
-      │                 │              │
-      ▼                 ▼              ▼
-  review-plan      review-tasks   review-implementation
-   (gate)            (gate)           (gate)
+feature-discuss (+ qa-enrichment) → generate-tasks → implement → review
+         CO?                            JAK?        BUDUJ+TEST    AUDYTUJ
+          │                               │              │
+          ▼                               ▼              ▼
+      review-plan                    review-tasks   review-implementation
+       (gate)                          (gate)           (gate)
 ```
 
 For larger Claude Code implementations, `implement` becomes an orchestrator:
@@ -95,6 +95,7 @@ Interactive Product Owner / Product Architect session. Discusses feature require
 - Proposes 2-3 alternative approaches with tradeoffs
 - Iterates on scope, edge cases, dependencies
 - Writes a planning document
+- Runs QA enrichment to generate behavioral Acceptance Criteria (AC-1, AC-2, ...)
 - Runs `review-plan` gate before finishing
 
 **When to use:** Starting a new feature, brainstorming, "chcę dodać...", "potrzebujemy..."
@@ -122,6 +123,7 @@ Reads a planning doc or review report and creates a step-by-step implementation 
 - Produces either a single sequential tasks file or an orchestrated phase plan for larger features
 - For orchestrated plans, creates phase files with read scope, write scope, focused verification, and completion criteria
 - Creates `implementation-context.md` as a concise handoff contract between phases
+- Maps Acceptance Criteria from planning doc to tasks with `Traces to: AC-N` traceability
 - Adds a final verification task with your project's build/test commands
 - Runs `review-tasks` gate before finishing
 
@@ -307,6 +309,7 @@ Agents are subagents that skills spawn automatically. You don't invoke them dire
 
 | Agent | Spawned by | Purpose |
 |-------|-----------|---------|
+| `qa-enrichment` | feature-discuss | Analyzes planning doc and codebase, generates behavioral Acceptance Criteria |
 | `review-plan` | feature-discuss | Validates planning doc completeness, feasibility, architecture |
 | `review-tasks` | generate-tasks | Validates task granularity, ordering, specificity, code references |
 | `implementation-worker` | implement | Implements one orchestrated phase with a fresh, narrow context |
@@ -316,13 +319,13 @@ Agents are subagents that skills spawn automatically. You don't invoke them dire
 
 ### Review agent criteria
 
-**review-plan** checks: completeness, feasibility, architectural soundness, actionability
+**review-plan** checks: completeness, feasibility, architectural soundness, actionability, AC quality (behavioral, verifiable, complete coverage)
 
-**review-tasks** checks: traceability to planning doc, granularity, ordering & dependencies, specificity of file paths and signatures, verification task presence, code reference accuracy
+**review-tasks** checks: traceability to planning doc, granularity, ordering & dependencies, specificity of file paths and signatures, verification task presence, code reference accuracy, AC coverage (every AC-N traced by at least one task)
 
 **phase-review** checks: phase write scope, completion, phase verification, handoff quality, obvious correctness issues, garbage, rules
 
-**review-implementation** checks: correctness, patterns compliance, rules compliance, test coverage, completeness, safety (no secrets, no injection vectors)
+**review-implementation** checks: correctness, patterns compliance, rules compliance, test coverage, completeness, safety (no secrets, no injection vectors), AC fulfillment (every AC-N has implementation and test)
 
 ## Project Structure in Your Repo
 

@@ -38,6 +38,11 @@ Inspect key files referenced in the tasks to verify they exist and match descrip
 - Every requirement from the planning doc is covered by at least one task
 - No tasks that go beyond the planning doc scope without justification
 - Source doc is referenced in project context section
+- If the source planning doc contains `## Acceptance Criteria`:
+  - Every `AC-N` item is referenced by at least one task's `**Traces to:**` field
+  - No orphan AC (defined in plan but never traced by any task)
+  - Tasks with `**Traces to:** none` that appear to cover an AC but don't reference it should be flagged
+  - If planning doc has no `## Acceptance Criteria` section, skip this check
 
 ### 2. Granularity
 - Each task is one logical unit of work — not too big (multiple features), not too small (rename a variable)
@@ -94,7 +99,11 @@ Issues to address:
 ...
 ```
 
-Categories: TRACEABILITY, GRANULARITY, ORDERING, SPECIFICITY, VERIFICATION, CODE_REFERENCE
+Categories: TRACEABILITY, GRANULARITY, ORDERING, SPECIFICITY, VERIFICATION, CODE_REFERENCE, AC_COVERAGE
+
+AC_COVERAGE issues use this format: `[AC_COVERAGE] General — AC-3 ("description...") not covered by any task`
+
+For orchestrated tasks, check AC traceability across all phase files, not just the main index.
 
 ## Rules
 

@@ -59,6 +59,15 @@ Evaluate the plan against these dimensions:
 - No vague steps like "handle errors properly" or "add tests"
 - Alternative approaches documented with clear rejection reasons
 
+### 5. AC Quality
+- Acceptance Criteria section exists with three categories (Happy path, Edge cases, Security)
+- Each AC is behavioral and user-facing — no implementation details (file paths, method signatures, class names)
+- Each AC is verifiable as true/false — not vague ("works correctly") or unbounded
+- AC numbering is sequential (`AC-1:`, `AC-2:`, ...)
+- AC coverage is reasonable relative to plan scope — not only happy path
+- No trivial AC that would pass regardless of implementation quality
+- If `## Acceptance Criteria` section is absent, flag as `AC_QUALITY` issue: "Acceptance Criteria section missing — QA enrichment may not have run"
+
 ## Response Format
 
 You MUST respond with exactly one of these two formats:
@@ -83,7 +92,7 @@ Issues to address:
 ...
 ```
 
-Categories: COMPLETENESS, FEASIBILITY, ARCHITECTURE, ACTIONABILITY
+Categories: COMPLETENESS, FEASIBILITY, ARCHITECTURE, ACTIONABILITY, AC_QUALITY
 
 ## Rules
 

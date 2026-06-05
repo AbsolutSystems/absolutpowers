@@ -151,6 +151,15 @@ Utwórz skill w obu katalogach. Użyj drift detection żeby sprawdzić różnice
 | `implementation-worker` | Implementuje dokładnie jeden phase file z `tasks-{slug}/NN-{phase}.md` |
 | `phase-review` | Lekko sprawdza zakończoną fazę przed oznaczeniem jej jako completed w parent tasks file |
 
+Uwaga: `qa-enrichment` nie jest agentem orchestrated implementation — jest agentem wzbogacającym spawned przez `feature-discuss` po zapisie planning doc. Patrz sekcja "Dodawanie nowego agenta".
+
+### Agenci feature-discuss
+
+| Agent | Rola |
+|-------|------|
+| `qa-enrichment` | Dopisuje Acceptance Criteria do planning doc po zapisie przez feature-discuss |
+| `review-plan` | Weryfikuje planning doc — gate zwracający PASS lub REJECTED |
+
 Kontrakt ownership:
 - `implementation-worker` aktualizuje tylko swój phase file i `implementation-context.md`
 - główny `implement` orchestrator aktualizuje status fazy w parent `tasks-{slug}.md`
@@ -177,6 +186,7 @@ Przy zmianach w tym formacie aktualizuj razem:
 - `claude/skills/implement/SKILL.md`
 - `claude/agents/review-tasks.md`
 - `claude/agents/review-implementation.md`
+- `claude/agents/qa-enrichment.md` (jeśli zmiana dotyczy AC w tasks, np. format pola `Traces to:`)
 - `codex/skills/generate-tasks/SKILL.md`
 - `codex/skills/implement/SKILL.md`
 - dokumentację w `README.md` i `docs/`

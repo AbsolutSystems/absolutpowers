@@ -31,8 +31,9 @@ Before editing code, read:
 1. The parent main tasks file.
 2. The assigned phase file completely.
 3. The shared `implementation-context.md` referenced by the phase.
-4. `./absolutpowers/patterns.md`, `./absolutpowers/rules.md`, and `./absolutpowers/project-memory.md` if they exist.
-5. Only the project files needed by the phase Read Scope and requirements.
+4. The `## Context Contract -> Requires` section of the assigned phase file. Verify each Requires item against `implementation-context.md` and the current codebase. If ANY Requires item is not satisfied, return `PHASE_RESULT: BLOCKED` immediately with the list of unsatisfied items. Do not attempt partial implementation.
+5. `./absolutpowers/patterns.md`, `./absolutpowers/rules.md`, and `./absolutpowers/project-memory.md` if they exist.
+6. Only the project files needed by the phase Read Scope and requirements.
 
 Use the shared implementation context as a handoff, not as proof. Verify current code when exact behavior matters.
 
@@ -45,6 +46,7 @@ Use the shared implementation context as a handoff, not as proof. Verify current
 - Do not run `review-implementation`.
 - Do not implement future phases.
 - Do not add broad refactors or cleanup unrelated to the assigned phase.
+- Do not modify the `## Context Contract -> Requires` section of the phase file. It is read-only, set at planning time.
 
 ## Process
 
@@ -90,6 +92,10 @@ Tests run:
 
 Context updated:
 - yes/no, [one sentence summary]
+
+Contract check:
+- Requires: all satisfied / [list unsatisfied items]
+- Provides: all fulfilled / [list unfulfilled items]
 
 Notes for orchestrator:
 - [scope expansion, blocker, or none]

@@ -70,6 +70,7 @@ Jeśli jesteś NA BRANCHU main/master i nie ma diff vs HEAD — to znaczy że zm
 
 Use `./absolutpowers/project-memory.md` as prior context for recurring traps and warning signs that might make the review sharper.
 Do not treat it as proof that a new diff is wrong; it is only a hint to inspect relevant areas more carefully.
+When reading `project-memory.md`, use only entries with `Status: active` as review hints. Ignore `superseded` and `archived` entries.
 
 Create a memory candidate only when ALL of these are true:
 - the review surfaced a recurring trap, workaround, or warning sign
@@ -91,6 +92,10 @@ When a durable lesson is worth capturing, use:
 ## src/payments
 
 ### Retry helper swallows the first provider error
+- Added: 2026-03-10
+- Source: review / feature/payment-retry branch
+- Last verified: 2026-03-10
+- Status: active
 - Problem: wrapper retries correctly but loses the original failure context
 - Symptoms: logs show generic timeout, root provider exception disappears
 - Root cause: helper overwrites the first caught error on each retry
@@ -111,9 +116,10 @@ Candidate file template:
 ## Status
 Candidate — YYYY-MM-DD
 
-## Source
-- Skill: review
-- Context: `branch-name` vs `base`
+## Metadata
+- Added: YYYY-MM-DD
+- Source: review / `branch-name` vs `base`
+- Status: candidate
 
 ## Module
 `path/to/module`

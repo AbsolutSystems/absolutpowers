@@ -32,6 +32,14 @@ Before starting implementation, also read (if they exist):
 
 Use patterns as reference for HOW to implement. Follow rules as constraints.
 Use project memory as prior operational context: apply it when relevant, but do not force old workarounds onto unrelated code.
+When reading `project-memory.md`, use only entries with `Status: active` as implementation hints. Ignore entries with `Status: superseded` or `Status: archived`.
+
+### Acceptance Criteria
+
+After reading the tasks file, find the `**Source doc:**` field in the `## Project Context` or `## Source` section. Read that planning doc and extract all items from the `## Acceptance Criteria` section (lines matching `- AC-N: ...`).
+
+- If the planning doc has an `## Acceptance Criteria` section: extract all `AC-N:` items and keep them in memory for fulfillment tracking.
+- If no `## Acceptance Criteria` section exists: note that AC traceability is not available for this tasks file and proceed normally.
 
 ## Project Memory
 
@@ -62,6 +70,10 @@ When a durable lesson is worth capturing, use:
 ## src/auth
 
 ### Token refresh race in session bootstrap
+- Added: 2026-04-15
+- Source: implement / tasks-auth-refactor.md (Task 3)
+- Last verified: 2026-04-15
+- Status: active
 - Problem: concurrent refresh paths invalidate each other
 - Symptoms: flaky 401 on first page load, duplicate refresh requests
 - Root cause: bootstrap and interceptor both refresh from stale state
@@ -72,6 +84,16 @@ When a durable lesson is worth capturing, use:
 - Affected paths:
   - `src/auth/bootstrap.ts`
   - `src/auth/refresh-token.ts`
+
+### ~~Stale token check was insufficient~~
+- Added: 2026-03-01
+- Source: debug / flaky-auth investigation
+- Last verified: 2026-03-01
+- Status: superseded (by: "Token refresh race in session bootstrap", 2026-04-15)
+- ~~Problem: token expiry check used wrong clock~~
+- ~~Resolution: switch to server-issued expiry timestamp~~
+- Affected paths:
+  - `src/auth/token-check.ts`
 ```
 
 Candidate files should capture the fuller investigation and recommendation:
@@ -82,9 +104,10 @@ Candidate files should capture the fuller investigation and recommendation:
 ## Status
 Candidate — YYYY-MM-DD
 
-## Source
-- Skill: implement
-- Context: `./absolutpowers/feature/tasks-{slug}.md` (Task N)
+## Metadata
+- Added: YYYY-MM-DD
+- Source: implement / tasks-{slug}.md (Task N)
+- Status: candidate
 
 ## Module
 `path/to/module`
@@ -127,8 +150,24 @@ Codex does not have plugin-level phase worker or review gate agents in this plug
 
 - Read the main tasks file completely.
 - Read the shared `implementation-context.md` referenced in Project Context.
+
+**Resumption detection:**
+- Scan `## Phase Overview` for phase statuses.
+- If ALL phases are `pending`: fresh start. Proceed to first phase.
+- If one or more phases are `completed`:
+  1. Report: "Resuming from Phase N. Phases 1 through M already completed."
+  2. Read `## Completed Phases` in `implementation-context.md`.
+  3. Cross-reference: each completed phase should have a corresponding entry in `## Completed Phases`. If any completed phase is missing, warn: "Phase X marked completed but no entry in implementation-context.md — handoff data may be incomplete."
+  4. Read the next pending phase's `## Context Contract -> Requires` (if present).
+  5. Verify each Requires item against `implementation-context.md` and the codebase.
+  6. If any Requires item is unsatisfied, warn about potential stale state. Ask user whether to proceed or investigate first.
+
+**After resumption check or fresh start:**
 - Find the first pending phase in `## Phase Overview`.
 - Read the referenced phase file completely.
+- Read the phase's `## Context Contract -> Requires` section (if present).
+- Verify each Requires item against `implementation-context.md` and the current codebase.
+- If any Requires item is not satisfied, stop and report. Ask the user whether to proceed or fix first.
 - Do not start a later phase while an earlier dependency is pending or failed.
 
 ### Step O2: Execute One Phase
@@ -140,9 +179,10 @@ For the pending phase:
 4. Update task statuses inside the phase file only after verification passes.
 5. Fill `Implementation Decisions / Remarks` in the phase file.
 6. Update `implementation-context.md` with concise handoff facts needed by later phases.
-7. Update the parent phase status in the main tasks file to `completed`.
+7. Verify all items in `## Context Contract -> Provides` are fulfilled before marking the phase complete.
+8. Update the parent phase status in the main tasks file to `completed`.
 
-If required edits fall outside Write Scope, stop and explain why they are needed before proceeding.
+If required edits fall outside Write Scope, stop and explain why they are needed before proceeding. If execution of a phase appears stuck, stop and ask user for guidance.
 
 ### Step O3: Continue Through Phases
 
@@ -158,6 +198,15 @@ When all implementation phases are completed:
 - update `99-final-verification.md`
 - update Final Verification status in the parent main tasks file
 - do not report completion if any required command fails
+
+### Step O4.5: Post-Implementation Housekeeping
+
+After all phases and final verification pass, run Steps 4-6 once:
+- Step 4: Review all completed phases for CLAUDE.md/AGENTS.md updates. Apply changes in a single pass.
+- Step 5: Review all completed phases for ADR-worthy decisions. Create ADRs if needed.
+- Step 6: Review all completed phases for memory candidates. Propose inline if found.
+
+Do not perform Steps 4-6 during individual phases.
 
 ## Single-File Process
 
@@ -191,6 +240,12 @@ After successful implementation, update the tasks file in-place:
 - Change task status from `**Status:** pending` to `**Status:** completed`
 - Fill in the "Implementation decisions / remarks" section if relevant
 - Save the file
+
+### Post-completion housekeeping (Steps 4-6)
+
+Steps 4-6 run **once after ALL tasks are completed** (just before Step 7B), not after each individual task. Skip any step that does not apply — most tasks will not trigger any of them. Do not let housekeeping delay forward progress on remaining tasks.
+
+**Orchestrated mode:** Do not update CLAUDE.md, AGENTS.md, or create ADRs during individual phases. Handle Steps 4-6 in a single pass after all phases and final verification complete.
 
 ### Step 4: Update CLAUDE.md Source Files (if applicable)
 If the completed task introduced:
@@ -239,21 +294,45 @@ Accepted
 **Only for significant decisions** — not every implementation choice warrants an ADR. If the "Implementation decisions / remarks" section in the task captures it sufficiently, that's enough.
 
 ### Step 6: Project Memory Candidate (if applicable)
-At the end of the implementation session, after code/tests/verification are done:
-- Decide whether you uncovered a durable lesson worth preserving for future work
-- If no: do nothing
-- If yes: create `./absolutpowers/memory-candidates/memory-candidates-YYYY-MM-DD-{slug}.md`
-- In your final response, explicitly ask the user whether to promote that candidate into `./absolutpowers/project-memory.md`
+At the end of the implementation session, after all tasks and verification are done:
+- If no durable lesson was discovered: do nothing. Do not mention memory in the completion summary.
+- If a simple durable lesson was found: mention it inline in your final response (2-4 lines: problem, resolution, affected paths). Ask: "Promote this to project-memory.md?" If user approves, write the entry directly to `./absolutpowers/project-memory.md`.
+- If the lesson is complex (root cause analysis, multiple symptoms, multi-file impact): create a candidate file at `./absolutpowers/memory-candidates/memory-candidates-YYYY-MM-DD-{slug}.md` first, then ask for promotion.
 
-Promotion rules:
+Promotion rules (apply when writing to project-memory.md):
 - Promotion requires explicit user approval
 - When promoting, update an existing matching memory entry instead of duplicating it
+- When promoting, set `Added: [today]`, `Source: [skill / context]`, `Last verified: [today]`, `Status: active`
+- If the entry conflicts with an existing active entry for the same module/topic, mark the old entry as `Status: superseded (by: "[new entry title]", [today])` and apply strikethrough (`~~`) to the old title and content. Keep the old entry in place for audit trail.
+- Valid statuses: `active`, `superseded`, `archived`
 - Keep `project-memory.md` grouped by module, but always include `Affected paths` inside the entry
-- After successful promotion, delete the candidate file
+- If a candidate file was created and promoted, delete the candidate file after promotion
 
 ### Step 7: Continue or Stop
-- If there are more pending tasks: proceed to next pending task (go to Step 1)
-- If all tasks completed: report completion summary only after the final verification task has been executed successfully
+- If there are more pending tasks: proceed to next pending task (go to **Step 2** — skip Steps 4-6 until all tasks are done).
+- If all tasks completed: run **Steps 4-6 as a batch** (review all completed tasks for CLAUDE.md updates, ADR candidates, and memory candidates). Then proceed to **Step 7B: AC Fulfillment Report**, then report completion summary.
+
+### Step 7B: AC Fulfillment Report
+
+Skip this step entirely if no `## Acceptance Criteria` section was found in the planning doc.
+
+For each `AC-N` extracted at startup, determine fulfillment status:
+- `FULFILLED` — at least one task traces to this AC (via `**Traces to:** AC-N`), that task is `completed`, and its verification tests pass
+- `PARTIAL` — at least one task traces to this AC but the task is not `completed` or implementation is incomplete
+- `NOT VERIFIED` — no task traces to this AC, or the tracing task has no tests covering it
+
+Print the fulfillment summary before the completion summary:
+
+```
+AC Fulfillment:
+- AC-1: FULFILLED
+- AC-2: FULFILLED
+- AC-3: NOT VERIFIED — no test found
+```
+
+This step is informational — it does not block the completion summary.
+
+In orchestrated mode: AC fulfillment report runs once after all phases are complete and final verification passes, before the completion summary.
 
 ---
 
@@ -271,6 +350,7 @@ Promotion rules:
 **Don't:**
 - Skip tasks or change task order
 - In orchestrated mode, skip phase verification or let `implementation-context.md` become a verbose work log
+- Update CLAUDE.md, AGENTS.md, or create ADRs during individual phases — handle in Step O4.5 after all phases complete
 - Implement beyond task scope
 - Leave task as pending if completed
 - Report overall completion if the final build/verification task failed or was skipped
@@ -335,6 +415,14 @@ Completed Task [N]: [Title]
 - Verification commands: [executed/not applicable/failed]
 - CLAUDE.md / AGENTS.md: [updated + synced/no changes needed]
 - Memory: [no durable lesson/candidate created at .../promoted to project-memory]
+```
+
+When all tasks are complete (Step 7B), include the AC Fulfillment section if ACs were found:
+```
+AC Fulfillment:
+- AC-1: FULFILLED
+- AC-2: FULFILLED
+- AC-3: NOT VERIFIED — no test found
 ```
 
 ---

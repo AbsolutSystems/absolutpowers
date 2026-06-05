@@ -66,6 +66,13 @@ Output:
 
 For orchestrated mode, group work into phases of 1-3 tightly related tasks. Each phase must have a narrow Read Scope, Write Scope, Phase Verification, and Completion Criteria. In Codex this format is executed sequentially in one session; do not promise Claude Code subagents or review gates.
 
+**Phase sizing by risk:**
+- **High risk** (migrations, security, shared core, multi-tenancy): 1 task per phase.
+- **Medium risk** (new service integrating existing APIs, data model changes): 2 tasks per phase.
+- **Low risk** (new isolated module, tests, config, scaffolding): up to 3 tasks per phase.
+
+Match the `**Risk:** low | medium | high` field in Phase Overview to this heuristic.
+
 ## Interactive Process
 
 ### Step 1: Read Input Document and Context
@@ -77,21 +84,17 @@ Also read (if they exist):
 - **`./absolutpowers/patterns.md`** — established code patterns to reference in tasks
 - **`./absolutpowers/rules.md`** — project rules that implementation must comply with
 - **`./docs/adr/*.md`** — architecture decision records — past decisions that may constrain or inform implementation
+- **`## Acceptance Criteria` section** in the planning doc — if present, extract all `AC-N:` items for traceability mapping
 
 Use discovered patterns to write more specific tasks (e.g., "follow Repository pattern from `src/orders/OrderRepository.ts`"). Reference rules as constraints in task requirements where relevant. If an ADR is relevant to a task, reference it explicitly (e.g., "Per ADR `2026-04-15-event-driven-notifications.md`, use event bus instead of direct calls").
 
-### Step 2: Gather Additional Context (only if needed)
-If the input doc is clear and no major ambiguity remains, proceed directly to analysis.
+### Step 2: Proceed or Clarify
+If the input document has clear, complete requirements with no material gaps, proceed directly to Step 4. Most planning docs are self-contained — do NOT stop to ask for additional context by default.
 
-If additional context would materially improve the plan, ask:
-
-"I've read the input document. Ready to create the implementation plan.
-
-**Do you have any additional context to share?**
-(Implementation preferences, constraints, reference files, or type 'proceed')"
+Only pause if the document has concrete ambiguities that would materially change the plan structure (e.g., unknown target platform, missing data model, contradictory requirements). In that case, fold the questions into Step 3 below.
 
 ### Step 3: Clarify Ambiguities
-After receiving input, if you encounter:
+If you encounter:
 - Multiple valid implementation approaches
 - Ambiguities in requirements
 - Missing information
@@ -120,6 +123,19 @@ Before creating tasks, analyze:
 - **Error handling**: Exception patterns, logging approach
 - **Data models**: DTOs, entities, schemas
 - **Configuration**: How settings are managed
+
+---
+
+### AC Traceability
+
+If the planning doc contains a `## Acceptance Criteria` section, apply these rules when creating tasks:
+
+- Extract all `AC-N:` items from the section (they appear under `### Happy path`, `### Edge cases`, `### Security` subsections).
+- Every AC must be covered by at least one task via the `**Traces to:** AC-1, AC-3` field.
+- A task may trace to multiple ACs; one AC may be traced by multiple tasks.
+- Infrastructural tasks (scaffolding, config, CI setup) may have `**Traces to:** none` with a brief parenthetical reason, e.g., `**Traces to:** none (infrastructure task)`.
+- The final verification task traces to all ACs collectively, e.g., `**Traces to:** AC-1, AC-2, AC-3, AC-4, AC-5`.
+- If the planning doc has no `## Acceptance Criteria` section, skip traceability entirely — do not error, do not invent AC identifiers.
 
 ---
 
@@ -173,6 +189,7 @@ Sequential tasks the agent executes in order. Each task:
 ```markdown
 ### Task [N]: [Action-Oriented Title]
 **Status:** pending
+**Traces to:** AC-N, AC-M
 
 **Create:**
 - `full/path/to/NewFile.ts`
@@ -251,6 +268,7 @@ orchestrated
 - Execute phase files sequentially in dependency order.
 - Update phase files and this parent file after each phase passes its verification.
 - Keep `implementation-context.md` concise and useful for later phases.
+- Each phase file contains a Context Contract. Validate Requires before starting each phase; verify Provides after completion.
 ```
 
 Each phase file must follow this structure:
@@ -268,6 +286,16 @@ pending
 Read before starting:
 - `./absolutpowers/feature/tasks-{slug}/implementation-context.md`
 
+## Context Contract
+
+### Requires (from previous phases)
+- [concrete item: file path, symbol, or `implementation-context.md` section that must exist before this phase starts]
+- [for Phase 1: "None (first phase)."]
+
+### Provides (for later phases)
+- [concrete item this phase commits to producing]
+- [e.g., "Service `OrderService` at `src/services/OrderService.ts` with method `create(dto): Order`"]
+
 ## Read Scope
 - `path/to/reference/File.ext`
 
@@ -282,6 +310,7 @@ Read before starting:
 
 ### Task 1: [Action]
 **Status:** pending
+**Traces to:** AC-N, AC-M
 
 **Requirements:**
 - [specific requirement]
@@ -298,10 +327,13 @@ Run:
 - All changes are within Write Scope unless explicitly justified.
 - Phase verification commands pass.
 - `implementation-context.md` is updated with only durable handoff facts.
+- All items listed in `## Context Contract -> Provides` are fulfilled.
 
 ## Implementation Decisions / Remarks
 - [to be completed after phase completion]
 ```
+
+Each Requires item must reference a concrete file, symbol, or `implementation-context.md` section — not vague descriptions. Each Provides item must be verifiable: a file path, a symbol name, or a specific section in `implementation-context.md`.
 
 Create `implementation-context.md` with this structure:
 
@@ -335,6 +367,15 @@ Rules for `implementation-context.md`:
 - Include only facts that later phases need.
 - Do not paste full diffs, temporary debugging hypotheses, or obvious restatements of the phase file.
 - Keep entries short and link concrete files, symbols, commands, or decisions.
+
+**Size limits:**
+- Maximum ~50 lines of content (excluding section headers and `## Purpose`).
+- Each entry: max 2 lines. Longer entries belong in the phase file, not here.
+- When a phase completes and its entries are not needed by remaining phases, compress to one-liners or remove.
+
+**Staleness:**
+- Before adding a new entry, check if existing entries became irrelevant given completed phases. Remove or compress stale ones.
+- `## Completed Phases` entries are exempt — they serve as audit trail.
 
 The final verification phase file `99-final-verification.md` must contain the same concrete project commands required by the main tasks file.
 
@@ -437,6 +478,7 @@ npm run typecheck
 ```markdown
 ### Task 3: Create ArchiveService
 **Status:** pending
+**Traces to:** AC-2, AC-5
 
 **Create:**
 - `src/services/ArchiveService.ts`

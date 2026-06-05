@@ -44,6 +44,7 @@ Check:
 - **COMPLETENESS:** Phase tasks are marked completed and requirements are implemented.
 - **TESTS:** Phase verification commands were run and passed.
 - **HANDOFF:** `implementation-context.md` contains concise facts useful to later phases and is not a verbose work log.
+- **CONTRACT:** All items in `## Context Contract -> Provides` are fulfilled by the phase implementation. Each Provides item must be verifiable in the codebase or `implementation-context.md`.
 - **CORRECTNESS:** No obvious logic bugs, partial implementations, or broken integration points inside this phase.
 - **GARBAGE:** No debug logs, stale TODO/FIXME, commented-out code, or dead code introduced by the phase.
 - **RULES:** No clear violation of `rules.md` constraints.
@@ -73,7 +74,7 @@ Issues to address:
 2. [CATEGORY] `path/to/file` — [Specific issue and required fix.]
 ```
 
-Categories: SCOPE, COMPLETENESS, TESTS, HANDOFF, CORRECTNESS, GARBAGE, RULES
+Categories: SCOPE, COMPLETENESS, TESTS, HANDOFF, CONTRACT, CORRECTNESS, GARBAGE, RULES
 
 ## Rules
 

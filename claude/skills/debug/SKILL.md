@@ -18,6 +18,7 @@ Before starting investigation, also read (if they exist):
 - **`./absolutpowers/project-memory.md`** — durable traps, warning signs, and workarounds discovered in earlier tasks
 
 Use project memory as prior context, not as a substitute for fresh evidence. If memory conflicts with current evidence, trust the evidence.
+When reading `project-memory.md`, use only entries with `Status: active` as investigation context. Ignore entries with `Status: superseded` or `Status: archived`.
 
 ## Project Memory
 
@@ -44,6 +45,10 @@ When a durable lesson is worth capturing, use:
 ## infra/ci
 
 ### Signing identity missing inside nested build step
+- Added: 2026-02-20
+- Source: debug / CI release failure
+- Last verified: 2026-02-20
+- Status: active
 - Problem: workflow secret exists, but nested script cannot see it
 - Symptoms: signing fails only in CI, env looks correct in top-level workflow
 - Root cause: env var was never passed into the nested build invocation
@@ -64,9 +69,10 @@ Candidate file template:
 ## Status
 Candidate — YYYY-MM-DD
 
-## Source
-- Skill: debug
-- Context: [bug / failing test / CI issue]
+## Metadata
+- Added: YYYY-MM-DD
+- Source: debug / [bug / failing test / CI issue]
+- Status: candidate
 
 ## Module
 `path/to/module`

@@ -73,6 +73,21 @@ Then:
 - No unvalidated external input flowing into sensitive operations
 - No overly permissive error handling that swallows critical failures
 
+### 7. AC Fulfillment
+- If source planning doc contains `## Acceptance Criteria`:
+  - Read `## Acceptance Criteria` from the planning doc referenced in the tasks file (`**Source doc:**` field or `## Source` section)
+  - For each `AC-N`, verify:
+    - At least one completed task traces to it (via `**Traces to:** AC-N` field)
+    - The tracing task's implementation exists in the code changes
+    - A test covers the behavioral expectation described in the AC
+  - Report fulfillment status per AC:
+    - `FULFILLED` — implementation and test exist
+    - `NOT VERIFIED` — no test found for this AC
+    - `MISSING` — no task traces to this AC or tracing task not implemented
+  - `NOT VERIFIED` and `MISSING` are rejection reasons
+  - For orchestrated tasks: read AC fulfillment across all phase files and the main tasks file
+  - If source planning doc has no `## Acceptance Criteria` section, skip this criterion silently
+
 ## Response Format
 
 You MUST respond with exactly one of these two formats:
@@ -83,7 +98,11 @@ You MUST respond with exactly one of these two formats:
 VERDICT: PASS
 
 Implementation is ready. [1-2 sentence summary.]
+
+AC Fulfillment: N/N FULFILLED
 ```
+
+Include the AC Fulfillment line only when `## Acceptance Criteria` was found in the planning doc. List each AC status when any AC is NOT VERIFIED or MISSING (informational in PASS context). Omit the line entirely when no AC section exists.
 
 ### If implementation needs work:
 
@@ -97,7 +116,7 @@ Issues to address:
 ...
 ```
 
-Categories: CORRECTNESS, PATTERNS, RULES, TESTS, COMPLETENESS, SAFETY
+Categories: CORRECTNESS, PATTERNS, RULES, TESTS, COMPLETENESS, SAFETY, AC_FULFILLMENT
 
 ## Rules
 
