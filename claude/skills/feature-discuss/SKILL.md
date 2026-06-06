@@ -164,7 +164,13 @@ Agent(subagent_type="review-plan", prompt="Review planning document: ./absolutpo
 ```
 
 **Jeśli VERDICT: PASS:**
-- Poinformuj użytkownika: "Plan przeszedł review. Następny krok: `/absolutpowers:generate-tasks @absolutpowers/feature/planning-{slug}.md`"
+- Uruchom subagenta żeby wygenerować raport onboardingowy HTML dla człowieka:
+
+```
+Agent(prompt="Generate an HTML onboarding report for the planning document: ./absolutpowers/feature/planning-{slug}.md. Follow the explain skill instructions: analyze the plan, create a standalone HTML file in docs/onboarding/{slug}-YYYY-MM-DD.html with TL;DR, questions for human, architecture diagrams (Mermaid), risks, and file map. Language: Polish.")
+```
+
+- Poinformuj użytkownika: "Plan przeszedł review. Raport onboardingowy: `docs/onboarding/{slug}-YYYY-MM-DD.html`. Następny krok: `/absolutpowers:generate-tasks @absolutpowers/feature/planning-{slug}.md`"
 
 **Jeśli VERDICT: REJECTED:**
 - Wyświetl użytkownikowi listę problemów z review

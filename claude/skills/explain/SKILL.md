@@ -1,8 +1,15 @@
 ---
-description: Generuje raport HTML wyjaśniający plan lub wprowadzone zmiany (onboarding dla człowieka)
-argument-hint: [opcjonalnie: ścieżka do dokumentu planu lub zakres np. "ostatni feature"]
+name: explain
+description: >
+  Generuje raport HTML wyjaśniający plan lub wprowadzone zmiany (onboarding dla człowieka).
+  TRIGGER when: "explain", "explain me", "opisz", "wyjaśnij", "wytłumacz",
+  "co się zmieniło", "what changed", "onboarding", "podsumuj zmiany",
+  "opisz plan", "explain the plan", "explain changes".
 allowed-tools: Read, Glob, Grep, Bash(git log:*), Bash(git diff:*), Bash(git status:*), Bash(ls:*), Bash(npx @mermaid-js/mermaid-cli:*), Write
+argument-hint: "[opcjonalnie: ścieżka do dokumentu planu lub zakres np. 'ostatni feature']"
 ---
+
+# Explain — Human Onboarding Report
 
 Twoim zadaniem jest stworzenie samodzielnego pliku HTML, który ma pomóc człowiekowi (developerowi) szybko i bez wysiłku zrozumieć plan pracy lub zmiany wprowadzone w kodzie. To dokument onboardingowy — pisany dla człowieka, nie dla maszyny. Ma być narzędziem, któremu można zaufać, a nie ładnie wyglądającym podsumowaniem.
 
@@ -22,14 +29,14 @@ Nie rozdmuchuj raportu dla małej zmiany — fałszywa rozbudowa obniża zaufani
 
 Zakres: $ARGUMENTS
 
-1. Jeśli podano ścieżkę do dokumentu planu/zadań — przeczytaj go (Read).
+1. Jeśli podano ścieżkę do dokumentu planu/zadań — przeczytaj go.
 2. Jeśli nie podano zakresu — przeanalizuj bieżący stan: `git status`, `git log --oneline -20`, `git diff` względem głównego brancha. Ustal co się zmieniło.
 3. Przejrzyj kluczowe pliki, których dotyczą zmiany, żeby zrozumieć **faktyczną implementację**, a nie tylko opis w planie.
 4. Jeśli istnieją dokumenty planowania/ADR w repo — uwzględnij je.
 
 ## ZASADA NACZELNA: audytowalność
 
-To jest najważniejsza reguła całej komendy. Przy każdej istotnej tezie czytelnik musi wiedzieć, na czym opierasz wniosek. Rozróżniaj wizualnie i językowo:
+To jest najważniejsza reguła całego skilla. Przy każdej istotnej tezie czytelnik musi wiedzieć, na czym opierasz wniosek. Rozróżniaj wizualnie i językowo:
 - **Zweryfikowane** — „widać w kodzie/diffie", „plik X robi Y" (sprawdziłeś to bezpośrednio).
 - **Wnioskowane / założone** — „zakładam, że…", „prawdopodobnie…", „nie zweryfikowałem, ale…".
 

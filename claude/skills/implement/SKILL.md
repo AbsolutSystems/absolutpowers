@@ -173,8 +173,19 @@ Use this process only when the main tasks file has `## Mode` set to `orchestrate
 
 ### Step O2: Delegate One Phase
 
+**Model routing by risk:**
+Read the phase's `**Risk:**` field from the Phase Overview in the parent tasks file.
+- `high` risk → spawn worker with `model: "opus"` for stronger reasoning on security, migrations, shared core
+- `low` or `medium` risk (or unspecified) → spawn worker with default model (sonnet)
+
 For the pending phase, spawn `implementation-worker`:
 
+If Risk is `high`:
+```
+Agent(subagent_type="implementation-worker", model="opus", prompt="Implement this orchestrated phase. Parent tasks file: ./absolutpowers/feature/tasks-{slug}.md. Phase file: ./absolutpowers/feature/tasks-{slug}/NN-phase-slug.md. Validate Context Contract Requires before starting. Follow the phase Write Scope, update only the phase file and implementation-context.md, run phase verification, and return PHASE_RESULT with contract check.")
+```
+
+If Risk is `low`, `medium`, or unspecified:
 ```
 Agent(subagent_type="implementation-worker", prompt="Implement this orchestrated phase. Parent tasks file: ./absolutpowers/feature/tasks-{slug}.md. Phase file: ./absolutpowers/feature/tasks-{slug}/NN-phase-slug.md. Validate Context Contract Requires before starting. Follow the phase Write Scope, update only the phase file and implementation-context.md, run phase verification, and return PHASE_RESULT with contract check.")
 ```

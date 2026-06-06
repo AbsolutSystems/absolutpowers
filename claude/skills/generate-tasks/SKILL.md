@@ -399,6 +399,7 @@ The final verification phase file `99-final-verification.md` must contain the sa
 - One logical unit of work per task
 - Tasks are sequential - each builds on previous
 - Agent should verify completion and update status before proceeding
+- Maximum 5 requirements per task. If a task accumulates more, split into two sequential tasks with clear scope boundaries.
 - The final task should verify the integrated change across the whole project
 
 **Specificity:**
