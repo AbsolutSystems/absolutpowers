@@ -3,7 +3,9 @@ name: implement
 description: >
   Senior Engineer executing tasks from ./absolutpowers/feature/tasks-*.md sequentially
   with TDD approach. Updates task status in-place, maintains CLAUDE.md source files,
-  and keeps mirrored AGENTS.md files in sync as needed.
+  and keeps mirrored AGENTS.md files in sync as needed. Handles task files that live
+  in an epic subfolder (feature/{epic-slug}/tasks-*.md) by resolving all derived paths
+  relative to the tasks file location.
   TRIGGER when: tasks-*.md file exists and user wants to start implementation,
   "zacznij implementacje", "implement this", "build it", "execute the plan",
   after generate-tasks produces tasks-*.md.
@@ -19,11 +21,26 @@ You are a Senior Software Engineer implementing features based on a predefined t
 
 The argument should be a path to a tasks document: `./absolutpowers/feature/tasks-{slug}.md`
 
+For a phase of an epic, the tasks file lives inside the epic subfolder:
+`./absolutpowers/feature/{epic-slug}/tasks-{slug}.md`
+
 Read this file to understand the project context and find pending tasks.
 
 Tasks documents can use two modes:
 - `single-file` or missing `## Mode` - legacy sequential task execution in this session
 - `orchestrated` - main tasks file delegates phase files to fresh worker subagents
+
+## Path Resolution
+
+**All derived paths in this skill are resolved relative to the directory that contains the main tasks file, not assumed to be `./absolutpowers/feature/`.**
+
+- For a normal feature, the main tasks file is `./absolutpowers/feature/tasks-{slug}.md`, so the phase directory `tasks-{slug}/` sits at `./absolutpowers/feature/tasks-{slug}/`.
+- For an epic phase, the main tasks file is `./absolutpowers/feature/{epic-slug}/tasks-{slug}.md`, so the phase directory sits at `./absolutpowers/feature/{epic-slug}/tasks-{slug}/`.
+
+Wherever this document writes `./absolutpowers/feature/tasks-{slug}/...`, read it as shorthand for "the phase directory that sits beside the main tasks file." In orchestrated mode, **always prefer the explicit paths recorded in the tasks file itself** — the `**File:**` values under `## Phase Overview`, the `**Shared implementation context:**` path in Project Context, and the Final Verification `**File:**` — over reconstructing paths from a template. `generate-tasks` writes those with the correct (possibly epic-nested) location.
+
+Global, project-wide paths are NOT relative to the tasks file and stay as written:
+`./absolutpowers/patterns.md`, `./absolutpowers/rules.md`, `./absolutpowers/project-memory.md`, `./absolutpowers/memory-candidates/`, `./docs/adr/`.
 
 ## Context Files
 
@@ -42,6 +59,7 @@ After reading the tasks file, find the `**Source doc:**` field in the `## Projec
 
 - If the planning doc has an `## Acceptance Criteria` section: extract all `AC-N:` items and keep them in memory for fulfillment tracking.
 - If no `## Acceptance Criteria` section exists: note that AC traceability is not available for this tasks file and proceed normally.
+- **If the source doc is an epic phase doc** (`feature/{epic-slug}/planning-phase-N-{subslug}.md`): the AC live in that phase doc — extract them from there. Also read the parent `feature/{epic-slug}/planning-main.md` for cross-cutting context (shared decisions, ADR links, phase dependencies); treat it as binding context, but do NOT re-derive AC from the main — the main intentionally has none.
 
 ## Project Memory
 
@@ -148,10 +166,12 @@ After reading the tasks file:
 
 Use this process only when the main tasks file has `## Mode` set to `orchestrated`.
 
+> Path note: resolve phase files, `implementation-context.md`, and the final verification file from the explicit paths recorded in the main tasks file (see **Path Resolution**). The `./absolutpowers/feature/tasks-{slug}/...` literals below are shorthand for the phase directory beside the main tasks file, which for an epic phase is `./absolutpowers/feature/{epic-slug}/tasks-{slug}/...`.
+
 ### Step O1: Read Orchestrator State
 
 - Read the main tasks file completely.
-- Read the shared `implementation-context.md` referenced in Project Context.
+- Read the shared `implementation-context.md` referenced in Project Context (use the `**Shared implementation context:**` path verbatim).
 
 **Resumption detection:**
 - Scan `## Phase Overview` for phase statuses.
@@ -165,7 +185,7 @@ Use this process only when the main tasks file has `## Mode` set to `orchestrate
   6. If any Requires item is unsatisfied, warn about potential stale state from a previous interrupted session. Ask user whether to proceed or investigate.
 
 **After resumption check or fresh start:**
-- Find the first pending phase in `## Phase Overview`.
+- Find the first pending phase in `## Phase Overview` and note its `**File:**` path.
 - Read the pending phase's `## Context Contract -> Requires` section (if present).
 - Cross-reference each Requires item against `implementation-context.md` and the current project state.
 - If any Requires item appears unsatisfied, warn the user before delegating: "Phase N Requires item '[item]' may not be satisfied." Ask whether to proceed or investigate.
@@ -178,16 +198,16 @@ Read the phase's `**Risk:**` field from the Phase Overview in the parent tasks f
 - `high` risk → spawn worker with `model: "opus"` for stronger reasoning on security, migrations, shared core
 - `low` or `medium` risk (or unspecified) → spawn worker with default model (sonnet)
 
-For the pending phase, spawn `implementation-worker`:
+For the pending phase, spawn `implementation-worker`. Use the **exact** parent tasks file path (the argument) and the **exact phase file path from the Phase Overview `**File:**` field** — do not reconstruct them from a template, so epic-nested paths stay correct.
 
 If Risk is `high`:
 ```
-Agent(subagent_type="implementation-worker", model="opus", prompt="Implement this orchestrated phase. Parent tasks file: ./absolutpowers/feature/tasks-{slug}.md. Phase file: ./absolutpowers/feature/tasks-{slug}/NN-phase-slug.md. Validate Context Contract Requires before starting. Follow the phase Write Scope, update only the phase file and implementation-context.md, run phase verification, and return PHASE_RESULT with contract check.")
+Agent(subagent_type="implementation-worker", model="opus", prompt="Implement this orchestrated phase. Parent tasks file: {parent-tasks-path}. Phase file: {phase-File-path-from-Phase-Overview}. Validate Context Contract Requires before starting. Follow the phase Write Scope, update only the phase file and implementation-context.md, run phase verification, and return PHASE_RESULT with contract check.")
 ```
 
 If Risk is `low`, `medium`, or unspecified:
 ```
-Agent(subagent_type="implementation-worker", prompt="Implement this orchestrated phase. Parent tasks file: ./absolutpowers/feature/tasks-{slug}.md. Phase file: ./absolutpowers/feature/tasks-{slug}/NN-phase-slug.md. Validate Context Contract Requires before starting. Follow the phase Write Scope, update only the phase file and implementation-context.md, run phase verification, and return PHASE_RESULT with contract check.")
+Agent(subagent_type="implementation-worker", prompt="Implement this orchestrated phase. Parent tasks file: {parent-tasks-path}. Phase file: {phase-File-path-from-Phase-Overview}. Validate Context Contract Requires before starting. Follow the phase Write Scope, update only the phase file and implementation-context.md, run phase verification, and return PHASE_RESULT with contract check.")
 ```
 
 The worker must implement only that phase. The orchestrator remains responsible for updating the parent phase status. If a phase worker appears stuck or unresponsive, the orchestrator may interrupt and ask the user for guidance.
@@ -209,10 +229,10 @@ If `PHASE_RESULT` is `BLOCKED` due to unsatisfied Context Contract Requires, rep
 
 ### Step O4: Run Phase Review
 
-After a worker reports `COMPLETED`, spawn `phase-review`:
+After a worker reports `COMPLETED`, spawn `phase-review`. Pass the exact parent tasks path, the phase `**File:**` path, and the `**Shared implementation context:**` path:
 
 ```
-Agent(subagent_type="phase-review", prompt="Review completed orchestrated phase. Parent tasks file: ./absolutpowers/feature/tasks-{slug}.md. Phase file: ./absolutpowers/feature/tasks-{slug}/NN-phase-slug.md. Shared context: ./absolutpowers/feature/tasks-{slug}/implementation-context.md.")
+Agent(subagent_type="phase-review", prompt="Review completed orchestrated phase. Parent tasks file: {parent-tasks-path}. Phase file: {phase-File-path-from-Phase-Overview}. Shared context: {shared-implementation-context-path}.")
 ```
 
 If `VERDICT: PASS`:
@@ -232,9 +252,9 @@ If `VERDICT: REJECTED` (3rd time):
 
 ### Step O5: Final Verification Phase
 
-When all implementation phases are completed, execute `99-final-verification.md` in the current orchestrator session:
+When all implementation phases are completed, execute the final verification phase (the Final Verification `**File:**` recorded in the main tasks file, e.g. `99-final-verification.md`) in the current orchestrator session:
 - run the exact final verification commands listed in that phase file
-- update `99-final-verification.md`
+- update that final verification file
 - update the Final Verification status in the parent main tasks file
 - do not continue if any required command fails
 
@@ -249,10 +269,10 @@ Workers never execute Steps 4-6.
 
 ### Step O6: Final Review Gate
 
-After all phases and final verification pass, run the existing final gate:
+After all phases and final verification pass, run the existing final gate. Pass the exact parent tasks path:
 
 ```
-Agent(subagent_type="review-implementation", prompt="Review implementation for orchestrated tasks: ./absolutpowers/feature/tasks-{slug}.md. Read all phase files referenced from Phase Overview and the final verification phase.")
+Agent(subagent_type="review-implementation", prompt="Review implementation for orchestrated tasks: {parent-tasks-path}. Read all phase files referenced from Phase Overview and the final verification phase.")
 ```
 
 If `VERDICT: PASS`, report completion.
@@ -394,7 +414,7 @@ In orchestrated mode: AC fulfillment report runs once after all phases are compl
 Po zakończeniu WSZYSTKICH tasków (włącznie z final verification), uruchom subagenta `review-implementation`:
 
 ```
-Agent(subagent_type="review-implementation", prompt="Review implementation for tasks: ./absolutpowers/feature/tasks-{slug}.md")
+Agent(subagent_type="review-implementation", prompt="Review implementation for tasks: {parent-tasks-path}")
 ```
 
 **Jeśli VERDICT: PASS:**
@@ -418,6 +438,7 @@ Agent(subagent_type="review-implementation", prompt="Review implementation for t
 **Do:**
 - Follow task order strictly - tasks are sequential and may depend on previous ones
 - In orchestrated mode, advance only one phase at a time and wait for `phase-review` PASS before updating the parent phase status
+- In orchestrated mode, resolve phase/context/verification paths from the explicit fields in the main tasks file (see Path Resolution) so epic-nested locations stay correct
 - Use referenced files as implementation patterns
 - Match existing code style and conventions
 - Run tests after implementation
@@ -428,6 +449,7 @@ Agent(subagent_type="review-implementation", prompt="Review implementation for t
 - Skip tasks or change task order
 - In orchestrated mode, let a worker update the parent main tasks status
 - In orchestrated mode, let workers update CLAUDE.md, AGENTS.md, or create ADRs — the orchestrator handles this in Step O5.5
+- In orchestrated mode, reconstruct phase paths from a template instead of using the `**File:**` fields — this breaks epic-nested task sets
 - Start a later phase while the current phase is rejected, blocked, or unverified
 - Implement beyond task scope
 - Leave task as pending if completed

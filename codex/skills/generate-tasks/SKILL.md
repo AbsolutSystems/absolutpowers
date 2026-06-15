@@ -3,7 +3,9 @@ name: generate-tasks
 description: >
   Staff Engineer creating implementation plans for an AI coding agent.
   Reads a planning doc or review report, then produces a tasks-*.md file
-  with sequential implementation steps for an AI agent.
+  with sequential implementation steps for an AI agent. Supports epic phase
+  docs that live in a feature/{epic-slug}/ subfolder, keeping all task output
+  inside that same subfolder.
   TRIGGER when: planning doc exists and user wants implementation plan,
   "rozpisz taski", "break this into tasks", review report needs fix tasks,
   after feature-discuss produces planning-*.md, "what are the steps".
@@ -15,13 +17,16 @@ You are a Staff Software Engineer creating implementation plans for an AI coding
 
 ## Input
 
-The argument can be one of two types:
+The argument can be one of three types:
 
 **Planning doc** (new feature):
 `./absolutpowers/feature/planning-{slug}.md`
 
 **Review report** (fixing review findings):
 `./absolutpowers/reviews/YYYY-MM-DD-{branch-slug}.md`
+
+**Epic phase doc** (planning one phase of an epic):
+`./absolutpowers/feature/{epic-slug}/planning-phase-N-{subslug}.md`
 
 Read the file to understand what needs to be done.
 
@@ -33,9 +38,12 @@ Output file is always in `./absolutpowers/feature/`:
 |------------|-----------|-------------|
 | Planning doc | `./absolutpowers/feature/planning-push-notifications.md` | `./absolutpowers/feature/tasks-push-notifications.md` |
 | Review report | `./absolutpowers/reviews/2026-04-21-feature-auth.md` | `./absolutpowers/feature/tasks-fix-feature-auth.md` |
+| Epic phase doc | `./absolutpowers/feature/push-notif/planning-phase-1-data-model.md` | `./absolutpowers/feature/push-notif/tasks-phase-1-data-model.md` |
 
 For planning docs: replace `planning-` prefix with `tasks-`.
 For review reports: use `tasks-fix-{branch-slug}` (drop the date, add `fix-` prefix).
+
+**Epic phase docs (input lives in a `feature/{epic-slug}/` subfolder):** keep all output INSIDE that same subfolder — never flatten to `feature/` root. Set `{slug}` = the part after `planning-` (e.g. `phase-1-data-model`) and treat `./absolutpowers/feature/{epic-slug}/` as the working directory for every output path below. So orchestrated outputs become `feature/{epic-slug}/tasks-{slug}/...`. This preserves epic grouping and prevents slug collisions between epics that both have a `phase-1`.
 
 ## Output Mode
 
@@ -79,6 +87,7 @@ Match the `**Risk:** low | medium | high` field in Phase Overview to this heuris
 Read the document provided as argument. Understand what needs to be implemented:
 - for a planning doc: the feature, scope, chosen solution, and constraints
 - for a review report: the findings, broken rules, and fixes required
+- for an epic phase doc: ALSO read the parent `./absolutpowers/feature/{epic-slug}/planning-main.md` first — it holds the shared architectural context, cross-cutting decisions (with ADR links), and phase dependencies. Treat it as binding context for the tasks, and honor the phase's `## Context Contract -> Requires` (artifacts produced by earlier phases). Do NOT re-plan sibling phases — your scope is this one phase.
 
 Also read (if they exist):
 - **`./absolutpowers/patterns.md`** — established code patterns to reference in tasks
@@ -153,7 +162,9 @@ Concise, factual overview for agent orientation:
 ```markdown
 ## Project Context
 
-**Source doc:** `./absolutpowers/feature/planning-{slug}.md` or `./absolutpowers/reviews/YYYY-MM-DD-{branch-slug}.md`
+**Source doc:** `./absolutpowers/feature/planning-{slug}.md` or `./absolutpowers/reviews/YYYY-MM-DD-{branch-slug}.md` or `./absolutpowers/feature/{epic-slug}/planning-phase-N-{subslug}.md`
+
+**Epic context (if applicable):** `./absolutpowers/feature/{epic-slug}/planning-main.md`
 
 **Stack:** [languages, frameworks, key libraries]
 
@@ -241,7 +252,8 @@ The main `tasks-{slug}.md` file is a phase index. It should keep global context 
 pending
 
 ## Source
-- Planning doc: `./absolutpowers/feature/planning-{slug}.md`
+- Planning doc: `./absolutpowers/feature/planning-{slug}.md`  <!-- for epic phases: ./absolutpowers/feature/{epic-slug}/planning-phase-N-{subslug}.md -->
+- Epic context (if applicable): `./absolutpowers/feature/{epic-slug}/planning-main.md`
 
 ## Mode
 orchestrated
@@ -531,7 +543,7 @@ interface ArchiveResult {
 Generate output in the selected mode.
 
 For `single-file`, generate the tasks file at `./absolutpowers/feature/tasks-{slug}.md` with:
-1. Project Context section (including reference to planning doc)
+1. Project Context section (including reference to planning doc, and to `planning-main.md` if this is an epic phase)
 2. `## Mode` set to `single-file`
 3. Sequential implementation tasks (all with `**Status:** pending`)
 4. A final verification task as the last task, using concrete build/validation commands
@@ -543,5 +555,7 @@ For `orchestrated`, generate:
 3. `implementation-context.md`
 4. One phase file per phase, with 1-3 related tasks each
 5. `99-final-verification.md`
+
+> Reminder for epic phase docs: every path above is relative to the epic subfolder, i.e. `./absolutpowers/feature/{epic-slug}/tasks-{slug}.md` and `./absolutpowers/feature/{epic-slug}/tasks-{slug}/...`. Do not write to the `feature/` root.
 
 Use markdown formatting: headers, code blocks with language identifiers, bullet lists.

@@ -24,6 +24,8 @@ all phases + final verification ──▶ review-implementation ──▶ PASS /
 
 `phase-review` jest lekkim gate'em jednej fazy. Pełny `review-implementation` nadal działa dopiero po zakończeniu wszystkich faz i final verification.
 
+> **Uwaga:** `/absolutpowers:triada-review` to osobne narzędzie — standalone, multi-agentowy review na żądanie (Claude only), **nie** gate pipeline'u. Nie zastępuje `review-implementation` ani solo skilla `review`; uruchamiasz go ręcznie gdy chcesz równoległą, wieloperspektywiczną ocenę brancha.
+
 ## Mechanizm działania
 
 1. Skill kończy swoją pracę i zapisuje output (planning doc / tasks doc / kod)

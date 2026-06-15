@@ -3,7 +3,9 @@ name: implement
 description: >
   Senior Engineer executing tasks from ./absolutpowers/feature/tasks-*.md sequentially
   with TDD approach. Updates task status in-place, maintains CLAUDE.md source files,
-  and keeps mirrored AGENTS.md files in sync as needed.
+  and keeps mirrored AGENTS.md files in sync as needed. Handles task files that live
+  in an epic subfolder (feature/{epic-slug}/tasks-*.md) by resolving all derived paths
+  relative to the tasks file location.
   TRIGGER when: tasks-*.md file exists and user wants to start implementation,
   "zacznij implementacje", "implement this", "build it", "execute the plan",
   after generate-tasks produces tasks-*.md.
@@ -17,11 +19,26 @@ You are a Senior Software Engineer implementing features based on a predefined t
 
 The argument should be a path to a tasks document: `./absolutpowers/feature/tasks-{slug}.md`
 
+For a phase of an epic, the tasks file lives inside the epic subfolder:
+`./absolutpowers/feature/{epic-slug}/tasks-{slug}.md`
+
 Read this file to understand the project context and find pending tasks.
 
 Tasks documents can use two modes:
 - `single-file` or missing `## Mode` - legacy sequential task execution in this session
 - `orchestrated` - phase-file execution in dependency order, still within this Codex session
+
+## Path Resolution
+
+**All derived paths in this skill are resolved relative to the directory that contains the main tasks file, not assumed to be `./absolutpowers/feature/`.**
+
+- For a normal feature, the main tasks file is `./absolutpowers/feature/tasks-{slug}.md`, so the phase directory `tasks-{slug}/` sits at `./absolutpowers/feature/tasks-{slug}/`.
+- For an epic phase, the main tasks file is `./absolutpowers/feature/{epic-slug}/tasks-{slug}.md`, so the phase directory sits at `./absolutpowers/feature/{epic-slug}/tasks-{slug}/`.
+
+Wherever this document writes `./absolutpowers/feature/tasks-{slug}/...`, read it as shorthand for "the phase directory that sits beside the main tasks file." In orchestrated mode, **always prefer the explicit paths recorded in the tasks file itself** — the `**File:**` values under `## Phase Overview`, the `**Shared implementation context:**` path in Project Context, and the Final Verification `**File:**` — over reconstructing paths from a template. `generate-tasks` writes those with the correct (possibly epic-nested) location.
+
+Global, project-wide paths are NOT relative to the tasks file and stay as written:
+`./absolutpowers/patterns.md`, `./absolutpowers/rules.md`, `./absolutpowers/project-memory.md`, `./absolutpowers/memory-candidates/`, `./docs/adr/`.
 
 ## Context Files
 
@@ -40,6 +57,7 @@ After reading the tasks file, find the `**Source doc:**` field in the `## Projec
 
 - If the planning doc has an `## Acceptance Criteria` section: extract all `AC-N:` items and keep them in memory for fulfillment tracking.
 - If no `## Acceptance Criteria` section exists: note that AC traceability is not available for this tasks file and proceed normally.
+- **If the source doc is an epic phase doc** (`feature/{epic-slug}/planning-phase-N-{subslug}.md`): the AC live in that phase doc — extract them from there. Also read the parent `feature/{epic-slug}/planning-main.md` for cross-cutting context (shared decisions, ADR links, phase dependencies); treat it as binding context, but do NOT re-derive AC from the main — the main intentionally has none.
 
 ## Project Memory
 
@@ -146,10 +164,12 @@ After reading the tasks file:
 
 Codex does not have plugin-level phase worker or review gate agents in this plugin. In orchestrated mode, execute phase files sequentially in the current session while preserving the same file contracts.
 
+> Path note: resolve phase files, `implementation-context.md`, and the final verification file from the explicit paths recorded in the main tasks file (see **Path Resolution**). The `./absolutpowers/feature/tasks-{slug}/...` literals below are shorthand for the phase directory beside the main tasks file, which for an epic phase is `./absolutpowers/feature/{epic-slug}/tasks-{slug}/...`.
+
 ### Step O1: Read Orchestrator State
 
 - Read the main tasks file completely.
-- Read the shared `implementation-context.md` referenced in Project Context.
+- Read the shared `implementation-context.md` referenced in Project Context (use the `**Shared implementation context:**` path verbatim).
 
 **Resumption detection:**
 - Scan `## Phase Overview` for phase statuses.
@@ -163,7 +183,7 @@ Codex does not have plugin-level phase worker or review gate agents in this plug
   6. If any Requires item is unsatisfied, warn about potential stale state. Ask user whether to proceed or investigate first.
 
 **After resumption check or fresh start:**
-- Find the first pending phase in `## Phase Overview`.
+- Find the first pending phase in `## Phase Overview` and note its `**File:**` path.
 - Read the referenced phase file completely.
 - Read the phase's `## Context Contract -> Requires` section (if present).
 - Verify each Requires item against `implementation-context.md` and the current codebase.
@@ -192,11 +212,10 @@ If required edits fall outside Write Scope, stop and explain why they are needed
 
 ### Step O4: Final Verification
 
-When all implementation phases are completed:
-- execute `99-final-verification.md`
+When all implementation phases are completed, execute the final verification phase (the Final Verification `**File:**` recorded in the main tasks file, e.g. `99-final-verification.md`) in the current session:
 - run the exact final verification commands listed in that phase file
-- update `99-final-verification.md`
-- update Final Verification status in the parent main tasks file
+- update that final verification file
+- update the Final Verification status in the parent main tasks file
 - do not report completion if any required command fails
 
 ### Step O4.5: Post-Implementation Housekeeping
@@ -341,6 +360,7 @@ In orchestrated mode: AC fulfillment report runs once after all phases are compl
 **Do:**
 - Follow task order strictly - tasks are sequential and may depend on previous ones
 - In orchestrated mode, follow phase order strictly and keep each phase inside its Write Scope
+- In orchestrated mode, resolve phase/context/verification paths from the explicit fields in the main tasks file (see Path Resolution) so epic-nested locations stay correct
 - Use referenced files as implementation patterns
 - Match existing code style and conventions
 - Run tests after implementation
@@ -350,6 +370,7 @@ In orchestrated mode: AC fulfillment report runs once after all phases are compl
 **Don't:**
 - Skip tasks or change task order
 - In orchestrated mode, skip phase verification or let `implementation-context.md` become a verbose work log
+- In orchestrated mode, reconstruct phase paths from a template instead of using the `**File:**` fields — this breaks epic-nested task sets
 - Update CLAUDE.md, AGENTS.md, or create ADRs during individual phases — handle in Step O4.5 after all phases complete
 - Implement beyond task scope
 - Leave task as pending if completed
