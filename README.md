@@ -203,6 +203,48 @@ Full 4-phase code review of current branch changes.
 
 ---
 
+### `/absolutpowers:triada-review` (Claude Code only)
+
+On-demand **multi-agent** code review of the current branch vs master. The main
+session orchestrates three agents with non-overlapping scopes **in parallel**, then
+synthesizes one report. Complements — does not replace — the solo `review` skill.
+
+**What it does:**
+- Gathers context (diff, PR description, CI status, commit messages, `./absolutpowers/rules.md`)
+- Reconstructs the change goal and sanity-checks description vs diff
+- Splits large diffs into ≤5 packages (single mode under 1500 lines / 20 files)
+- Delegates to three agents in parallel, each scoped to its own criteria:
+
+| Role (scope label) | `subagent_type` | Scope |
+|---|---|---|
+| `tech-lead-advisor` | `absolutpowers:tech-lead-agent` | goal, architecture, overengineering, readability |
+| `security-auditor` | `absolutpowers:codebase-auditor` | security, correctness, test quality |
+| `ui-reviewer` | `absolutpowers:ui-reviewer` | UI states, interactions, a11y, data, UI races, user goal (UI files only) |
+
+- Each agent also flags `rules.md` violations within its scope
+- Synthesizes: merged findings by severity, rules compliance, cross-package issues, priority disagreements, final verdict (`approve` / `approve_with_comments` / `request_changes` / `block`)
+
+**Defaults are baked in** — works with no config. Optionally override role →
+`subagent_type` / `enabled` / `scope` per project via `.claude/triada-review.agents.json`.
+
+**review vs triada-review:** `review` is solo, 4-phase, writes an audit-trail report,
+integrates with `project-memory.md`, and works on Codex. `triada-review` is parallel,
+multi-agent, JSON-synthesized, and Claude-only — reach for it on larger PRs.
+
+**When to use:** Larger PRs, when you want independent perspectives, "review this branch"
+
+**Input:** Optional context hint (e.g. "focus on the billing layer")
+
+**Output:** Synthesized report in the session (no file written)
+
+**Example:**
+```bash
+/absolutpowers:triada-review
+/absolutpowers:triada-review "skup się na warstwie płatności"
+```
+
+---
+
 ### `/absolutpowers:debug`
 
 Systematic debugging — root cause investigation before any fixes.
@@ -305,7 +347,7 @@ The `preboot` skill triggers broadly on explicit PreBoot mentions, PreBoot depen
 
 ## Agents (Claude Code only)
 
-Agents are subagents that skills spawn automatically. You don't invoke them directly — they're part of the pipeline.
+Most agents are subagents that skills spawn automatically — you don't invoke them directly. Three are orchestrated by the `/triada-review` command instead of the pipeline.
 
 | Agent | Spawned by | Purpose |
 |-------|-----------|---------|
@@ -315,7 +357,9 @@ Agents are subagents that skills spawn automatically. You don't invoke them dire
 | `implementation-worker` | implement | Implements one orchestrated phase with a fresh, narrow context |
 | `phase-review` | implement | Lightweight quality gate after one orchestrated phase |
 | `review-implementation` | implement | Validates code correctness, patterns, tests, safety |
-| `tech-lead-advisor` | (available for manual use) | Strategic architecture guidance, technology choices, tradeoff analysis |
+| `tech-lead-advisor` | triada-review / manual | Strategic architecture guidance, technology choices, tradeoff analysis |
+| `codebase-auditor` | triada-review | Deep security / correctness / test-quality review (JSON verdict) |
+| `ui-reviewer` | triada-review | QA/UX review — UI states, interactions, a11y, UI races, user goal (JSON verdict) |
 
 ### Review agent criteria
 
@@ -326,6 +370,8 @@ Agents are subagents that skills spawn automatically. You don't invoke them dire
 **phase-review** checks: phase write scope, completion, phase verification, handoff quality, obvious correctness issues, garbage, rules
 
 **review-implementation** checks: correctness, patterns compliance, rules compliance, test coverage, completeness, safety (no secrets, no injection vectors), AC fulfillment (every AC-N has implementation and test)
+
+**triada-review agents** check (non-overlapping scopes, each returns strict JSON): `tech-lead-advisor` → goal / architecture / overengineering / readability; `codebase-auditor` → security / correctness / test quality; `ui-reviewer` → UI states / interactions / data representation / a11y / UI races / user goal. All three also flag `rules.md` violations within their scope.
 
 ## Project Structure in Your Repo
 
@@ -433,7 +479,9 @@ Skills can discover durable lessons during work — recurring traps, non-obvious
 |---------|------------|-------|
 | Skills | 6 workflow + 1 PreBoot | 6 workflow + explain + tech-lead-advisor + 1 PreBoot |
 | Onboarding reports | `explain` command | `explain` skill |
-| Agents | 6 agents (review gates + phase worker + tech-lead-advisor) | none |
+| Agents | 9 agents (review gates + phase worker + triada-review trio) | none |
+| Slash commands | `triada-review` (multi-agent review) | Not available |
+| Multi-agent review | `triada-review` (3 parallel agents + synthesis) | Not available (no parallel subagents) |
 | Review gates | Automatic after each pipeline step, plus `phase-review` for orchestrated phases | Not available |
 | Orchestrated implementation | Worker subagent per phase | Sequential phase files in one session |
 | Skill invocation | `/absolutpowers:skill-name` | `$absolutpowers skill-name` |
@@ -445,9 +493,9 @@ Skills can discover durable lessons during work — recurring traps, non-obvious
 absolut-ai-skills/
 ├── claude/                         # Claude Code plugin
 │   ├── .claude-plugin/plugin.json
-│   ├── commands/                   # Claude slash commands
+│   ├── commands/                   # triada-review slash command
 │   ├── skills/                     # 6 workflow + 1 PreBoot skill
-│   └── agents/                     # 6 subagent definitions
+│   └── agents/                     # 9 subagent definitions
 ├── codex/                          # Codex plugin
 │   ├── .codex-plugin/plugin.json
 │   ├── skills/                     # 6 workflow + explain + tech-lead-advisor + 1 PreBoot skill

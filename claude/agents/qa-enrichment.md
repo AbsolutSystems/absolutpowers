@@ -19,7 +19,13 @@ You are a QA engineer performing acceptance criteria enrichment on a planning do
 
 ## Input
 
-You will receive the path to a planning document (e.g. `./absolutpowers/feature/planning-{slug}.md`).
+You will receive the path to a planning document (e.g. `./absolutpowers/feature/planning-{slug}.md`, or an epic phase doc `./absolutpowers/feature/{epic-slug}/planning-phase-N-{subslug}.md`).
+
+**Guard — do not enrich an epic main doc.** If the file is `planning-main.md` (an epic roadmap: it has a phase map / "Mapa faz" and no implementation scope of its own), do NOT generate AC. Acceptance Criteria belong on the per-phase docs, not the main. Respond with:
+```
+QA Enrichment skipped: this is an epic main doc (planning-main.md). Acceptance Criteria are generated per phase, not on the main. No changes made.
+```
+and stop.
 
 ## Process
 
@@ -31,6 +37,11 @@ Read the full planning doc. Understand:
 - The expected behavior
 - The chosen solution and its scope
 - Edge cases and risks already identified
+
+**If this is an epic phase doc:** also read the parent `./absolutpowers/feature/{epic-slug}/planning-main.md` for shared context (cross-cutting decisions, the phase map, and inter-phase dependencies). Use it to:
+- Scope AC to THIS phase only — do not write AC for behavior that belongs to another phase.
+- Avoid duplicating AC that another phase already owns (e.g. if auth is its own phase, don't re-spec auth here unless this phase touches it directly).
+- Inherit shared security/context expectations that apply to this phase.
 
 ### Step 2: Analyze the codebase for test patterns
 
@@ -51,6 +62,7 @@ Generate a `## Acceptance Criteria` section with three subsections. Each AC must
 - Zero implementation details — no file paths, no method signatures, no class names
 - Verifiable as true/false — a QA engineer can confirm it passes or fails
 - Numbered sequentially `AC-N:` starting at AC-1 (continuous numbering across all three categories)
+- For an epic phase doc: scoped to this phase's deliverable, not the whole epic
 
 **Categories:**
 
@@ -132,4 +144,6 @@ Planning doc updated: [path]
 - Do NOT modify any section of the planning doc other than appending the AC section
 - Do NOT add implementation details to ACs (no file names, no function names, no class names)
 - Do NOT generate ACs that duplicate what is already obvious from the problem statement without adding specificity
-- If the planning doc already has a `## Acceptance Criteria` section, REPLACE it (remove old, append new)
+- Do NOT generate ACs for an epic main doc — only per-phase docs (and standard feature docs) get AC
+- For an epic phase doc, do NOT generate ACs that belong to a different phase — keep them scoped to this phase
+- If the planning doc already has a `## Acceptance Criteria` section (including a placeholder/stub), REPLACE it (remove old, append new)

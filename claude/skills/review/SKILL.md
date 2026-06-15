@@ -15,6 +15,12 @@ argument-hint: "[branch bazowy, default: main]"
 
 Wykonaj PEŁNY review zmian w bieżącym BRANCHU (w porównaniu do main/master). Przejdź przez WSZYSTKIE 4 fazy po kolei.
 
+> **To review vs `/absolutpowers:triada-review`:** to `review` = solo, pełne 4 fazy,
+> audit trail do `./absolutpowers/reviews/`, integracja z `project-memory.md`,
+> działa też na Codex. Dla równoległego, multi-agentowego review większych PR
+> (3 agentów z rozłącznymi zakresami + synteza, Claude-only) użyj
+> `/absolutpowers:triada-review`. Nie konkurują — to dwa różne narzędzia.
+
 ## Krok 0: Przygotowanie
 
 Ustal branch bazowy i używaj go konsekwentnie jako `<base>` w dalszych komendach.

@@ -4,16 +4,16 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## What This Is
 
-AbsolutPowers — a Claude Code + Codex plugin providing AI-assisted development lifecycle skills: feature discussion, task generation, implementation, review, debugging, and project context management. Version 3.3.0.
+AbsolutPowers — a Claude Code + Codex plugin providing AI-assisted development lifecycle skills: feature discussion, task generation, implementation, review, debugging, and project context management. Version 3.4.0.
 
 ## Repository Layout
 
 Two parallel plugin trees share most skill logic but differ in platform capabilities:
 
-- `claude/` — Claude Code plugin. Has `skills/`, `agents/`, and `.claude-plugin/plugin.json`
-- `codex/` — Codex plugin. Has `skills/`, `.codex-plugin/plugin.json`. No agents (Codex lacks plugin-level subagent support)
+- `claude/` — Claude Code plugin. Has `skills/`, `agents/`, `commands/`, and `.claude-plugin/plugin.json`
+- `codex/` — Codex plugin. Has `skills/`, `.codex-plugin/plugin.json`. No agents or commands (Codex lacks plugin-level subagent support)
 
-Skills live in `{platform}/skills/{name}/SKILL.md`. Agents live in `claude/agents/{name}.md` (Claude only).
+Skills live in `{platform}/skills/{name}/SKILL.md`. Agents live in `claude/agents/{name}.md` (Claude only). Slash commands live in `claude/commands/{name}.md` (Claude only).
 
 Supporting files:
 - `scripts/diff-skills.sh` — drift detection between Claude and Codex skill files
@@ -85,6 +85,23 @@ Ownership contract:
 - `implementation-worker` updates only its phase file and `implementation-context.md`
 - `implement` orchestrator updates phase status in parent tasks file
 - `phase-review` is read-only, returns VERDICT only
+
+### Standalone Triada Review (Claude only)
+
+`/absolutpowers:triada-review` — on-demand multi-agent code review of the current
+branch vs master. The main session acts as orchestrator: gathers context (diff, PR,
+CI, `rules.md`), delegates to three agents **in parallel** with non-overlapping
+scopes, then synthesizes one report (JSON per agent → merged verdict).
+
+- `tech-lead-advisor` (`absolutpowers:tech-lead-agent`) — goal, architecture, overengineering, readability
+- `security-auditor` (`absolutpowers:codebase-auditor`) — security, correctness, test quality
+- `ui-reviewer` (`absolutpowers:ui-reviewer`) — UI states, interactions, a11y, data, UI races, user goal (spawned only when UI files present)
+
+Defaults are baked into the command; an optional per-project
+`.claude/triada-review.agents.json` can override role → `subagent_type`, `enabled`,
+and `scope`. This is separate from the pipeline gates and from the solo `review`
+skill — see the `review` SKILL for the distinction. Codex has no equivalent
+(needs parallel subagents).
 
 ## Key Development Commands
 
