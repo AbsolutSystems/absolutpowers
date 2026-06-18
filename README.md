@@ -45,6 +45,9 @@ This creates `CLAUDE.md`, `AGENTS.md`, `./absolutpowers/patterns.md`, and `./abs
 
 # Step 4: Final code review
 /absolutpowers:review
+
+# Step 5 (optional, pre-commit): harvest knowledge — learned skill + module docs
+/absolutpowers:harvest @absolutpowers/feature/tasks-push-notifications.md
 ```
 
 Each step produces files that feed into the next. Small features usually get one `tasks-{slug}.md`; larger features can get an orchestrated phase plan with `tasks-{slug}/NN-phase.md` files and a shared `implementation-context.md`. Review gates between steps catch issues automatically.
@@ -52,13 +55,26 @@ Each step produces files that feed into the next. Small features usually get one
 ## The Pipeline
 
 ```
-feature-discuss (+ qa-enrichment) → generate-tasks → implement → review
-         CO?                            JAK?        BUDUJ+TEST    AUDYTUJ
-          │                               │              │
-          ▼                               ▼              ▼
-      review-plan                    review-tasks   review-implementation
-       (gate)                          (gate)           (gate)
+feature-discuss (+ qa-enrichment) → generate-tasks → implement → review → harvest
+         CO?                            JAK?        BUDUJ+TEST    AUDYTUJ   UTRWAL
+          │                               │              │                    │
+          ▼                               ▼              ▼                    ▼
+      review-plan                    review-tasks   review-implementation  try-learn-skill
+       (gate)                          (gate)           (gate)             + document-feature
 ```
+
+`problem-discuss` is an optional **intake/triage** front door — for a fuzzy, multi-item
+client report where each item must be classified before it enters the pipeline:
+
+```
+problem-discuss (zgłoszenie klienta → klasyfikacja per sprawa)
+  ├─ bug            → debug
+  ├─ gap featurowy  → feature-discuss → generate-tasks → implement
+  ├─ config / dane  → fix bezpośredni
+  └─ nieporozumienie → close
+```
+
+`harvest` is an optional pre-commit closeout — see [Harvest Phase](#harvest-phase).
 
 For larger Claude Code implementations, `implement` becomes an orchestrator:
 
@@ -270,6 +286,47 @@ Systematic debugging — root cause investigation before any fixes.
 
 ---
 
+### `/absolutpowers:problem-discuss`
+
+Intake & triage for a fuzzy, multi-item client report. Decomposes the report into discrete
+items, establishes the intended business rule per item, confronts it with the code, classifies
+each item, and routes it onward. Cousin of `debug` (breadth-first), not `feature-discuss`.
+
+**What it does:**
+- Decomposes one client report into N discrete items (Faza 0)
+- Per item: extracts the stated business rule (intended behavior) vs the reported discrepancy
+- Reads attachments (images/files passed in the prompt) as evidence
+- Investigates the code flow breadth-first, with `file:line` evidence (analysis, **not** a fix)
+- Classifies each item into one of 6 buckets, then fans out a route recommendation
+- Writes a report; **does not** fix, plan, or write tasks (hard boundary)
+
+**Classification → route:**
+
+| Bucket | Route |
+|---|---|
+| potwierdzony bug | `debug` |
+| nie zaimplementowane (gap) | `feature-discuss` |
+| błąd konfiguracji / env | fix bezpośredni |
+| anomalia danych | fix danych |
+| działa-jak-zaprojektowano (nieporozumienie) | close + wyjaśnienie klientowi |
+| za mało danych | dopytaj klienta |
+
+**When to use:** A client/stakeholder sends a multi-item report about an existing module —
+"po akceptacji korekty powinny wyjść maile, w produkcji ich nie widzę", a list of remarks from
+production, a discrepancy between a documented rule and observed behavior. **Not** for a clean
+error/stack trace/test failure (that's `debug`) or a new feature request (that's `feature-discuss`).
+
+**Input:** Client report text + paths to attachments (images/files)
+
+**Output:** `./absolutpowers/problem/problem-{slug}.md` (per-item analysis + routing table)
+
+**Example:**
+```bash
+/absolutpowers:problem-discuss "Klient zgłosił: 1) dlaczego user X dostaje maile (obraz.png), 2) po korekcie nie widzę 2 maili (culinar1.pdf)"
+```
+
+---
+
 ### `/absolutpowers:update-ai-context`
 
 Bootstraps or refreshes project documentation for AI agents.
@@ -313,6 +370,148 @@ Generates a standalone HTML onboarding report for a plan or current code changes
 ```bash
 /absolutpowers:explain @absolutpowers/feature/tasks-push-notifications.md
 ```
+
+---
+
+### `/absolutpowers:try-learn-skill`
+
+Extracts a reusable procedure from a finished feature's artifacts into a callable
+**learned skill** stored in your project under `.claude/skills/learned/`.
+
+**What it does:**
+- Reads the feature's `planning-{slug}.md`, `tasks-{slug}.md` (+ phase files), and the `git diff` (process + effect)
+- Detects whether there is a **generalizable** procedure (repeatable on another task of the same class) — if not, reports "nic do utrwalenia" and stops
+- Globs existing `.claude/skills/learned/**/SKILL.md` to decide **NEW vs UPDATE** (UPDATE bumps `occurrences` and promotes `confidence: candidate → established` on the 2nd encounter)
+- **SKIP**s when the procedure overlaps a static skill (feature-discuss, implement, review, …) — no duplicating built-in behavior
+- Proposes the full generated `SKILL.md` and **waits for your acceptance (human gate)** before writing
+- Generated learned skills carry a `learned-meta` block in the body and a narrow `TRIGGER when:` to avoid retrieval collisions
+
+**Manual, opt-in step.** `implement` only prints a soft, best-effort nudge after
+completion — forgetting it is never an error.
+
+**When to use:** After a feature is implemented and you want to preserve a repeatable procedure
+
+**Input:** Path to a `tasks-*.md` or `planning-*.md`
+
+**Output:** `{your-project}/.claude/skills/learned/learned-{name}/SKILL.md` (after approval)
+
+**Example:**
+```bash
+/absolutpowers:try-learn-skill @absolutpowers/feature/tasks-push-notifications.md
+```
+
+---
+
+### `/absolutpowers:document-feature`
+
+Generates or updates durable **per-module** documentation from a finished
+feature's artifacts, written to your project under `docs/modules/{module}.md`.
+
+**What it does:**
+- Reads the feature's `planning-{slug}.md` (the "why"), `tasks-{slug}.md` (+ phase files), and the `git diff` (the truth about the code)
+- Detects which **modules** the feature touched (`CLAUDE.md` `## Project Structure` / `patterns.md` → path heuristic fallback)
+- **Shows the detected file→module mapping and waits for confirmation** — the single hard gate (wrong detection = docs in the wrong file)
+- For each module: NEW (create) or UPDATE (**intelligent merge** — rewrites touched sections to reflect the current state, not an append-changelog)
+- **Auto-writes** the content (pre-commit `git diff` is the natural review surface; docs are non-executable) and stamps a `doc-meta` block (`last-updated`, `last-commit`)
+
+**When to use:** After a feature, before commit — so the module doc stays "how it works now". Read it before extending the module ("read the `auth` module docs before you grow it").
+
+**Input:** Path to a `tasks-*.md` or `planning-*.md`
+
+**Output:** `{your-project}/docs/modules/{module}.md`
+
+**Example:**
+```bash
+/absolutpowers:document-feature @absolutpowers/feature/tasks-push-notifications.md
+```
+
+---
+
+### `/absolutpowers:harvest`
+
+Thin closeout orchestrator for the **harvest phase**. Runs `try-learn-skill`
+then `document-feature` over one finished feature, each keeping its own gate.
+
+**What it does:**
+- Runs `try-learn-skill` (reusable procedure → learned skill, human gate)
+- Runs `document-feature` (per-module docs, mapping-confirm gate)
+- Gracefully **skips** a sub-skill the project opted out of — missing is not an error
+- Reminds you to review the result in `git diff` before committing
+
+**When to use:** At the end of `implement`, before commit. `implement` prints a single best-effort nudge toward it.
+
+**Input:** Path to a `tasks-*.md` or `planning-*.md`
+
+**Output:** Orchestrates both sub-skills (learned skill + module docs)
+
+**Example:**
+```bash
+/absolutpowers:harvest @absolutpowers/feature/tasks-push-notifications.md
+```
+
+## Harvest Phase
+
+The **harvest phase** runs at the end of `implement`, before commit. It is the
+single closeout entry point that gathers durable knowledge from a finished
+feature: a reusable procedure (`try-learn-skill`) and per-module documentation
+(`document-feature`). Each sub-skill keeps its own gate; the result is reviewed
+in `git diff` before commit.
+
+```
+feature-discuss → generate-tasks → implement → review
+                                       │
+                                       ▼ (optional, pre-commit)
+                                    harvest
+                                       ├─ try-learn-skill → .claude/skills/learned/
+                                       └─ document-feature → docs/modules/
+```
+
+**Three documentation mechanisms — deliberately different:**
+
+| | `document-feature` | `update-ai-context` | `explain` |
+|---|---|---|---|
+| Captures | Deep, **per-module** docs from planning + diff | Broad/shallow `CLAUDE.md` from a **code scan** | Ephemeral, single-change human onboarding |
+| Source | One feature's planning (why) + git diff (truth) | Whole-codebase structural scan | A plan/tasks doc or current git diff |
+| Granularity | Per module (`docs/modules/{module}.md`) | Per package (hierarchical `CLAUDE.md`) | Per change |
+| Trigger | After a feature, on-demand (or via harvest) | Bootstrap / refresh | On-demand, when a human needs a fast explanation |
+| Output | `docs/modules/{module}.md` (durable, in repo) | `CLAUDE.md` / `AGENTS.md` (auto-injected) | `docs/onboarding/*.html` (ephemeral) |
+| Audience | AI agent as a new developer | Every skill's auto-loaded context | A human |
+
+If it is "deep, durable knowledge of how a module works and why," it belongs in
+`document-feature`. If it is "broad code conventions auto-loaded into context,"
+that is `update-ai-context`. If it is "a one-off, human-readable explanation of
+a change," that is `explain`.
+
+## Learned Skills
+
+Learned skills are project-local, callable procedures that AbsolutPowers can
+extract from finished work via `try-learn-skill`. They live in your project under
+`.claude/skills/learned/` and are namespaced `learned-{name}`.
+
+**Pipeline position:** part of the optional **harvest phase** after `implement`
+(see [Harvest Phase](#harvest-phase)). `implement` nudges you toward `harvest`,
+which runs `try-learn-skill` first. The pipeline does not require it.
+
+```
+feature-discuss → generate-tasks → implement → review
+                                       │
+                                       ▼ (optional, pre-commit)
+                                    harvest → try-learn-skill → .claude/skills/learned/
+```
+
+**Learned skills vs `patterns.md`** — they are deliberately different and should
+not duplicate each other:
+
+| | Learned skill | `patterns.md` |
+|---|---|---|
+| Captures | A **procedure** (sequence of steps/tools/decisions) | **Code structure** (recurring conventions) |
+| Form | Callable `SKILL.md` with a narrow `TRIGGER when:` | Descriptive reference, read by `generate-tasks` / `implement` |
+| Lifecycle | NEW → UPDATE, `confidence: candidate → established`, `occurrences` | Re-scanned/refreshed by `update-ai-context` |
+| Source | One finished feature's artifacts + git diff | Whole-codebase scan (pattern used 3+ times) |
+| Stored in | `.claude/skills/learned/` | `./absolutpowers/patterns.md` |
+
+If something is "how the code is shaped," it belongs in `patterns.md`. If it is
+"how to carry out a class of task," it belongs in a learned skill.
 
 ## PreBoot Skill
 
@@ -444,6 +643,9 @@ Skills can discover durable lessons during work — recurring traps, non-obvious
 
 /absolutpowers:review
 # → 4-phase review → report
+
+/absolutpowers:harvest @absolutpowers/feature/tasks-{slug}.md
+# → (optional, pre-commit) try-learn-skill + document-feature → review w git diff
 ```
 
 ### Quick bug fix
@@ -477,7 +679,7 @@ Skills can discover durable lessons during work — recurring traps, non-obvious
 
 | Feature | Claude Code | Codex |
 |---------|------------|-------|
-| Skills | 6 workflow + 1 PreBoot | 6 workflow + explain + tech-lead-advisor + 1 PreBoot |
+| Skills | 11 workflow + 1 PreBoot | 11 workflow + tech-lead-advisor + 1 PreBoot |
 | Onboarding reports | `explain` command | `explain` skill |
 | Agents | 9 agents (review gates + phase worker + triada-review trio) | none |
 | Slash commands | `triada-review` (multi-agent review) | Not available |
@@ -494,11 +696,11 @@ absolut-ai-skills/
 ├── claude/                         # Claude Code plugin
 │   ├── .claude-plugin/plugin.json
 │   ├── commands/                   # triada-review slash command
-│   ├── skills/                     # 6 workflow + 1 PreBoot skill
+│   ├── skills/                     # 11 workflow + 1 PreBoot skill
 │   └── agents/                     # 9 subagent definitions
 ├── codex/                          # Codex plugin
 │   ├── .codex-plugin/plugin.json
-│   ├── skills/                     # 6 workflow + explain + tech-lead-advisor + 1 PreBoot skill
+│   ├── skills/                     # 11 workflow + tech-lead-advisor + 1 PreBoot skill
 │   └── scripts/
 ├── .claude-plugin/marketplace.json # Claude marketplace → claude/
 ├── .agents/plugins/marketplace.json # Codex marketplace → codex/
@@ -516,6 +718,40 @@ absolut-ai-skills/
 
 # Codex — pull repo and reinstall from local marketplace
 ```
+
+## Changelog
+
+Versioning is SemVer, kept in sync across both manifests
+(`claude/.claude-plugin/plugin.json` + `codex/.codex-plugin/plugin.json`).
+
+### 3.7.0 — Problem intake & triage
+- New `problem-discuss` skill — intake/triage front door for fuzzy, multi-item client reports: decomposes into discrete items, extracts the business rule per item, investigates the code breadth-first, classifies into 6 buckets (bug / gap / config / dane / nieporozumienie / brak danych), and fans out routing to `debug` / `feature-discuss` / direct fix / close (both trees)
+- Hard boundary: investigates and routes only — does not fix, plan, or write tasks
+- New output dir `absolutpowers/problem/problem-{slug}.md`
+- `debug` gains a "vs problem-discuss" note to keep triggers from colliding (both trees)
+
+### 3.6.0 — Harvest phase
+- New `harvest` skill — thin pre-commit closeout orchestrator: `try-learn-skill` → `document-feature`, each keeping its own gate (both trees)
+- New `document-feature` skill — durable **per-module** docs (`docs/modules/{module}.md`) from planning + git diff, with file→module mapping confirm gate and intelligent merge (both trees)
+- `implement` nudge reconciled `try-learn-skill` → `harvest` (single closeout entry point)
+- Docs: Harvest Phase section + `document-feature` vs `update-ai-context` vs `explain` distinction
+
+### 3.5.0 — Learned skills
+- New `try-learn-skill` — extracts a reusable procedure from a finished feature into a callable learned skill under `.claude/skills/learned/`, human-gated (both trees)
+- `implement` soft nudge toward skill extraction after completion
+
+### 3.4.0 — Triada review
+- `/absolutpowers:triada-review` — standalone parallel multi-agent branch review (Claude Code only)
+- Epic phase-docs; `feature-discuss` inquiry mode
+
+### 3.3.0 — Model routing
+- Model routing by risk; max-requirements rule; `explain` skill migration
+
+### 3.2.0 — QA enrichment
+- Acceptance Criteria pipeline across all skills
+
+### 3.0.0 — Orchestrated implementation
+- Orchestrated `implement` (phase workers + phase-review gates); consolidated PreBoot skills
 
 ## Requirements
 

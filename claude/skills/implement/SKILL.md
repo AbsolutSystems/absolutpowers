@@ -525,6 +525,18 @@ AC Fulfillment:
 - AC-3: NOT VERIFIED — no test found
 ```
 
+### Optional: faza harvest (best-effort)
+
+After reporting completion, optionally suggest one line to the user:
+
+> Przed commitem rozważ fazę harvest:
+> `/absolutpowers:harvest @absolutpowers/feature/tasks-{slug}.md`
+> — uruchomi try-learn-skill (reużywalna procedura) i document-feature
+> (docs modułu), każde z własnym gate; wynik przejrzyj w git diff przed commitem.
+
+To czysto opcjonalne. Pominięcie nie jest błędem — nie blokuje ani nie cofa
+completion. Nie odpalaj go automatycznie; tylko zaproponuj.
+
 ---
 
 ## Begin

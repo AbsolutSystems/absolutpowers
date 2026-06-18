@@ -12,6 +12,12 @@ argument-hint: "[opis buga lub błąd]"
 
 # Systematic Debugging
 
+> **vs `problem-discuss`:** `debug` to **głębokie** dochodzenie pojedynczego, znanego failure
+> (error / stack trace / test fail / cicha rozbieżność, którą już zidentyfikowano). Jeśli masz
+> **mgliste, wieloelementowe zgłoszenie od klienta**, w którym nie wiadomo jeszcze, czy każda
+> sprawa to bug, gap featurowy, błąd danych czy nieporozumienie — zacznij od `problem-discuss`
+> (intake + triage), który sklasyfikuje sprawy i odeśle potwierdzone bugi tutaj.
+
 ## Context Files
 
 Before starting investigation, also read (if they exist):

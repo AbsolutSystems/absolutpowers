@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## What This Is
 
-AbsolutPowers — a Claude Code + Codex plugin providing AI-assisted development lifecycle skills: feature discussion, task generation, implementation, review, debugging, and project context management. Version 3.4.0.
+AbsolutPowers — a Claude Code + Codex plugin providing AI-assisted development lifecycle skills: problem intake/triage, feature discussion, task generation, implementation, review, debugging, and project context management. Version 3.7.0.
 
 ## Repository Layout
 
@@ -61,6 +61,26 @@ feature-discuss → generate-tasks → implement → review
   (gate)            (gate)           (gate)
 ```
 
+### Intake / triage front door
+
+`problem-discuss` is an optional entry point **upstream** of the pipeline. It takes a fuzzy,
+multi-item client report, decomposes it into discrete items, extracts the intended business rule
+per item, investigates the code breadth-first (evidence, not fixes), classifies each item into one
+of 6 buckets, and fans out a route per item:
+
+```
+problem-discuss (no gate — investigative, like debug)
+  ├─ potwierdzony bug          → debug
+  ├─ nie zaimplementowane (gap) → feature-discuss → generate-tasks → implement
+  ├─ błąd konfiguracji / dane   → fix bezpośredni
+  └─ nieporozumienie            → close
+```
+
+Output: `absolutpowers/problem/problem-{slug}.md`. Hard boundary: it investigates and routes
+only — it does not fix, plan, or write tasks. Cousin of `debug` (breadth-first triage vs depth
+root-cause); both trees, no gate. Keep the `debug` "vs problem-discuss" note in sync so triggers
+do not collide.
+
 For larger features, `implement` orchestrates via subagents:
 
 ```
@@ -70,6 +90,10 @@ tasks-{slug}.md (orchestrator index)
   ├─ 99-final-verification (run by orchestrator)
   └─ review-implementation (final gate)
 ```
+
+### Harvest Phase (closeout)
+
+After `implement`, before commit, an optional **harvest phase** gathers durable knowledge from the finished feature. `implement` prints one best-effort nudge toward `harvest`, a thin orchestrator that runs `try-learn-skill` (reusable procedure → `.claude/skills/learned/`) then `document-feature` (per-module docs → `docs/modules/`), each keeping its own gate. `document-feature` is distinct from `update-ai-context` (code-scan → broad `CLAUDE.md`) and `explain` (ephemeral HTML). Both skills live in both trees.
 
 ### Review Gates (Claude only)
 
