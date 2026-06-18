@@ -427,14 +427,42 @@ feature's artifacts, written to your project under `docs/modules/{module}.md`.
 
 ---
 
+### `/absolutpowers:document-module`
+
+Generates **architectural documentation of an existing module from a code scan**:
+structure, public API, dependencies, key flows, plus C4 diagrams (C1–C3) and
+sequence diagrams. Two audiences — human (HTML) and AI-as-new-dev (markdown).
+
+**What it does:**
+- Resolves the module → file set (`CLAUDE.md` `## Project Structure` / `patterns.md` → explicit path → path heuristic) and echoes the boundary
+- Scans the module's code: public API, internal components, in/out dependencies, persistence, key operations
+- Marks **verified** (seen in code, `file:line`) vs **inferred** relationships (auditability)
+- Generates Mermaid **C4** diagrams (C1 Context / C2 Container / C3 Component) + sequence diagrams for key flows; validates with `mermaid-cli` if available, falls back to `graph`/`flowchart`
+- Writes markdown (**source of truth**, AI) and a self-contained HTML (**regenerable**, human, always overwritten)
+
+**When to use:** "udokumentuj architekturę modułu auth", "diagram modułu", "C4 modułu" — when you want a durable, diagram-rich architecture reference of a module as it exists now. **Not** for documenting one finished feature (that's `document-feature`) or explaining a single change (that's `explain`).
+
+**Input:** Module name or path (e.g. `auth` or `src/billing`)
+
+**Output:** `{your-project}/docs/modules/{slug}-architecture.md` + `{your-project}/docs/architecture/{slug}.html`
+
+**Example:**
+```bash
+/absolutpowers:document-module auth
+/absolutpowers:document-module src/billing
+```
+
+---
+
 ### `/absolutpowers:harvest`
 
-Thin closeout orchestrator for the **harvest phase**. Runs `try-learn-skill`
-then `document-feature` over one finished feature, each keeping its own gate.
+Thin closeout orchestrator for the **harvest phase**. Runs `try-learn-skill`,
+`document-feature`, then `document-module` over one finished feature, each keeping its own gate.
 
 **What it does:**
 - Runs `try-learn-skill` (reusable procedure → learned skill, human gate)
-- Runs `document-feature` (per-module docs, mapping-confirm gate)
+- Runs `document-feature` (per-module prose docs, mapping-confirm gate)
+- Runs `document-module` (module architecture + C4) **only for touched modules whose architecture changed** — new file / new public symbol / new cross-module import (NEW or refresh, decided by `document-module`); skips cosmetic/internal-only edits to avoid noisy diagram churn
 - Gracefully **skips** a sub-skill the project opted out of — missing is not an error
 - Reminds you to review the result in `git diff` before committing
 
@@ -463,24 +491,27 @@ feature-discuss → generate-tasks → implement → review
                                        ▼ (optional, pre-commit)
                                     harvest
                                        ├─ try-learn-skill → .claude/skills/learned/
-                                       └─ document-feature → docs/modules/
+                                       ├─ document-feature → docs/modules/{module}.md
+                                       └─ document-module → docs/modules/{module}-architecture.md + docs/architecture/*.html
+                                          (tylko gdy zmiana architektury)
 ```
 
-**Three documentation mechanisms — deliberately different:**
+**Four documentation mechanisms — deliberately different:**
 
-| | `document-feature` | `update-ai-context` | `explain` |
-|---|---|---|---|
-| Captures | Deep, **per-module** docs from planning + diff | Broad/shallow `CLAUDE.md` from a **code scan** | Ephemeral, single-change human onboarding |
-| Source | One feature's planning (why) + git diff (truth) | Whole-codebase structural scan | A plan/tasks doc or current git diff |
-| Granularity | Per module (`docs/modules/{module}.md`) | Per package (hierarchical `CLAUDE.md`) | Per change |
-| Trigger | After a feature, on-demand (or via harvest) | Bootstrap / refresh | On-demand, when a human needs a fast explanation |
-| Output | `docs/modules/{module}.md` (durable, in repo) | `CLAUDE.md` / `AGENTS.md` (auto-injected) | `docs/onboarding/*.html` (ephemeral) |
-| Audience | AI agent as a new developer | Every skill's auto-loaded context | A human |
+| | `document-feature` | `document-module` | `update-ai-context` | `explain` |
+|---|---|---|---|---|
+| Captures | Deep, **per-module** prose from planning + diff | **Architecture** of a module from a **code scan** (C4 diagrams) | Broad/shallow `CLAUDE.md` from a **code scan** | Ephemeral, single-change human onboarding |
+| Source | One feature's planning (why) + git diff (truth) | One module's code (scan, as-is) | Whole-codebase structural scan | A plan/tasks doc or current git diff |
+| Granularity | Per module (`docs/modules/{module}.md`) | Per module (`docs/modules/{slug}-architecture.md` + HTML) | Per package (hierarchical `CLAUDE.md`) | Per change |
+| Trigger | After a feature, on-demand (or via harvest) | On-demand ("document module X") | Bootstrap / refresh | On-demand, when a human needs a fast explanation |
+| Output | `docs/modules/{module}.md` (durable) | `docs/modules/{slug}-architecture.md` (md, truth) + `docs/architecture/{slug}.html` (regenerable) | `CLAUDE.md` / `AGENTS.md` (auto-injected) | `docs/onboarding/*.html` (ephemeral) |
+| Audience | AI agent as a new developer | Human (HTML) + AI as new developer (md) | Every skill's auto-loaded context | A human |
 
 If it is "deep, durable knowledge of how a module works and why," it belongs in
-`document-feature`. If it is "broad code conventions auto-loaded into context,"
-that is `update-ai-context`. If it is "a one-off, human-readable explanation of
-a change," that is `explain`.
+`document-feature`. If it is "the architecture/structure of a module with
+diagrams, from a code scan," that is `document-module`. If it is "broad code
+conventions auto-loaded into context," that is `update-ai-context`. If it is "a
+one-off, human-readable explanation of a change," that is `explain`.
 
 ## Learned Skills
 
@@ -679,7 +710,7 @@ Skills can discover durable lessons during work — recurring traps, non-obvious
 
 | Feature | Claude Code | Codex |
 |---------|------------|-------|
-| Skills | 11 workflow + 1 PreBoot | 11 workflow + tech-lead-advisor + 1 PreBoot |
+| Skills | 12 workflow + 1 PreBoot | 12 workflow + tech-lead-advisor + 1 PreBoot |
 | Onboarding reports | `explain` command | `explain` skill |
 | Agents | 9 agents (review gates + phase worker + triada-review trio) | none |
 | Slash commands | `triada-review` (multi-agent review) | Not available |
@@ -696,11 +727,11 @@ absolut-ai-skills/
 ├── claude/                         # Claude Code plugin
 │   ├── .claude-plugin/plugin.json
 │   ├── commands/                   # triada-review slash command
-│   ├── skills/                     # 11 workflow + 1 PreBoot skill
+│   ├── skills/                     # 12 workflow + 1 PreBoot skill
 │   └── agents/                     # 9 subagent definitions
 ├── codex/                          # Codex plugin
 │   ├── .codex-plugin/plugin.json
-│   ├── skills/                     # 11 workflow + tech-lead-advisor + 1 PreBoot skill
+│   ├── skills/                     # 12 workflow + tech-lead-advisor + 1 PreBoot skill
 │   └── scripts/
 ├── .claude-plugin/marketplace.json # Claude marketplace → claude/
 ├── .agents/plugins/marketplace.json # Codex marketplace → codex/
@@ -723,6 +754,13 @@ absolut-ai-skills/
 
 Versioning is SemVer, kept in sync across both manifests
 (`claude/.claude-plugin/plugin.json` + `codex/.codex-plugin/plugin.json`).
+
+### 3.8.0 — Module architecture docs
+- New `document-module` skill — architectural documentation of an existing module from a **code scan**: structure, public API, in/out dependencies, key flows + Mermaid **C4** diagrams (C1 Context / C2 Container / C3 Component) and sequence diagrams (both trees)
+- Dual output: markdown (AI, **source of truth**) `docs/modules/{slug}-architecture.md` + self-contained HTML (human, **regenerable**, always overwritten) `docs/architecture/{slug}.html`
+- Auditability: marks verified (from code) vs inferred relationships; `mermaid-cli` validation with `graph`/`flowchart` fallback
+- `document-feature` and `explain` gain "vs document-module" notes; docs distinction table expanded to four mechanisms
+- `harvest` wires in `document-module` as a third sub-step (`try-learn-skill` → `document-feature` → `document-module`) — auto-refreshes/creates module architecture docs, but **only for touched modules whose architecture changed** (new file / new public symbol / new cross-module import), to avoid noisy diagram churn on cosmetic edits
 
 ### 3.7.0 — Problem intake & triage
 - New `problem-discuss` skill — intake/triage front door for fuzzy, multi-item client reports: decomposes into discrete items, extracts the business rule per item, investigates the code breadth-first, classifies into 6 buckets (bug / gap / config / dane / nieporozumienie / brak danych), and fans out routing to `debug` / `feature-discuss` / direct fix / close (both trees)

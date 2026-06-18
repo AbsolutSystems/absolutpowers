@@ -116,6 +116,14 @@ When a durable lesson is worth capturing, use:
   - `src/payments/provider-client.ts`
 ```
 
+### Write the LESSON generally — keep specifics as the example
+
+Memory must transfer to NEW places, not only where it was found. So:
+- **Problem / Root cause / Warning signs** = the general CLASS of problem — a portable rule that applies to another module/file of the same nature. Capture the *mechanism*, not "file X line Y".
+- **Affected paths + this incident** = the concrete EXAMPLE (where it first showed up), not the lesson itself.
+
+Test: would someone working in a DIFFERENT module recognize this trap from the Warning signs alone? If not, it is too narrow — generalize the mechanism, keep one concrete example. Do not overshoot into uselessly vague ("be careful with config") either. Target: **general rule + portable warning signs + one concrete example.**
+
 Candidate file template:
 
 ```markdown

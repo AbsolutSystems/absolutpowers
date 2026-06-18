@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## What This Is
 
-AbsolutPowers — a Claude Code + Codex plugin providing AI-assisted development lifecycle skills: problem intake/triage, feature discussion, task generation, implementation, review, debugging, and project context management. Version 3.7.0.
+AbsolutPowers — a Claude Code + Codex plugin providing AI-assisted development lifecycle skills: problem intake/triage, feature discussion, task generation, implementation, review, debugging, and project context management. Version 3.8.0.
 
 ## Repository Layout
 
@@ -93,7 +93,7 @@ tasks-{slug}.md (orchestrator index)
 
 ### Harvest Phase (closeout)
 
-After `implement`, before commit, an optional **harvest phase** gathers durable knowledge from the finished feature. `implement` prints one best-effort nudge toward `harvest`, a thin orchestrator that runs `try-learn-skill` (reusable procedure → `.claude/skills/learned/`) then `document-feature` (per-module docs → `docs/modules/`), each keeping its own gate. `document-feature` is distinct from `update-ai-context` (code-scan → broad `CLAUDE.md`) and `explain` (ephemeral HTML). Both skills live in both trees.
+After `implement`, before commit, an optional **harvest phase** gathers durable knowledge from the finished feature. `implement` prints one best-effort nudge toward `harvest`, a thin orchestrator that runs `try-learn-skill` (reusable procedure → `.claude/skills/learned/`), then `document-feature` (per-module prose docs → `docs/modules/`), then `document-module` (module architecture + C4 → `docs/modules/{slug}-architecture.md` + `docs/architecture/`, **only for touched modules whose architecture changed**), each keeping its own gate. `document-feature` is distinct from `document-module` (code-scan of one module → architecture + C4 diagrams, on-demand, `docs/modules/{slug}-architecture.md` + `docs/architecture/{slug}.html`), `update-ai-context` (code-scan → broad `CLAUDE.md`), and `explain` (ephemeral HTML). Both skills live in both trees.
 
 ### Review Gates (Claude only)
 

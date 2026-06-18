@@ -318,6 +318,8 @@ At the end of the implementation session, after all tasks and verification are d
 - If a simple durable lesson was found: mention it inline in your final response (2-4 lines: problem, resolution, affected paths). Ask: "Promote this to project-memory.md?" If user approves, write the entry directly to `./absolutpowers/project-memory.md`.
 - If the lesson is complex (root cause analysis, multiple symptoms, multi-file impact): create a candidate file at `./absolutpowers/memory-candidates/memory-candidates-YYYY-MM-DD-{slug}.md` first, then ask for promotion.
 
+**Write the lesson generally** — memory must transfer to NEW places, not only this file. State Problem / root cause / warning signs as the general CLASS of problem (portable mechanism), and keep affected paths + this incident as the concrete EXAMPLE. Test: would someone in a DIFFERENT module recognize the trap from the warning signs? If not, it is too narrow. Don't overshoot into vague either — target a general rule + portable warning signs + one concrete example.
+
 Promotion rules (apply when writing to project-memory.md):
 - Promotion requires explicit user approval
 - When promoting, update an existing matching memory entry instead of duplicating it

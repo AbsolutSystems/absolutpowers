@@ -174,6 +174,9 @@ rozjazd reguła↔kod, nieoczywiste źródło danych) — utwórz
 czy promować do `./absolutpowers/project-memory.md`. Promocja wymaga zgody. Nie zapisuj
 jednorazowych incydentów ani stanów, które się nie powtórzą.
 
+Zapisuj lekcję **ogólnie** — przenośna klasa problemu (mechanizm) + znaki ostrzegawcze
+rozpoznawalne w INNYM module; konkrety (pliki, ten incydent) tylko jako przykład, nie jako lekcja.
+
 ## Red Flags — STOP
 
 Jeśli łapiesz się na którejś myśli — wróć do granicy skilla:

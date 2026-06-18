@@ -26,6 +26,9 @@ to pliki `docs/modules/{moduł}.md` w target-projekcie.
   deep, per-moduł, z intencji (planning) + prawdy (diff), on-demand.
 - ≠ `explain` (ephemeral raport HTML jednej zmiany dla człowieka). Tu: trwała
   dokumentacja modułu w repo.
+- ≠ `document-module` (skan KODU całego modułu → struktura + diagramy C4 do
+  osobnego `docs/modules/{slug}-architecture.md` + HTML). Tu: **proza** "jak
+  działa + dlaczego" z JEDNEGO feature'a. Komplementarne — linkuj krzyżowo.
 
 ## Wejście
 

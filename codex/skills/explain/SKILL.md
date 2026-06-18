@@ -11,6 +11,8 @@ description: >
 
 Twoim zadaniem jest stworzenie samodzielnego pliku HTML, który ma pomóc człowiekowi (developerowi) szybko i bez wysiłku zrozumieć plan pracy lub zmiany wprowadzone w kodzie. To dokument onboardingowy — pisany dla człowieka, nie dla maszyny. Ma być narzędziem, któremu można zaufać, a nie ładnie wyglądającym podsumowaniem.
 
+> **vs `document-module`:** `explain` jest **per-zmiana** i **ephemeralny** (snapshot planu/diffa, `docs/onboarding/*.html` z sufiksem wersji). Jeśli chcesz **trwałej dokumentacji architektury istniejącego modułu** ze skanu kodu (diagramy C4, regenerowalny HTML + markdown źródłowy) — to `document-module`.
+
 ## Krok 0: Oceń rozmiar i charakter zmiany, dobierz głębokość
 
 Zanim cokolwiek napiszesz, oceń skalę:
