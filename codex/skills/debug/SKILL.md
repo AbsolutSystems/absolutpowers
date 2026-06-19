@@ -16,6 +16,33 @@ description: >
 > sprawa to bug, gap featurowy, błąd danych czy nieporozumienie — zacznij od `problem-discuss`
 > (intake + triage), który sklasyfikuje sprawy i odeśle potwierdzone bugi tutaj.
 
+## Handoff Input
+
+**OPTIONAL — only applies when invoked with a path to a `problem-{slug}.md` file.**
+
+If invoked with a path to `absolutpowers/problem/problem-{slug}.md` (and optionally a case
+number, e.g. `"Sprawa 2"`), read that file **BEFORE Phase 1** and use the named case's evidence
+as the Phase 1 starting point:
+
+- reguła biznesowa (contract / expected behavior)
+- flow przejścia (step-by-step trigger path)
+- `file:line` references found in the investigation
+- facts extracted from attachments
+
+**What this means:** confirm and deepen — do NOT re-derive from zero. Phase 1 still happens in
+full, but you start with evidence already gathered by `problem-discuss` rather than a blank slate.
+
+**When no path is given:** start Phase 1 normally. Zero regression for solo debug invocations.
+
+**Edge cases:**
+- Multi-case file + no case number given → ask which case before reading evidence.
+- Evidence from `problem-discuss` contradicted by deeper investigation → trust the fresh
+  evidence; note the divergence explicitly in your response (consistent with "memory is context,
+  not proof").
+
+**Iron Law is unchanged.** The handoff gives a head start; it does not waive root-cause
+investigation. Debug may refute problem-discuss's preliminary hypothesis — with evidence.
+
 ## Context Files
 
 Before starting investigation, also read (if they exist):
@@ -277,6 +304,54 @@ You MUST complete each phase before proceeding to the next.
 
 **Fix the root cause, not the symptom:**
 
+**Step 0: Classify fix size (run once, at the start of Phase 4)**
+
+Before writing any code, classify the fix using the same heuristic as `generate-tasks`
+single-file vs orchestrated:
+
+- **Small** — 1 file / 1 layer, no migration, no public API change, no security boundary,
+  no shared-core impact → **inline** (proceed to steps 1–3 below as today).
+- **Large** — multiple layers/modules, database migration, public API change, security
+  boundary, shared-core impact, OR any Phase 4.5 escalation (3+ fixes failed /
+  architectural problem) → **do NOT implement inline**. Write
+  `absolutpowers/feature/planning-fix-{slug}.md` and route to generate-tasks (see template
+  below and Phase 4.5 for escalation path).
+
+**Borderline small/large → choose handoff** (gates > ungated inline fix). Justify the choice
+explicitly in your response.
+
+**Threshold = same heuristic as single-file vs orchestrated in `generate-tasks`.** One size
+model across the whole pipeline.
+
+---
+
+**`planning-fix-{slug}.md` template** (write to `absolutpowers/feature/`):
+
+```markdown
+# Fix: {short description}
+
+## Problem
+{root cause with evidence — file:line, mechanism, NOT just symptoms}
+
+## Wybrane rozwiązanie
+{chosen fix approach}
+
+## Zakres
+{files / layers / modules affected}
+
+## Acceptance Criteria
+{optional but recommended for large fixes — what must be true after the fix;
+root cause defines expected post-fix behavior, which maps naturally to AC
+and enables downstream Intent Fidelity / AC Fulfillment checks}
+```
+
+After writing `planning-fix-{slug}.md`, nudge:
+`/absolutpowers:generate-tasks @absolutpowers/feature/planning-fix-{slug}.md`
+
+Do NOT implement the fix inline. Stop here and let the pipeline take over.
+
+---
+
 1. **Create Failing Test Case**
    - Simplest possible reproduction
    - Automated test if possible
@@ -301,7 +376,7 @@ You MUST complete each phase before proceeding to the next.
    - **If ≥ 3: STOP and question the architecture (step 5 below)**
    - DON'T attempt Fix #4 without architectural discussion
 
-5. **If 3+ Fixes Failed: Question Architecture**
+5. **If 3+ Fixes Failed: Question Architecture (Phase 4.5)**
 
    **Pattern indicating architectural problem:**
    - Each fix reveals new shared state/coupling/problem in different place
@@ -313,9 +388,19 @@ You MUST complete each phase before proceeding to the next.
    - Are we "sticking with it through sheer inertia"?
    - Should we refactor architecture vs. continue fixing symptoms?
 
-   **Discuss with the user before attempting more fixes**
+   This is NOT a failed hypothesis — this is a wrong architecture. Discuss the architectural
+   question with the user. Then, regardless of whether you continue the same approach or pivot,
+   **escalate through the artefact exit**:
 
-   This is NOT a failed hypothesis - this is a wrong architecture.
+   Write `absolutpowers/feature/planning-fix-{slug}.md` capturing:
+   - current root cause (with `file:line` evidence)
+   - failed hypotheses and what each revealed (valuable context for generate-tasks)
+   - architectural question / pivot decision
+
+   Nudge: `/absolutpowers:generate-tasks @absolutpowers/feature/planning-fix-{slug}.md`
+
+   This is automatically a **Large** fix (3+ failed attempts = architectural scope). Do NOT
+   attempt Fix #4 inline. The pipeline with its gates is the correct path forward.
 
 ## Red Flags - STOP and Follow Process
 
@@ -356,7 +441,7 @@ If you catch yourself thinking:
 | **1. Root Cause** | Read errors, reproduce, check changes, gather evidence | Understand WHAT and WHY |
 | **2. Pattern** | Find working examples, compare | Identify differences |
 | **3. Hypothesis** | Form theory, test minimally | Confirmed or new hypothesis |
-| **4. Implementation** | Create test, fix, verify | Bug resolved, tests pass |
+| **4. Implementation** | Classify fix size → small: inline (test, fix, verify); large: write `planning-fix-{slug}.md`, route to `generate-tasks` | Bug resolved (small) or handed off to pipeline (large) |
 
 ## When Process Reveals "No Root Cause"
 

@@ -76,6 +76,33 @@ problem-discuss (zgłoszenie klienta → klasyfikacja per sprawa)
 
 `harvest` is an optional pre-commit closeout — see [Harvest Phase](#harvest-phase).
 
+`analyze` is an optional **on-demand cross-artifact audit** — not a gate. Run it at any
+point after `generate-tasks` to get a consolidated AC→task→code traceability matrix and
+detect scope creep or coverage gaps before merge:
+
+```
+generate-tasks → implement → review
+      │               │
+      │ (any time, optional)
+      ▼
+   analyze   →  absolutpowers/reviews/analyze-{slug}.md
+  (on-demand)   CONSISTENT / INCONSISTENT + per-class evidence
+```
+
+`tasks-to-issues` is an optional, on-demand, **Claude-only** bridge to the outside —
+the one outward-facing channel in an otherwise file-bound pipeline. It exports a
+`tasks-{slug}.md` (single-file or orchestrated) to **GitHub Issues** via `gh`,
+idempotently: one epic issue per feature + a sub-issue per phase (orchestrated) or
+per task (single-file). Re-runs never duplicate — a back-map `tasks-{slug}.issues.md`
+is the source of truth. Hard boundary: creates/updates issues + map only (never closes
+issues, pushes code, or touches task statuses):
+
+```
+tasks-{slug}.md  →  tasks-to-issues  →  GitHub Issues (epic + sub-issues)
+   (any time,         (Claude-only,      + absolutpowers/feature/tasks-{slug}.issues.md
+    optional)          via gh)             (idempotent back-map)
+```
+
 For larger Claude Code implementations, `implement` becomes an orchestrator:
 
 ```
@@ -261,6 +288,43 @@ multi-agent, JSON-synthesized, and Claude-only — reach for it on larger PRs.
 
 ---
 
+### `/absolutpowers:analyze` (on-demand, both trees)
+
+On-demand **cross-artifact consistency audit** — builds the full AC→task→code
+traceability matrix and detects divergences that per-step gates miss. Not a pipeline
+gate; invoke it at any point after `generate-tasks`, before merge, or whenever you
+want a consolidated trace view.
+
+**What it does:**
+- Auto-detects which artifacts exist for the slug (planning doc / tasks file / git diff)
+  and audits only the available chain links (degrades gracefully, not an error)
+- Builds an **AC → Task(s) → File(s)/symbol(s)** matrix
+- Detects six divergence classes with `file:line` / `AC-N` / `Task N` evidence:
+  1. AC bez taska — coverage gap (blocking)
+  2. Task bez AC — orphaned work (warning)
+  3. Task bez kodu — completed task with no matching diff entry (blocking)
+  4. Kod bez taska — scope creep (blocking)
+  5. AC bez weryfikacji — no test references the AC (warning)
+  6. Sprzeczność — planning says X, task/code does non-X (blocking)
+- Verdict: **CONSISTENT** (zero blocking divergences) or **INCONSISTENT** (at least one blocking divergence, each with evidence + routing)
+- Routes missing tasks to `generate-tasks`; missing code to `implement`
+- Hard boundary: audits and routes only — never fixes, plans, or writes code
+
+**When to use:** "sprawdź spójność feature'a", "czy mamy scope creep", "pokaż macierz AC→task→kod", before merging a larger feature, after `generate-tasks` to confirm coverage
+
+**Input:** Feature slug (matches `absolutpowers/feature/planning-{slug}.md` + `tasks-{slug}.md`)
+
+**Output:** `./absolutpowers/reviews/analyze-{slug}.md`
+
+**Example:**
+```bash
+/absolutpowers:analyze push-notifications
+```
+
+**analyze vs review vs triada-review:** `review` audits **code quality** (4 phases: semantic, edge cases, rules, GC). `triada-review` audits **code quality** with three parallel agents. `analyze` audits **traceability** — whether planning, tasks, and code form a consistent chain. Orthogonal concerns; safe to run all three.
+
+---
+
 ### `/absolutpowers:debug`
 
 Systematic debugging — root cause investigation before any fixes.
@@ -269,19 +333,24 @@ Systematic debugging — root cause investigation before any fixes.
 - Phase 1: Root cause investigation (read errors, reproduce, trace data flow)
 - Phase 2: Pattern analysis (find working examples, compare differences)
 - Phase 3: Hypothesis and testing (one change at a time)
-- Phase 4: Implementation (failing test → fix → verify)
-- Escalates to architecture review if 3+ fixes fail
+- Phase 4: Implementation — size branch after root cause is established:
+  - **Small fix** (1 file/layer, no migration/API/security/shared-core) → inline (failing test → fix → verify)
+  - **Large fix** (multi-layer, migration, public API, security boundary, or shared core) → writes `planning-fix-{slug}.md` and routes to `generate-tasks` (quality gates apply)
+- Escalates to `planning-fix-{slug}.md` + `generate-tasks` if 3+ fixes fail (Phase 4.5)
+- Reads `problem-{slug}.md` as starting evidence when routed from `problem-discuss`
 
 **When to use:** Bug report, test failure, "nie działa", unexpected behavior, CI failure
 
-**Input:** Bug description or error message
+**Input:** Bug description or error message; optionally `@absolutpowers/problem/problem-{slug}.md "Sprawa N"` when routed from `problem-discuss`
 
-**Output:** Fix + optional memory candidate
+**Output:** Small fix → implementation + optional memory candidate. Large fix → `./absolutpowers/feature/planning-fix-{slug}.md` (root cause + fix + scope) → hand off to `generate-tasks`
 
 **Example:**
 ```bash
 /absolutpowers:debug "endpoint /api/users zwraca 500 przy pustym query param"
 /absolutpowers:debug "testy auth padają na CI ale przechodzą lokalnie"
+# when routed from problem-discuss:
+/absolutpowers:debug @absolutpowers/problem/problem-slug.md "Sprawa 2"
 ```
 
 ---
@@ -323,6 +392,45 @@ error/stack trace/test failure (that's `debug`) or a new feature request (that's
 **Example:**
 ```bash
 /absolutpowers:problem-discuss "Klient zgłosił: 1) dlaczego user X dostaje maile (obraz.png), 2) po korekcie nie widzę 2 maili (culinar1.pdf)"
+```
+
+---
+
+### `/absolutpowers:constitution`
+
+Facilitates the authoring, ratification, and evolution of project-level principles
+(`absolutpowers/constitution.md`) — the "why we build things this way" document that is
+distinct from the mechanical lint rules in `rules.md`.
+
+**What it does:**
+- Guides a structured session to articulate, discuss, and ratify project principles (pryncypia)
+- Produces `absolutpowers/constitution.md` with semver header, ratification date, changelog, and numbered Artykuły
+- On subsequent runs: surfaces articles for revision, adds new ones, bumps the version inside the file
+
+**Two-file distinction — never merge:**
+
+| File | Content | Author |
+|---|---|---|
+| `absolutpowers/constitution.md` | Pryncypia/osąd — ratified principles, values, hard limits | `constitution` skill (human-driven session) |
+| `absolutpowers/rules.md` | Mechanika/lint — formatting, naming, forbidden patterns, required libraries | `update-ai-context` (code scan) |
+
+`constitution.md` shapes judgement (should we?). `rules.md` enforces mechanics (did we follow the convention?).
+
+**Pipeline wiring:**
+- `generate-tasks` + `implement` read `constitution.md` as **binding context** (tasks/implementation MUST NOT violate an article)
+- `review` Faza 3 checks for constitution violations and reports them
+- `feature-discuss` reads it as **lightweight context** (not a gate; absent file = silent skip)
+
+**When to use:** Bootstrapping project principles, revising or ratifying existing ones, "jakie są nasze pryncypia"
+
+**Input:** Optional topic or scope hint
+
+**Output:** `./absolutpowers/constitution.md` (ratified pryncypia, semver + changelog)
+
+**Example:**
+```bash
+/absolutpowers:constitution
+/absolutpowers:constitution "ratyfikuj pryncypia dla modułu płatności"
 ```
 
 ---
@@ -595,7 +703,7 @@ Most agents are subagents that skills spawn automatically — you don't invoke t
 
 **review-plan** checks: completeness, feasibility, architectural soundness, actionability, AC quality (behavioral, verifiable, complete coverage)
 
-**review-tasks** checks: traceability to planning doc, granularity, ordering & dependencies, specificity of file paths and signatures, verification task presence, code reference accuracy, AC coverage (every AC-N traced by at least one task)
+**review-tasks** checks: traceability to planning doc, granularity, ordering & dependencies, specificity of file paths and signatures, verification task presence, code reference accuracy, AC coverage (every AC-N traced by at least one task), **Intent Fidelity** — whether the task set achieves the goal/intent of the planning doc, not just literal per-requirement coverage (`INTENT` verdict category, Claude-only)
 
 **phase-review** checks: phase write scope, completion, phase verification, handoff quality, obvious correctness issues, garbage, rules
 
@@ -612,18 +720,24 @@ your-project/
 ├── absolutpowers/
 │   ├── feature/
 │   │   ├── planning-{slug}.md      # Feature plans
+│   │   ├── planning-fix-{slug}.md  # Large root-cause fix plans (emitted by debug)
 │   │   ├── tasks-{slug}.md         # Implementation tasks or orchestrator index
-│   │   └── tasks-{slug}/           # Phase files for larger orchestrated plans
-│   │       ├── implementation-context.md
-│   │       ├── 01-{phase}.md
-│   │       └── 99-final-verification.md
+│   │   ├── tasks-{slug}/           # Phase files for larger orchestrated plans
+│   │   │   ├── implementation-context.md
+│   │   │   ├── 01-{phase}.md
+│   │   │   └── 99-final-verification.md
+│   │   └── tasks-{slug}.issues.md  # tasks → GitHub Issues back-map (tasks-to-issues skill, Claude-only)
 │   ├── reviews/
-│   │   └── YYYY-MM-DD-{branch}.md  # Code review reports
+│   │   ├── YYYY-MM-DD-{branch}.md  # Code review reports
+│   │   └── analyze-{slug}.md       # Cross-artifact audit reports (analyze skill)
 │   ├── memory-candidates/
 │   │   └── memory-candidates-*.md  # Proposed durable lessons
+│   ├── problem/
+│   │   └── problem-{slug}.md       # Problem triage reports
 │   ├── project-memory.md           # Approved operational memory
 │   ├── patterns.md                 # Discovered code patterns
-│   └── rules.md                    # Project rules for review
+│   ├── rules.md                    # Mechanical rules for review (code-derived, lint-level)
+│   └── constitution.md             # Ratified project principles / pryncypia (≠ rules.md)
 ├── docs/adr/
 │   └── YYYY-MM-DD-{slug}.md        # Architecture Decision Records
 ├── CLAUDE.md                        # AI context (Claude Code)
@@ -660,57 +774,146 @@ Skills can discover durable lessons during work — recurring traps, non-obvious
 
 ## Workflows
 
-### New feature (full pipeline)
+This section is **decision-oriented**: start from the situation you're in, not from a list of
+skills. It tells you *when* to reach for which skill, *what* it does, and *what artifact* it leaves
+behind to feed the next step. (Per-skill options/inputs/outputs are in [Skills Reference](#skills-reference).)
+
+### Situation → skill
+
+| You have… | Start with | Why |
+|---|---|---|
+| A new project with no `CLAUDE.md` | `update-ai-context` | Generates the AI context every other skill reads |
+| An idea for a new feature | `feature-discuss` | PO/architect discussion → planning doc + AC |
+| A planning doc | `generate-tasks` | Breaks the plan into sequential tasks |
+| A tasks doc | `implement` | Executes tasks (TDD), with gates |
+| A clear bug (error / stack trace / test fail) | `debug` | Root cause before any fix |
+| A fuzzy, multi-item client report | `problem-discuss` | Triage: split, classify, route per item |
+| A branch ready to merge | `review` (solo) or `triada-review` (multi-agent) | Code-quality audit |
+| Doubt: "is the feature consistent / any scope creep?" | `analyze` | AC→task→code traceability audit |
+| A finished feature, pre-commit | `harvest` | Captures knowledge: learned skill + docs |
+| A change/plan to explain to a human | `explain` | Standalone HTML report |
+| The need to set project principles | `constitution` | Ratifies `constitution.md` (opt-in) |
+| Tasks to expose to the team in GitHub | `tasks-to-issues` | Export to Issues (Claude-only) |
+
+### Three entry points
+
+Pick the entry by how well the problem is already classified:
+
+```
+                    ┌─ feature-discuss   ── a clear NEW feature ("I want to add X")
+   entry ───────────┤
+                    ├─ debug             ── a clear BUG (error / stack trace / test fail / CI)
+                    │
+                    └─ problem-discuss   ── a FUZZY client report (many items, unclear whether
+                                             bug / gap / config / data / misunderstanding)
+```
+
+### 1. New feature (full pipeline)
+
+Each step leaves an artifact that feeds the next; automatic gates (Claude Code) stand between steps.
+
+```
+feature-discuss → generate-tasks → implement → review → harvest
+      WHAT?           HOW?         BUILD+TEST   AUDIT    CAPTURE
+       │                │              │                    │
+       ▼                ▼              ▼                    ▼
+  review-plan      review-tasks  review-implementation  try-learn-skill
+   (gate)            (gate)          (gate)            + document-feature
+```
+
+| Step | When | What it does | Artifact |
+|---|---|---|---|
+| `feature-discuss` | You have an idea, no plan yet | Q&A, code analysis, 2-3 options, then writes plan + **Acceptance Criteria** (AC-N). Reads `constitution.md` as light context if present | `planning-{slug}.md` |
+| `generate-tasks` | You have a planning doc | Plan → sequential tasks with exact paths/signatures/tests + `Traces to: AC-N`. Picks `single-file` or `orchestrated` mode | `tasks-{slug}.md` (+ phase dir) |
+| `implement` | You have a tasks doc | Executes tasks TDD, marks `completed` in-place. Orchestrated → worker per phase + `phase-review`. Respects `constitution.md` if present | code + tests |
+| `review` | Branch ready to merge | 4-phase code-quality audit (semantic / edge / rules / GC). Faza 3 also checks `constitution.md` | `reviews/YYYY-MM-DD-{branch}.md` |
+| `harvest` | Feature done, pre-commit | Runs `try-learn-skill` → `document-feature` → `document-module` (only if architecture changed) | learned skill + module docs |
+
+> **Intent matters:** the feature's goal MUST be written into the planning doc explicitly — the
+> downstream Intent Fidelity check (review-tasks) judges intent **only from the written plan**, not
+> from the discussion. **Epic?** `feature-discuss` splits into a light `planning-main.md` + per-phase
+> docs in a `feature/{epic-slug}/` subfolder.
 
 ```bash
 /absolutpowers:feature-discuss "opis feature'a"
-# → dyskusja → planning doc → review-plan gate → PASS
-
 /absolutpowers:generate-tasks @absolutpowers/feature/planning-{slug}.md
-# → analiza kodu → tasks doc or phase plan → review-tasks gate → PASS
-
 /absolutpowers:implement @absolutpowers/feature/tasks-{slug}.md
-# → TDD or phase workers → phase-review gates → verification → review-implementation gate → PASS
-
 /absolutpowers:review
-# → 4-phase review → report
-
-/absolutpowers:harvest @absolutpowers/feature/tasks-{slug}.md
-# → (optional, pre-commit) try-learn-skill + document-feature → review w git diff
+/absolutpowers:harvest @absolutpowers/feature/tasks-{slug}.md   # optional, pre-commit
 ```
 
-### Quick bug fix
+### 2. Bug (debug, with a size branch)
+
+Root cause first (Iron Law), then branch on fix size — small stays inline, large hands off to the pipeline so quality gates apply.
+
+```
+debug ── root cause ── fix size?
+            ├─ SMALL → inline (failing test → fix → verify)
+            └─ LARGE → planning-fix-{slug}.md → generate-tasks → implement → review
+               (multi-layer / migration / public API / security / shared core, or 3+ failed attempts)
+```
 
 ```bash
 /absolutpowers:debug "opis błędu"
-# → root cause → fix → test
+# routed from problem-discuss — reads the report as starting evidence:
+/absolutpowers:debug @absolutpowers/problem/problem-{slug}.md "Sprawa 2"
 ```
+
+### 3. Client report (intake + triage)
+
+```
+problem-discuss (fuzzy report → split into items → classify per item → route)
+  ├─ confirmed bug        → debug (reads problem-{slug}.md as evidence)
+  ├─ gap (not built)      → feature-discuss → generate-tasks → implement
+  ├─ config / env error   → direct fix
+  ├─ data anomaly         → data fix
+  ├─ works-as-designed    → close + explain to client
+  └─ not enough data      → ask client
+```
+
+`problem-discuss` investigates breadth-first with `file:line` evidence and **routes only** — it never
+fixes, plans, or writes tasks. Output: `problem/problem-{slug}.md`.
 
 ### Fix review findings
 
 ```bash
 /absolutpowers:review
-# → report z 5 problemami
-
+# 3+ issues → turn the report into fix tasks:
 /absolutpowers:generate-tasks @absolutpowers/reviews/2026-05-04-feature-auth.md
-# → tasks doc z fixami
-
 /absolutpowers:implement @absolutpowers/feature/tasks-fix-feature-auth.md
-# → fix → verify
 ```
 
-### Onboard a new project
+### On-demand tools (not pipeline steps, no gate)
+
+- **`analyze`** — run anytime to verify planning ↔ tasks ↔ code form a consistent chain (AC→task→code
+  matrix, scope-creep detection). Verdict CONSISTENT / INCONSISTENT. `review` audits *code quality*;
+  `analyze` audits *traceability* — orthogonal, safe to run both.
+- **`triada-review`** — parallel multi-agent review for larger PRs (Claude-only).
+- **`explain`** — standalone HTML report when a human needs to understand a plan or diff fast.
+
+### Setup & context (once / rarely)
 
 ```bash
-/absolutpowers:update-ai-context
-# → CLAUDE.md, AGENTS.md, patterns.md, rules.md (draft for approval)
+/absolutpowers:update-ai-context     # run FIRST in a new project — creates CLAUDE.md, AGENTS.md, patterns.md, rules.md
+/absolutpowers:constitution          # opt-in ceremony — the ONLY thing that creates constitution.md
+```
+
+`constitution.md` is **not a precondition** — the pipeline runs without it. When present it becomes a
+binding contract (generate-tasks/implement) and is reported in `review` Faza 3; when absent every
+consumer silently skips it. It is distinct from `rules.md` (principles/judgement vs mechanical lint) —
+never merge the two.
+
+### Expose tasks to the team
+
+```bash
+/absolutpowers:tasks-to-issues @absolutpowers/feature/tasks-{slug}.md   # Claude-only, idempotent, via gh
 ```
 
 ## Platform Differences
 
 | Feature | Claude Code | Codex |
 |---------|------------|-------|
-| Skills | 12 workflow + 1 PreBoot | 12 workflow + tech-lead-advisor + 1 PreBoot |
+| Skills | 15 workflow + 1 PreBoot | 14 workflow + tech-lead-advisor + 1 PreBoot |
 | Onboarding reports | `explain` command | `explain` skill |
 | Agents | 9 agents (review gates + phase worker + triada-review trio) | none |
 | Slash commands | `triada-review` (multi-agent review) | Not available |
@@ -727,11 +930,11 @@ absolut-ai-skills/
 ├── claude/                         # Claude Code plugin
 │   ├── .claude-plugin/plugin.json
 │   ├── commands/                   # triada-review slash command
-│   ├── skills/                     # 12 workflow + 1 PreBoot skill
+│   ├── skills/                     # 15 workflow + 1 PreBoot skill
 │   └── agents/                     # 9 subagent definitions
 ├── codex/                          # Codex plugin
 │   ├── .codex-plugin/plugin.json
-│   ├── skills/                     # 12 workflow + tech-lead-advisor + 1 PreBoot skill
+│   ├── skills/                     # 14 workflow + tech-lead-advisor + 1 PreBoot skill
 │   └── scripts/
 ├── .claude-plugin/marketplace.json # Claude marketplace → claude/
 ├── .agents/plugins/marketplace.json # Codex marketplace → codex/
@@ -754,6 +957,19 @@ absolut-ai-skills/
 
 Versioning is SemVer, kept in sync across both manifests
 (`claude/.claude-plugin/plugin.json` + `codex/.codex-plugin/plugin.json`).
+
+### 3.9.0 — Constitution + cross-artifact analyze + Intent Fidelity + tasks-to-issues + debug handoff
+- New `constitution` skill — guides authoring and ratification of `absolutpowers/constitution.md` (pryncypia/osąd, semver + ratification date + changelog, numbered Artykuły) (both trees)
+- Two-file distinction: `constitution.md` (pryncypia/osąd, human-driven, ratified) ≠ `rules.md` (mechanika/lint, code-derived) — never merged
+- `generate-tasks` + `implement` read `constitution.md` as binding context **when it exists** (optional file — absent = silent skip, no error); when present, tasks/implementation MUST NOT violate an article (both trees)
+- `review` Faza 3 extended with constitution sub-check — reads `constitution.md`, reports violations, adds counter to Podsumowanie (both trees)
+- `feature-discuss` reads `constitution.md` as lightweight context (not a gate; absent file = silent skip) (both trees)
+- `update-ai-context` PHASE 3 gains a demarcation note: pryncypia belong in `constitution.md` via the `constitution` skill, not in `rules.md` (both trees)
+- New `analyze` skill — on-demand cross-artifact consistency audit: builds AC→task→code matrix, detects 6 divergence classes (1/3/4/6 blocking, 2/5 warning), outputs `absolutpowers/reviews/analyze-{slug}.md`, verdict CONSISTENT/INCONSISTENT, hard boundary (audit+route only, never fixes), both trees
+- `review-tasks` gains criterion **#7 Intent Fidelity** (`INTENT` category, Claude-only): judges whether task set achieves the goal/intent of the planning doc, not just literal coverage
+- `review` + `generate-tasks` gain "vs analyze" / post-PASS analyze notes (both trees)
+- New `tasks-to-issues` skill — **Claude-only** outward bridge from `tasks-{slug}.md` to GitHub Issues via `gh`: epic issue per feature + sub-issue per phase (orchestrated) / per task (single-file), idempotent via back-map `tasks-{slug}.issues.md` (source of truth) + title marker `[{slug}]` (fallback), labels (`absolutpowers`, `{slug}`, `risk:*`), STOP-on-precondition, first-export publish confirmation, orphan flagging (no auto-close), hard boundary (issues + map only), provider extension point for `glab`/Jira. No Codex counterpart in v1 (deliberate asymmetry)
+- `debug` handoff closed on both ends (both trees): reads `problem-{slug}.md` as starting evidence when routed from `problem-discuss` (no re-deriving Phase 1 from scratch); Phase 4 branches by fix size — small fix stays inline, large fix (multi-layer / migration / public API / security boundary / shared core, or 3+ failed attempts via Phase 4.5) writes `planning-fix-{slug}.md` and routes to `generate-tasks` so quality gates apply. `problem-discuss` Faza 5 nudge points `debug` at the report file + item; `generate-tasks` recognizes the `planning-fix-` prefix as planning input
 
 ### 3.8.0 — Module architecture docs
 - New `document-module` skill — architectural documentation of an existing module from a **code scan**: structure, public API, in/out dependencies, key flows + Mermaid **C4** diagrams (C1 Context / C2 Container / C3 Component) and sequence diagrams (both trees)

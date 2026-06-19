@@ -92,6 +92,18 @@ If a cross-phase dependency is *consumed but not declared* anywhere (not in Requ
 - Referenced patterns match what's actually in those files
 - Referenced method signatures match actual interfaces
 
+### 7. Intent Fidelity
+- The task set as a whole achieves the GOAL/intent of the planning doc, not just literal
+  per-requirement coverage. Read the planning doc's problem statement and chosen solution,
+  then judge: if an agent executed exactly these tasks, would the feature's intent be met?
+- Flag when tasks technically cover each requirement but collectively miss the point
+  (e.g. plan wants "users self-serve password reset"; tasks build the endpoint but no email
+  delivery — every requirement "checked", intent unmet).
+- This is a judgment criterion, not a checklist. Only flag a CLEAR intent gap, not stylistic
+  preference. When the intent is genuinely met, do not invent gaps.
+- For an epic phase, judge intent against the phase doc's goal (plus `planning-main.md` for
+  shared context), not against sibling phases.
+
 ## Response Format
 
 You MUST respond with exactly one of these two formats:
@@ -116,7 +128,7 @@ Issues to address:
 ...
 ```
 
-Categories: TRACEABILITY, GRANULARITY, ORDERING, SPECIFICITY, VERIFICATION, CODE_REFERENCE, AC_COVERAGE
+Categories: TRACEABILITY, GRANULARITY, ORDERING, SPECIFICITY, VERIFICATION, CODE_REFERENCE, AC_COVERAGE, INTENT
 
 AC_COVERAGE issues use this format: `[AC_COVERAGE] General — AC-3 ("description...") not covered by any task`
 

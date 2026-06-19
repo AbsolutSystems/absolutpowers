@@ -269,6 +269,14 @@ Tell the user: "Proponuję następujące rules na bazie analizy kodu — przejrz
 4. Report findings but **do not auto-modify** — rules require human approval
 5. Propose additions/removals and ask for confirmation
 
+### Demarcation: rules.md vs constitution.md
+
+This phase produces only **mechanical** lint-level rules in `rules.md` (formatting, naming, forbidden patterns, required libraries). **Pryncypia** (osąd, wartości, granice projektu) belong in `absolutpowers/constitution.md` via the `constitution` skill.
+
+> Konstytucja = pryncypia/osąd. Mechanika = `rules.md` / `update-ai-context`.
+
+When a proposed rule is really a principle (e.g., "always prefer readability over cleverness"), redirect it to the `constitution` skill instead of adding it here. A proposed mechanical rule MAY reference an existing Artykuł it derives from (e.g., "Rule: max 80 chars per line — per Artykuł 3 Norma"), but do NOT auto-generate rules from constitution articles.
+
 ---
 
 ## PHASE 4: Sync Mirrored `AGENTS.md` Files

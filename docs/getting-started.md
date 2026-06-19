@@ -24,16 +24,18 @@ Otwórz dowolne repozytorium w Codex. Repo AbsolutPowers Skills eksponuje market
 
 ### Weryfikacja instalacji
 
-**Claude Code:** wpisz `/absolutpowers:` i sprawdź czy widzisz 6 workflow skilli oraz `preboot`:
-- feature-discuss
-- generate-tasks
-- implement
-- review
-- debug
-- update-ai-context
-- preboot
+**Claude Code:** wpisz `/absolutpowers:` i sprawdź autouzupełnianie — zobaczysz 15 workflow skilli + `preboot`:
 
-**Codex:** wpisz `$absolutpowers` i sprawdź autouzupełnianie. Poza workflow skillami dostępny jest też `explain`, który generuje HTML-owy raport onboardingowy dla planu albo aktualnych zmian.
+| Pipeline | Triage / debug | Wiedza / docs | Kontekst / setup |
+|---|---|---|---|
+| feature-discuss | problem-discuss | harvest | update-ai-context |
+| generate-tasks | debug | try-learn-skill | constitution |
+| implement | analyze | document-feature | preboot |
+| review | tasks-to-issues | document-module | explain |
+
+Plus komenda `/absolutpowers:triada-review` (równoległy multi-agent review).
+
+**Codex:** wpisz `$absolutpowers` i sprawdź autouzupełnianie. Te same workflow skille **poza** `tasks-to-issues` (Claude-only), plus skill `tech-lead-advisor`. Brak komend i bramek (Codex nie ma plugin-level subagentów).
 
 ## Krok 1: Przygotuj projekt
 
@@ -241,6 +243,7 @@ Tak. `update-ai-context` tworzy hierarchiczne CLAUDE.md w podkatalogach. Skille 
 
 ## Następne kroki
 
-- [Opis skilli](./skills-reference.md) — szczegółowa dokumentacja każdego skilla
+- [Skills Reference](../README.md#skills-reference) — szczegółowa dokumentacja każdego skilla
+- [Workflows](../README.md#workflows) — kiedy którego skilla użyć (przewodnik decyzyjny)
 - [Architektura review gate'ów](./review-gates.md) — jak działają automatyczne weryfikacje
 - [Rozwój pluginu](./contributing.md) — jak modyfikować skille i agentów

@@ -77,6 +77,12 @@ Utwórz katalog (`./absolutpowers/feature/` lub `./absolutpowers/feature/{slug}/
 
 ## Proces rozmowy
 
+### Wstępne wczytanie kontekstu projektu
+
+Przed rozpoczęciem rozmowy wczytaj kontekst projektu (jeśli dostępny):
+
+- Jeśli istnieje `./absolutpowers/constitution.md` — przeczytaj go jako **lekki kontekst** (nie bramka). Użyj ratyfikowanych pryncypiów jako miękkiego przewodnika przy formułowaniu propozycji rozwiązań. Jeśli proponowane rozwiązanie wprost naruszałoby Artykuł — zaznacz to użytkownikowi. Brak pliku → pomiń cicho, bez błędu.
+
 ### Faza 0: Parafraza i potwierdzenie kierunku (ZAWSZE NAJPIERW)
 
 Zanim cokolwiek przeanalizujesz, zaproponujesz lub zaplanujesz — **najpierw odbij piłeczkę**. Użytkownik często rzuca jednym zdaniem; Twój pierwszy ruch to NIE planowanie, tylko upewnienie się że dobrze rozumiesz.
@@ -361,6 +367,10 @@ Draft — [data]
 
 ## Problem
 [Co chcemy rozwiązać i dlaczego]
+
+> **Ważne:** Cel i intencja feature'a MUSZĄ być zapisane tu explicite. Bramka `review-tasks`
+> (kryterium Intent Fidelity) odpala się ze świeżym kontekstem i widzi wyłącznie to, co jest
+> w tym dokumencie — intencja, która żyje tylko w rozmowie, jest dla niej niewidoczna.
 
 ## Użytkownicy
 [Kto skorzysta z tego feature'a]

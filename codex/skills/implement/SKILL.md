@@ -46,6 +46,7 @@ Before starting implementation, also read (if they exist):
 - **`./absolutpowers/patterns.md`** — established code patterns and conventions to follow
 - **`./absolutpowers/rules.md`** — project rules to comply with
 - **`./absolutpowers/project-memory.md`** — durable traps, warning signs, and workarounds discovered in previous tasks
+- **`./absolutpowers/constitution.md`** — ratified project principles (pryncypia); implementation MUST respect these articles. If a task forces a violation, stop and surface it rather than silently breaking an article.
 
 Use patterns as reference for HOW to implement. Follow rules as constraints.
 Use project memory as prior operational context: apply it when relevant, but do not force old workarounds onto unrelated code.

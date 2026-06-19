@@ -17,10 +17,14 @@ You are a Staff Software Engineer creating implementation plans for an AI coding
 
 ## Input
 
-The argument can be one of three types:
+The argument can be one of four types:
 
 **Planning doc** (new feature):
 `./absolutpowers/feature/planning-{slug}.md`
+
+**Fix planning doc** (large root-cause fix, emitted by `debug` for changes that exceed inline scope):
+`./absolutpowers/feature/planning-fix-{slug}.md`
+Read it as: Problem = root cause with evidence, Wybrane rozwiązanie = chosen fix, Zakres = scope, optional AC = expected behaviour after the fix. This is the same planning-type input as a regular planning doc — do NOT introduce a separate parsing branch; reuse the planning variant.
 
 **Review report** (fixing review findings):
 `./absolutpowers/reviews/YYYY-MM-DD-{branch-slug}.md`
@@ -37,10 +41,11 @@ Output file is always in `./absolutpowers/feature/`:
 | Input type | Input path | Output path |
 |------------|-----------|-------------|
 | Planning doc | `./absolutpowers/feature/planning-push-notifications.md` | `./absolutpowers/feature/tasks-push-notifications.md` |
+| Fix planning doc | `./absolutpowers/feature/planning-fix-{slug}.md` | `./absolutpowers/feature/tasks-fix-{slug}.md` |
 | Review report | `./absolutpowers/reviews/2026-04-21-feature-auth.md` | `./absolutpowers/feature/tasks-fix-feature-auth.md` |
 | Epic phase doc | `./absolutpowers/feature/push-notif/planning-phase-1-data-model.md` | `./absolutpowers/feature/push-notif/tasks-phase-1-data-model.md` |
 
-For planning docs: replace `planning-` prefix with `tasks-`.
+For planning docs: replace `planning-` prefix with `tasks-`. This rule covers both `planning-{slug}.md` and `planning-fix-{slug}.md` — the prefix replacement produces `tasks-fix-{slug}.md` with no special-casing required.
 For review reports: use `tasks-fix-{branch-slug}` (drop the date, add `fix-` prefix).
 
 **Epic phase docs (input lives in a `feature/{epic-slug}/` subfolder):** keep all output INSIDE that same subfolder — never flatten to `feature/` root. Set `{slug}` = the part after `planning-` (e.g. `phase-1-data-model`) and treat `./absolutpowers/feature/{epic-slug}/` as the working directory for every output path below. So orchestrated outputs become `feature/{epic-slug}/tasks-{slug}/...`. This preserves epic grouping and prevents slug collisions between epics that both have a `phase-1`.
@@ -93,6 +98,7 @@ Also read (if they exist):
 - **`./absolutpowers/patterns.md`** — established code patterns to reference in tasks
 - **`./absolutpowers/rules.md`** — project rules that implementation must comply with
 - **`./docs/adr/*.md`** — architecture decision records — past decisions that may constrain or inform implementation
+- **`./absolutpowers/constitution.md`** — ratified project principles (pryncypia); treat as binding — tasks MUST NOT violate an article, and SHOULD cite the relevant Artykuł when it shapes a requirement.
 - **`## Acceptance Criteria` section** in the planning doc — if present, extract all `AC-N:` items for traceability mapping
 
 Use discovered patterns to write more specific tasks (e.g., "follow Repository pattern from `src/orders/OrderRepository.ts`"). Reference rules as constraints in task requirements where relevant. If an ADR is relevant to a task, reference it explicitly (e.g., "Per ADR `2026-04-15-event-driven-notifications.md`, use event bus instead of direct calls").
@@ -559,3 +565,9 @@ For `orchestrated`, generate:
 > Reminder for epic phase docs: every path above is relative to the epic subfolder, i.e. `./absolutpowers/feature/{epic-slug}/tasks-{slug}.md` and `./absolutpowers/feature/{epic-slug}/tasks-{slug}/...`. Do not write to the `feature/` root.
 
 Use markdown formatting: headers, code blocks with language identifiers, bullet lists.
+
+## Następny krok
+
+Po wygenerowaniu tasków głównym następnym krokiem jest implementacja: uruchom skill `implement` na pliku `./absolutpowers/feature/tasks-{slug}.md`.
+
+- (OPCJONALNIE, bez bramki) Możesz też uruchomić skill `analyze` dla sluga `{slug}` jako audyt spójności AC→task(→kod) przed `implement` — weryfikuje, czy wszystkie AC mają pokrycie w taskach. Nie jest wymagany; `implement` jest głównym następnym krokiem.

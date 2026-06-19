@@ -13,6 +13,8 @@ description: >
 
 Wykonaj PEŁNY review zmian w bieżącym BRANCHU (w porównaniu do main/master). Przejdź przez WSZYSTKIE 4 fazy po kolei.
 
+> **Review vs `analyze`:** `review` ocenia **JAKOŚĆ kodu** na branchu (4 fazy: semantyka, edge cases, reguły, garbage). `analyze` ocenia **KOMPLETNOŚĆ trace'owalności / spójność** planning↔tasks↔kod przez artefakty — zupełnie inny wymiar. Nie scalać: gdy pytanie brzmi „czy taski/kod pokrywają plan i AC", użyj `analyze`; gdy pytanie brzmi „czy kod jest poprawny i bezpieczny", użyj `review`.
+
 ## Krok 0: Przygotowanie
 
 Ustal branch bazowy i używaj go konsekwentnie jako `<base>` w dalszych komendach.
@@ -187,6 +189,16 @@ Przeczytaj plik `./absolutpowers/rules.md` z roota projektu.
 
 **Jeśli istnieje** — dla KAŻDEJ reguły sprawdź czy diff ją łamie. Bądź binarny: złamana albo nie.
 
+### Pryncypia (constitution)
+
+Przeczytaj plik `./absolutpowers/constitution.md` z roota projektu.
+
+**Jeśli plik nie istnieje** — napisz: "Brak pliku ./absolutpowers/constitution.md, pomijam sprawdzanie pryncypiów." i kontynuuj.
+
+**Jeśli istnieje** — dla każdego Artykułu oceń, czy diff narusza jego Normę. Cytuj `Artykuł N` przy każdym znalezisku.
+
+**Ważne:** Review RAPORTUJE naruszenia pryncypiów (binarnie: naruszone / nie), ale ich NIE blokuje — decyzja o merge należy do autora. Pryncypia to osąd i wartości, nie twarde reguły lintera.
+
 ---
 
 ## FAZA 4: GARBAGE COLLECTION
@@ -230,6 +242,7 @@ Sprawdź CAŁY plik (nie tylko diff) dla każdego zmienionego pliku:
 ## 3. Rules Check
 ### Złamane: [lista]
 ### Spełnione: [lista]
+### Naruszone pryncypia (constitution): [lista z Artykuł N lub "brak"]
 
 ---
 
@@ -244,6 +257,7 @@ Sprawdź CAŁY plik (nie tylko diff) dla każdego zmienionego pliku:
 - Ryzyka do sprawdzenia: [liczba]
 - Śmieci do usunięcia: [liczba]
 - Złamane reguły: [liczba]
+- Naruszone pryncypia: [liczba]
 - Weryfikacja końcowa: [potwierdzona / brak dowodu / nie dotyczy]
 - Ogólna ocena: [1-2 zdania — czy ten diff jest gotowy do merge'a]
 ```

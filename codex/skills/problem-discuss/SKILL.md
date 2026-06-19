@@ -158,7 +158,7 @@ Zapisz `absolutpowers/problem/problem-{slug}.md` (`{slug}` z tytułu zgłoszenia
 Jedno zgłoszenie rozsypuje się na wiele ścieżek. Po zapisie raportu, w odpowiedzi do
 użytkownika, **zaproponuj** następny krok per sprawa (best-effort nudge, NIE wykonuj):
 
-- potwierdzony bug → `debug` ze sprawą + dowodem `file:line`
+- potwierdzony bug → `/absolutpowers:debug @absolutpowers/problem/problem-{slug}.md "Sprawa N"` (debug wczyta raport i skupi się na nazwanej sprawie)
 - gap featurowy → `feature-discuss` z opisem brakującej funkcji
 - config / dane → fix bezpośredni (wskaż plik/konfigurację/rekord)
 - nieporozumienie → odpowiedź do klienta wyjaśniająca jak system działa (zaproponuj treść)
