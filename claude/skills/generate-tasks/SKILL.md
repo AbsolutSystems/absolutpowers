@@ -590,7 +590,6 @@ Agent(subagent_type="review-tasks", prompt="Review tasks document: ./absolutpowe
 **Jeśli VERDICT: PASS:**
 - Poinformuj użytkownika: "Taski przeszły review. Następny krok: `/absolutpowers:implement @absolutpowers/feature/tasks-{slug}.md`"
 - (OPCJONALNIE, bez bramki) Możesz też uruchomić `/absolutpowers:analyze {slug}` jako audyt spójności AC→task(→kod) przed `implement` — weryfikuje, czy wszystkie AC mają pokrycie w taskach. Nie jest wymagany; `implement` jest głównym następnym krokiem.
-- (OPCJONALNIE, bez bramki) Aby wystawić ten plan zespołowi w GitHub Issues — `/absolutpowers:tasks-to-issues @absolutpowers/feature/tasks-{slug}.md` (Claude-only, przez `gh`; idempotentnie). Eksport to świadoma decyzja, nie automat.
 
 **Jeśli VERDICT: REJECTED (1. raz):**
 - Wyświetl użytkownikowi listę problemów z review

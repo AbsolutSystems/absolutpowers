@@ -31,11 +31,11 @@ Otwórz dowolne repozytorium w Codex. Repo AbsolutPowers Skills eksponuje market
 | feature-discuss | problem-discuss | harvest | update-ai-context |
 | generate-tasks | debug | try-learn-skill | constitution |
 | implement | analyze | document-feature | preboot |
-| review | tasks-to-issues | document-module | explain |
+| review | | document-module | explain |
 
 Plus komenda `/absolutpowers:triada-review` (równoległy multi-agent review).
 
-**Codex:** wpisz `$absolutpowers` i sprawdź autouzupełnianie. Te same workflow skille **poza** `tasks-to-issues` (Claude-only), plus skill `tech-lead-advisor`. Brak komend i bramek (Codex nie ma plugin-level subagentów).
+**Codex:** wpisz `$absolutpowers` i sprawdź autouzupełnianie. Te same workflow skille, plus skill `tech-lead-advisor`. Brak komend i bramek (Codex nie ma plugin-level subagentów).
 
 ## Krok 1: Przygotuj projekt
 

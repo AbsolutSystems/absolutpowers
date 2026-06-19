@@ -171,32 +171,6 @@ and `scope`. This is separate from the pipeline gates and from the solo `review`
 skill — see the `review` SKILL for the distinction. Codex has no equivalent
 (needs parallel subagents).
 
-### Outward-facing bridge: `tasks-to-issues` (Claude only)
-
-`tasks-to-issues` is the only **outward-facing** skill — the rest of the pipeline is
-file-bound inside `absolutpowers/`. It reads a `tasks-{slug}.md` (single-file or
-orchestrated, including epic subfolder) and exports it to **GitHub Issues** via `gh`:
-one epic issue per feature + a sub-issue per phase (orchestrated) / per task
-(single-file); tasks inside a phase become a checklist in the phase issue body.
-
-- **Idempotent:** back-map `absolutpowers/feature/tasks-{slug}.issues.md` is the source of
-  truth; title marker `[{slug}]` is the fallback. Re-runs add missing, update existing
-  (open) issues, leave closed ones untouched, never duplicate. Map is rewritten after each
-  issue (resume-safe).
-- **STOP-on-precondition** (mirrors `preboot`): aborts with a clear message if `gh` is
-  unauthenticated, no GitHub remote exists, or the user lacks issue-create permission — no
-  partial export.
-- **Hard boundary:** creates/updates issues + map ONLY. Never closes issues (even after
-  `implement`/merge), never pushes code, never mutates task statuses in the tasks-doc (that
-  is `implement`'s job), never creates milestones/assignees/board automation. One-directional
-  (tasks → issues; no tracker → tasks-doc sync).
-- **Provider:** GitHub via `gh` in v1, with a delimited provider section as the extension
-  point for `glab`/Jira later.
-
-**Claude-only asymmetry (deliberate):** no Codex counterpart in v1 — it needs `Bash(gh:*)` and
-external API interaction. Codex is out of scope until the contract stabilizes. This is NOT
-drift to fix (see Cross-Platform Editing Rules).
-
 ## Key Development Commands
 
 ```bash
@@ -225,10 +199,6 @@ When modifying task format or pipeline behavior, update these files together:
 When modifying `analyze` (cross-artifact audit) or the divergence class list, update both trees together:
 - `claude/skills/analyze/SKILL.md`
 - `codex/skills/analyze/SKILL.md`
-
-`tasks-to-issues` is intentionally **single-tree** (Claude only) — `claude/skills/tasks-to-issues/SKILL.md`
-has no `codex/` counterpart. Its absence from Codex is expected, NOT drift to fix; `diff-skills.sh`
-will list it as Claude-only.
 
 Expected drift (Claude-only additions): `allowed-tools`, `argument-hint` in frontmatter, agent gate sections, orchestrated worker delegation. Unexpected drift to sync: changed phases/steps, new prompt sections, output format changes.
 
