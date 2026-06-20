@@ -422,6 +422,9 @@ absolut-ai-skills/
 Versioning is SemVer, kept in sync across both manifests
 (`claude/.claude-plugin/plugin.json` + `codex/.codex-plugin/plugin.json`).
 
+### 3.10.1 — Fix harvest archive path
+- `harvest` skill: archive path `absolutpowers/archiwa/` → `absolutpowers/archives/` (English, consistent with `feature/`, `problem/`, `reviews/`) (both trees)
+
 ### 3.10.0 — Remove tasks-to-issues
 - Removed the `tasks-to-issues` skill (Claude-only GitHub Issues export) — `claude/skills/tasks-to-issues/`, README/docs/CLAUDE.md references, and the `tasks-{slug}.issues.md` back-map artifact. The pipeline is again fully file-bound inside `absolutpowers/`; no outward-facing channel
 - Claude skill count: 15 → 14 workflow (+ 1 PreBoot)

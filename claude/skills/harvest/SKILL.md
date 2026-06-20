@@ -107,7 +107,7 @@ Po sekwencji podaj zwięzłe podsumowanie:
   `tasks-{slug}.md`** — durable wiedza jest już w `docs/modules/` (jak działa) i
   learned-skillach (procedura). Warunek: istotne decyzje (alternatywy, *dlaczego
   nie*) są w ADR (`docs/adr/`), bo tego harvest NIE utrwala. Preferuj przeniesienie
-  do `absolutpowers/archiwa/` zamiast kasowania (czysty `feature/` + audit trail);
+  do `absolutpowers/archives/` zamiast kasowania (czysty `feature/` + audit trail);
   git history i tak zachowa oryginał.
 
 ## Zasady
