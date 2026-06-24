@@ -422,6 +422,11 @@ absolut-ai-skills/
 Versioning is SemVer, kept in sync across both manifests
 (`claude/.claude-plugin/plugin.json` + `codex/.codex-plugin/plugin.json`).
 
+### 3.11.0 — try-learn-skill reuse-surface gate
+- `try-learn-skill` KROK 2: added an **empirical reuse-surface scan** (2B) — Grep/Glob the repo for *other* instances of the detected procedure's class, count candidates outside the feature diff. Generalizability is now proven from code, not judged from the feature's own artifacts (n=1 always self-describes as a class)
+- Decision rule (2C): **0 candidates + occurrences=1 → SKIP** (it's a one-feature solution log, not a reusable skill); module-specific gotchas get **redirected to `document-feature`** instead of saved as a fake procedure. `≥1 candidate` → genuine reuse surface, continue
+- KROK 6 human gate now surfaces the candidate count as concrete evidence ("found N other `<Dialog` outside this feature") instead of a subjective "will this help?" (both trees)
+
 ### 3.10.1 — Fix harvest archive path
 - `harvest` skill: archive path `absolutpowers/archiwa/` → `absolutpowers/archives/` (English, consistent with `feature/`, `problem/`, `reviews/`) (both trees)
 

@@ -60,6 +60,8 @@ Jeśli BRAK kluczowych artefaktów (np. nie ma ani tasks, ani planning, ani diff
 
 ## KROK 2: Detekcja generalizowalnej procedury
 
+### 2A: Wyodrębnij procedurę
+
 Wyodrębnij z artefaktów **sekwencję kroków, narzędzi i decyzji**, która jest
 powtarzalna na innym zadaniu tego samego typu (np. "dodanie nowego endpointu
 CRUD z filtrowaniem", "mirror skilla Claude→Codex", "migracja pola w modelu").
@@ -72,6 +74,36 @@ Kryterium GENERALIZACJI (twarde):
 
 Jeśli nic generalizowalnego → zaraportuj **"nic do utrwalenia"** z jednym
 zdaniem uzasadnienia i zakończ BEZ zapisu.
+
+### 2B: Reuse-surface scan (dowód empiryczny, nie osąd)
+
+Test 2A jest **wewnętrzny** — pyta, czy procedura *brzmi* jak klasa. To za mało:
+n=1 feature zawsze brzmi jak klasa, bo opisuje siebie. Zanim uznasz procedurę za
+reużywalną, **zdobądź dowód z kodu**: czy w repo istnieją INNE instancje tej
+samej klasy zadań, na których ten skill by się odpalił?
+
+Zbuduj 2–3 zapytania Grep/Glob z `TRIGGER when:` wykrytej procedury (prymitywy,
+wzorce, nazwy API których procedura dotyczy) i policz instancje **inne niż ta
+zmieniona w tym feature'rze**. Przykłady:
+- procedura "Dialog→Sheet" → `Grep` na `<Dialog`/`DialogContent` poza plikami z diffa,
+- procedura "nowy CRUD endpoint z filtrowaniem" → `Grep` na inne `FilterableController`,
+- procedura "migracja pola w modelu" → `Grep` na inne modele tego samego kształtu.
+
+Zanotuj **liczbę kandydatów** (instancji, na których skill mógłby zadziałać
+w przyszłości) — to dowód karmiony do bramki w KROKU 6.
+
+### 2C: Reguła decyzyjna na liczbie kandydatów
+
+- **≥1 inny kandydat** → realna powierzchnia reużycia. Kontynuuj (NEW/UPDATE).
+- **0 kandydatów + occurrences=1** → BRAK dowodu reużycia. To nie procedura-skill,
+  to **log rozwiązania jednego feature'a**. NIE zapisuj jako learned-skill.
+  Zamiast tego: jeśli wykryte „pułapki / gotchas" są wiedzą o konkretnym module
+  (specyficzne bugi, ograniczenia, na-co-uważać), **przekieruj je do
+  `document-feature`** — tam jest ich trwałe miejsce (kontekst modułu), bez
+  udawania przenośnej procedury. Zaraportuj to userowi i zakończ BEZ zapisu skilla.
+
+  Wyjątek: user może świadomie nadpisać („wiem, że teraz n=1, ale ta procedura
+  wróci — zapisz") — wtedy zapisz jako `candidate` z adnotacją w gate.
 
 ## KROK 3: Wczytaj istniejące learned-skille
 
@@ -110,6 +142,12 @@ Kolizja z innym **learned**-skillem → to nie SKIP, to ścieżka **UPDATE** (Kr
 Pokaż użytkownikowi PEŁNĄ proponowaną treść `SKILL.md` (dla NEW) albo diff/opis
 zmian (dla UPDATE), albo uzasadnienie SKIP. Zaznacz: NEW / UPDATE / SKIP, gdzie
 trafi plik, jaki będzie `name` i `TRIGGER when:`.
+
+**Pokaż dowód reużycia z KROKU 2B**: liczbę innych kandydatów w repo i czym są
+(np. „znalazłem 3 inne `<Dialog` poza tym feature'em: X, Y, Z"). To zamienia
+subiektywne „czy to się przyda?" w konkret, który user osądza. Przy 0 kandydatów
+domyślną propozycją jest **SKIP + przekierowanie gotchas do `document-feature`**
+(KROK 2C), nie zapis.
 
 **CZEKAJ NA AKCEPTACJĘ.** Nie zapisuj nic przed wyraźnym "ok / zapisz / tak"
 (wzorzec propose → gate z `feature-discuss` i `update-ai-context`). Użytkownik
@@ -189,7 +227,10 @@ blok `learned-meta` w ciele) jest identyczna.
 ## Zasady
 
 - **Nie zapisuj bez akceptacji** (Krok 6 = twarda brama).
+- **Dowód > osąd**: bez ≥1 innego kandydata w repo (KROK 2B) procedura n=1 to
+  log rozwiązania, nie skill — domyślnie SKIP, gotchas → `document-feature`.
 - **SKIP > duplikat**: kolizja ze statycznym skillem → pomiń, nie utrwalaj.
-- **Brak materiału / brak generalizacji → zakończ czysto** bez tworzenia plików.
+- **Brak materiału / brak generalizacji / brak powierzchni reużycia → zakończ
+  czysto** bez tworzenia plików.
 - **Write tylko do `.claude/skills/learned/`** target-projektu.
 - Najpierw pokaż, potem pisz — użytkownik widzi cały plik przed zapisem.
