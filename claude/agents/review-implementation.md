@@ -61,7 +61,7 @@ Then:
 - Test files are in correct locations following project conventions
 
 ### 5. Completeness
-- All tasks marked as completed have corresponding code changes
+- All tasks marked as completed have corresponding code changes; any task still `in-progress` means the implementation is unfinished — report it as a `[BLOCKER]` COMPLETENESS issue
 - In orchestrated mode, all completed phases have corresponding code changes and the parent phase status matches the phase file status
 - No partial implementations (interface defined but not implemented)
 - Final verification task was executed and passed
@@ -111,12 +111,37 @@ VERDICT: REJECTED
 
 Issues to address:
 
-1. [CATEGORY] `path/to/file:line` — [Specific issue. What's wrong, what needs to change.]
-2. [CATEGORY] `path/to/file` — [Issue description.]
+1. [BLOCKER|WARN] [CATEGORY] `path/to/file:line` — [Specific issue. What's wrong, what needs to change.]
+2. [BLOCKER|WARN] [CATEGORY] `path/to/file` — [Issue description.]
 ...
 ```
 
 Categories: CORRECTNESS, PATTERNS, RULES, TESTS, COMPLETENESS, SAFETY, AC_FULFILLMENT
+
+
+## Severity
+
+Every issue MUST carry a severity before the category:
+- `[BLOCKER]` — the change is unsafe, incorrect, untested where it must be tested, or leaves an AC unfulfilled.
+- `[WARN]` — real but non-blocking; the author should see it, but it must not gate progress.
+
+`VERDICT: REJECTED` is allowed ONLY when at least one `[BLOCKER]` exists. If all issues
+are `[WARN]`, respond `VERDICT: PASS` and append a `Warnings (non-blocking):` list after
+the summary.
+
+## Re-review Protocol (2nd+ iteration)
+
+If the invocation prompt includes a previous verdict and the list of applied fixes, you are
+re-reviewing — do NOT review from scratch:
+1. FIRST account for every previously reported issue, one line each:
+   `#N: FIXED` or `#N: NOT-FIXED — [what is still missing]`.
+2. Only AFTER that, report new findings, each explicitly marked `[NEW]`. A `[NEW]` issue may
+   contribute to REJECTED only if it is a genuine `[BLOCKER]`; if it was plainly discoverable
+   in the previous pass, add one clause explaining why it surfaces only now.
+3. The verdict follows exclusively from NOT-FIXED blockers and `[NEW]` blockers.
+
+This is the convergence contract: the author must be able to reach PASS by fixing the
+reported list — never by chasing a fresh top-list each iteration.
 
 ## Rules
 
@@ -125,4 +150,4 @@ Categories: CORRECTNESS, PATTERNS, RULES, TESTS, COMPLETENESS, SAFETY, AC_FULFIL
 - Be strict on correctness — bugs in new code are blocking.
 - Be lenient on minor style deviations that don't affect behavior.
 - Every rejection reason must include the exact file (and line if possible) and a specific fix.
-- Maximum 10 issues per review. If more exist, list the 10 most critical.
+- Maximum 10 issues per review. If more exist, list the 10 most critical. List `[BLOCKER]` issues first — the cap must never push a blocker out in favor of a `[WARN]`.

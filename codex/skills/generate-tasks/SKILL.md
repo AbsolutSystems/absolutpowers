@@ -98,10 +98,11 @@ Also read (if they exist):
 - **`./absolutpowers/patterns.md`** — established code patterns to reference in tasks
 - **`./absolutpowers/rules.md`** — project rules that implementation must comply with
 - **`./docs/adr/*.md`** — architecture decision records — past decisions that may constrain or inform implementation
+- **`./absolutpowers/project-memory.md`** — durable traps, warning signs, and workarounds from previous work. Use only entries with `Status: active` whose affected paths overlap the modules this plan will touch; ignore `superseded`/`archived`.
 - **`./absolutpowers/constitution.md`** — ratified project principles (pryncypia); treat as binding — tasks MUST NOT violate an article, and SHOULD cite the relevant Artykuł when it shapes a requirement.
 - **`## Acceptance Criteria` section** in the planning doc — if present, extract all `AC-N:` items for traceability mapping
 
-Use discovered patterns to write more specific tasks (e.g., "follow Repository pattern from `src/orders/OrderRepository.ts`"). Reference rules as constraints in task requirements where relevant. If an ADR is relevant to a task, reference it explicitly (e.g., "Per ADR `2026-04-15-event-driven-notifications.md`, use event bus instead of direct calls").
+Use discovered patterns to write more specific tasks (e.g., "follow Repository pattern from `src/orders/OrderRepository.ts`"). Reference rules as constraints in task requirements where relevant. If an ADR is relevant to a task, reference it explicitly (e.g., "Per ADR `2026-04-15-event-driven-notifications.md`, use event bus instead of direct calls"). If an active `project-memory.md` trap touches a task's files, weave it into that task's **Requirements** explicitly (e.g., "Uwaga: SecureData szyfruje kolumnę przy starcie — patrz project-memory.md, sekcja `billing`; wykonaj migrację danych PRZED zmianą modelu"). The plan must route around known traps by construction — do not leave them for the implementer to rediscover.
 
 ### Step 2: Proceed or Clarify
 If the input document has clear, complete requirements with no material gaps, proceed directly to Step 4. Most planning docs are self-contained — do NOT stop to ask for additional context by default.
@@ -241,9 +242,10 @@ Sequential tasks the agent executes in order. Each task:
 
 **Status values:**
 - `pending` - task not yet started
+- `in-progress` - task started in a session; encountering it at session start means a previous session was interrupted mid-task
 - `completed` - task finished and verified
 
-When agent completes a task, it updates status from `pending` to `completed` before proceeding to next task.
+The agent sets `pending` → `in-progress` when it STARTS a task, and `in-progress` → `completed` only after implementation and verification. A tasks doc fresh from generate-tasks contains only `pending`.
 
 ---
 
@@ -284,6 +286,7 @@ orchestrated
 
 ## Execution Notes
 - Execute phase files sequentially in dependency order.
+- Update statuses in this parent file: `pending` → `in-progress` when a phase starts, → `completed` after phase verification passes.
 - Update phase files and this parent file after each phase passes its verification.
 - Keep `implementation-context.md` concise and useful for later phases.
 - Each phase file contains a Context Contract. Validate Requires before starting each phase; verify Provides after completion.
@@ -360,6 +363,8 @@ Create `implementation-context.md` with this structure:
 
 ## Purpose
 Short handoff for later phases. Keep this file concise. Add only facts that future phases need.
+HARD BUDGET: max 10 lines per phase entry across all sections combined; whole file target ≤150 lines.
+Every later phase reads this file — its size is paid on every phase.
 
 ## Completed Phases
 - None yet.

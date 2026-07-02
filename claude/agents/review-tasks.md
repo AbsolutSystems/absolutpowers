@@ -123,8 +123,8 @@ VERDICT: REJECTED
 
 Issues to address:
 
-1. [CATEGORY] Task [N] — [Specific issue. What's wrong, what needs to change.]
-2. [CATEGORY] General — [Issue affecting multiple tasks or overall structure.]
+1. [BLOCKER|WARN] [CATEGORY] Task [N] — [Specific issue. What's wrong, what needs to change.]
+2. [BLOCKER|WARN] [CATEGORY] General — [Issue affecting multiple tasks or overall structure.]
 ...
 ```
 
@@ -134,11 +134,37 @@ AC_COVERAGE issues use this format: `[AC_COVERAGE] General — AC-3 ("descriptio
 
 For orchestrated tasks, check AC traceability across all phase files, not just the main index.
 
+
+## Severity
+
+Every issue MUST carry a severity before the category:
+- `[BLOCKER]` — an agent executing these tasks would fail or build the wrong thing (broken ordering, uncovered AC, nonexistent referenced paths, missed intent).
+- `[WARN]` — real but non-blocking; the author should see it, but it must not gate progress.
+
+`VERDICT: REJECTED` is allowed ONLY when at least one `[BLOCKER]` exists. If all issues
+are `[WARN]`, respond `VERDICT: PASS` and append a `Warnings (non-blocking):` list after
+the summary.
+
+## Re-review Protocol (2nd+ iteration)
+
+If the invocation prompt includes a previous verdict and the list of applied fixes, you are
+re-reviewing — do NOT review from scratch:
+1. FIRST account for every previously reported issue, one line each:
+   `#N: FIXED` or `#N: NOT-FIXED — [what is still missing]`.
+2. Only AFTER that, report new findings, each explicitly marked `[NEW]`. A `[NEW]` issue may
+   contribute to REJECTED only if it is a genuine `[BLOCKER]`; if it was plainly discoverable
+   in the previous pass, add one clause explaining why it surfaces only now.
+3. The verdict follows exclusively from NOT-FIXED blockers and `[NEW]` blockers.
+
+This is the convergence contract: the author must be able to reach PASS by fixing the
+reported list — never by chasing a fresh top-list each iteration.
+
 ## Rules
 
 - Be strict on specificity — vague tasks waste more time than overly detailed ones.
 - Don't reject for minor style differences in task formatting.
+- A freshly generated tasks doc must contain only `pending` statuses (`in-progress`/`completed` are runtime states set by implement) — flag any other value as a `[WARN]`.
 - Verify at least 3 file path references against the actual codebase. When a reference is a declared deliverable of an earlier epic phase, treat its absence as expected, not as a failed verification.
 - For orchestrated tasks, verify references across the main file and phase files, not only the main index.
 - Every rejection reason must be specific and actionable.
-- Maximum 7 issues per review. If more exist, list the 7 most critical.
+- Maximum 7 issues per review. If more exist, list the 7 most critical. List `[BLOCKER]` issues first — the cap must never push a blocker out in favor of a `[WARN]`.

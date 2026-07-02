@@ -41,9 +41,9 @@ Read:
 
 Check:
 - **SCOPE:** Changed files are inside the phase Write Scope, or scope expansion is explicitly justified.
-- **COMPLETENESS:** Phase tasks are marked completed and requirements are implemented.
+- **COMPLETENESS:** Phase tasks are marked completed and requirements are implemented. Any task left `in-progress` or `pending` in the phase file is an automatic completeness failure.
 - **TESTS:** Phase verification commands were run and passed.
-- **HANDOFF:** `implementation-context.md` contains concise facts useful to later phases and is not a verbose work log.
+- **HANDOFF:** `implementation-context.md` contains concise facts useful to later phases and is not a verbose work log. The phase's additions stay within the 10-line budget; a phase entry materially over budget is a HANDOFF failure.
 - **CONTRACT:** All items in `## Context Contract -> Provides` are fulfilled by the phase implementation. Each Provides item must be verifiable in the codebase or `implementation-context.md`.
 - **CORRECTNESS:** No obvious logic bugs, partial implementations, or broken integration points inside this phase.
 - **GARBAGE:** No debug logs, stale TODO/FIXME, commented-out code, or dead code introduced by the phase.

@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## What This Is
 
-AbsolutPowers — a Claude Code + Codex plugin providing AI-assisted development lifecycle skills: problem intake/triage, feature discussion, task generation, implementation, review, debugging, project context management, and project constitution. Version 3.11.0.
+AbsolutPowers — a Claude Code + Codex plugin providing AI-assisted development lifecycle skills: problem intake/triage, feature discussion, task generation, implementation, review, debugging, project context management, and project constitution. Version 3.12.0.
 
 ## Repository Layout
 

@@ -211,7 +211,9 @@ If Risk is `low`, `medium`, or unspecified:
 Agent(subagent_type="implementation-worker", prompt="Implement this orchestrated phase. Parent tasks file: {parent-tasks-path}. Phase file: {phase-File-path-from-Phase-Overview}. Validate Context Contract Requires before starting. Follow the phase Write Scope, update only the phase file and implementation-context.md, run phase verification, and return PHASE_RESULT with contract check.")
 ```
 
-The worker must implement only that phase. The orchestrator remains responsible for updating the parent phase status. If a phase worker appears stuck or unresponsive, the orchestrator may interrupt and ask the user for guidance.
+Before spawning the worker:
+- **Context budget check:** if `implementation-context.md` exceeds ~150 lines, compact it first — rewrite older `## Completed Phases` entries into a one-line digest each and drop entries in other sections that no remaining phase needs (Staleness rules). Every worker pays for this file's size in its context window; compaction is the orchestrator's job, not the workers'.
+- Set the phase status in the parent tasks file from `pending` to `in-progress` (interruption marker). The worker must implement only that phase. The orchestrator remains responsible for updating the parent phase status: `in-progress` → `completed` only after `phase-review` PASS. On session start, a phase already `in-progress` with no matching `## Completed Phases` entry means an interrupted run — treat it like the stale-state warning in Step O1 (verify partial state, ask the user). If a phase worker appears stuck or unresponsive, the orchestrator may interrupt and ask the user for guidance.
 
 ### Step O3: Inspect Worker Result
 
@@ -278,9 +280,13 @@ Agent(subagent_type="review-implementation", prompt="Review implementation for o
 
 If `VERDICT: PASS`, report completion.
 
-If `VERDICT: REJECTED` (1st time): fix the reported issues, rerun final verification if affected, then rerun `review-implementation`.
+If `VERDICT: REJECTED` (1st time): fix every `[BLOCKER]` issue (fix `[WARN]` only when cheap — warns never gate), rerun final verification if affected, then rerun `review-implementation` PASSING the previous verdict and the fix list, so the gate accounts for old issues (FIXED/NOT-FIXED) and marks genuinely new findings `[NEW]`:
 
-If `VERDICT: REJECTED` (2nd time with similar issues): show user options — (a) attempt fix again, (b) override review and proceed, (c) stop and investigate manually.
+```
+Agent(subagent_type="review-implementation", prompt="Re-review implementation for tasks: {parent-tasks-path}. Previous verdict:\n{full previous verdict}\nApplied fixes:\n{issue #N → what changed}")
+```
+
+If `VERDICT: REJECTED` (2nd time — NOT-FIXED items or `[NEW]` blockers remain): show user options — (a) attempt fix again, (b) override review and proceed, (c) stop and investigate manually.
 
 If `VERDICT: REJECTED` (3rd time): show remaining issues, same options (a/b/c).
 
@@ -289,10 +295,19 @@ If `VERDICT: REJECTED` (3rd time): show remaining issues, same options (a/b/c).
 ### Step 1: Read Tasks Document
 - Read the tasks file provided as argument
 - Understand the Project Context section
-- Find the first task with `**Status:** pending`
+- **Interruption check:** if any task has `**Status:** in-progress`, a previous session died
+  mid-task. Do NOT implement blindly on top of it: compare the task's `Create:`/`Modify:`
+  lists against the actual repo state (which files exist, `git status`/`git diff`) and report
+  what is already done vs missing. Ask the user: (a) finish the remaining part, (b) revert
+  partial changes and redo, (c) mark `completed` if verification confirms it is in fact done.
+- Otherwise find the first task with `**Status:** pending`
 
 ### Step 2: Implement the Task
-For the pending task:
+Before touching any code, update the task's status in the tasks file from
+`**Status:** pending` to `**Status:** in-progress` and save — this is the interruption
+marker for a future session.
+
+For the task:
 
 1. **Review task requirements**
    - Read all sections: Create, Modify, Description, Requirements, Tests, Example
@@ -313,7 +328,7 @@ For the pending task:
 
 ### Step 3: Update Status
 After successful implementation, update the tasks file in-place:
-- Change task status from `**Status:** pending` to `**Status:** completed`
+- Change task status from `**Status:** in-progress` to `**Status:** completed`
 - Fill in the "Implementation decisions / remarks" section if relevant
 - Save the file
 
@@ -425,10 +440,14 @@ Agent(subagent_type="review-implementation", prompt="Review implementation for t
 - Implementacja gotowa
 
 **Jeśli VERDICT: REJECTED (1. raz):**
-- Wyświetl listę problemów, napraw je, uruchom `review-implementation` ponownie
+- Wyświetl listę problemów, napraw każdą pozycję `[BLOCKER]` (`[WARN]` tylko gdy tanie — warny nie bramkują), uruchom `review-implementation` ponownie PRZEKAZUJĄC poprzedni werdykt i listę poprawek:
 
-**Jeśli VERDICT: REJECTED (2. raz z podobnymi problemami):**
-- Pokaż: "Review odrzucił implementację po raz drugi z podobnymi problemami. Opcje: (a) popraw ponownie, (b) override review i kontynuuj, (c) zatrzymaj się i zbadaj ręcznie."
+```
+Agent(subagent_type="review-implementation", prompt="Re-review implementation for tasks: {parent-tasks-path}. Previous verdict:\n{pełny poprzedni werdykt}\nApplied fixes:\n{issue #N → co zmieniono}")
+```
+
+**Jeśli VERDICT: REJECTED (2. raz — pozycje NOT-FIXED lub `[NEW]` blockery):**
+- Pokaż: "Review odrzucił implementację po raz drugi (NOT-FIXED / nowe blockery). Opcje: (a) popraw ponownie, (b) override review i kontynuuj, (c) zatrzymaj się i zbadaj ręcznie."
 - Jeśli (b): kontynuuj jak przy PASS, dodaj notatkę `**Review override:** [data]` w tasks doc
 
 **Jeśli VERDICT: REJECTED (3. raz):**

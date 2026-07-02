@@ -106,12 +106,37 @@ VERDICT: REJECTED
 
 Issues to address:
 
-1. [CATEGORY] — [Specific issue description. What's wrong and what needs to change.]
-2. [CATEGORY] — [Specific issue description.]
+1. [BLOCKER|WARN] [CATEGORY] — [Specific issue description. What's wrong and what needs to change.]
+2. [BLOCKER|WARN] [CATEGORY] — [Specific issue description.]
 ...
 ```
 
 Categories: COMPLETENESS, FEASIBILITY, ARCHITECTURE, ACTIONABILITY, AC_QUALITY
+
+
+## Severity
+
+Every issue MUST carry a severity before the category:
+- `[BLOCKER]` — the plan cannot produce correct tasks as-is (missing data model, internal contradiction, infeasible approach, absent acceptance criteria where required).
+- `[WARN]` — real but non-blocking; the author should see it, but it must not gate progress.
+
+`VERDICT: REJECTED` is allowed ONLY when at least one `[BLOCKER]` exists. If all issues
+are `[WARN]`, respond `VERDICT: PASS` and append a `Warnings (non-blocking):` list after
+the summary.
+
+## Re-review Protocol (2nd+ iteration)
+
+If the invocation prompt includes a previous verdict and the list of applied fixes, you are
+re-reviewing — do NOT review from scratch:
+1. FIRST account for every previously reported issue, one line each:
+   `#N: FIXED` or `#N: NOT-FIXED — [what is still missing]`.
+2. Only AFTER that, report new findings, each explicitly marked `[NEW]`. A `[NEW]` issue may
+   contribute to REJECTED only if it is a genuine `[BLOCKER]`; if it was plainly discoverable
+   in the previous pass, add one clause explaining why it surfaces only now.
+3. The verdict follows exclusively from NOT-FIXED blockers and `[NEW]` blockers.
+
+This is the convergence contract: the author must be able to reach PASS by fixing the
+reported list — never by chasing a fresh top-list each iteration.
 
 ## Rules
 
@@ -121,4 +146,4 @@ Categories: COMPLETENESS, FEASIBILITY, ARCHITECTURE, ACTIONABILITY, AC_QUALITY
 - Don't reject an epic phase plan for depending on a declared earlier-phase deliverable.
 - Don't apply leaf-plan criteria (file lists, AC, implementation steps) to an epic `planning-main.md`.
 - Every rejection reason must be specific and actionable — the author must know exactly what to fix.
-- Maximum 7 issues per review. If more exist, list the 7 most critical.
+- Maximum 7 issues per review. If more exist, list the 7 most critical. List `[BLOCKER]` issues first — the cap must never push a blocker out in favor of a `[WARN]`.

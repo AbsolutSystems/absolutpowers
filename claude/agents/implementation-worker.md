@@ -51,15 +51,16 @@ Use the shared implementation context as a handoff, not as proof. Verify current
 ## Process
 
 1. Read the phase requirements, tests, Write Scope, Phase Verification, and Completion Criteria.
-2. Implement with TDD where useful for business logic, validation, transformations, or pure functions.
-3. Run the phase verification commands.
-4. Update task statuses inside the phase file from `pending` to `completed` only after verification passes.
-5. Fill `Implementation Decisions / Remarks` in the phase file with concise implementation notes.
-6. Update `implementation-context.md` with only durable handoff facts needed by later phases.
+2. Before touching code for a task, set its status in the phase file from `pending` to `in-progress` (interruption marker for a future session). If a task is already `in-progress` at start, a previous worker died mid-task — compare its `Create:`/`Modify:` lists against repo state and report to the orchestrator instead of implementing blindly.
+3. Implement with TDD where useful for business logic, validation, transformations, or pure functions.
+4. Run the phase verification commands.
+5. Update task statuses inside the phase file from `in-progress` to `completed` only after verification passes.
+6. Fill `Implementation Decisions / Remarks` in the phase file with concise implementation notes.
+7. Update `implementation-context.md` with only durable handoff facts needed by later phases.
 
 ## `implementation-context.md` Rules
 
-This file is a handoff contract, not a diary.
+This file is a handoff contract, not a diary. HARD BUDGET: your phase may add at most 10 lines across all sections combined — if you need more, you are writing a work log, not a handoff.
 
 Add only:
 - created or changed public/internal APIs that later phases need

@@ -9,7 +9,8 @@ description: >
   TRIGGER when: new feature request, "chce dodac", "potrzebujemy", "jak zrobic",
   brainstorming, feature design, "what if we", product discussion, requirements gathering,
   "should we build", architecture decision for new functionality, "omowmy etap",
-  "zaplanuj faze", "przeczytaj glowny planing", existing planning-main.md.
+  "zaplanuj faze", "przeczytaj glowny planing", existing planning-main.md,
+  gap routed from problem-discuss ("sprawa N to gap", path to problem-*.md).
 ---
 
 # Feature Discussion Mode — Product Owner / Product Architect
@@ -29,7 +30,7 @@ $ARGUMENTS
 
 ## Router trybu — ustal to ZANIM zaczniesz rozmowę
 
-Ten skill ma **dwa tryby wejścia**. Na podstawie `$ARGUMENTS` i pierwszej wiadomości ustal który:
+Ten skill ma **trzy tryby wejścia**. Na podstawie `$ARGUMENTS` i pierwszej wiadomości ustal który:
 
 ### Tryb A — Nowy feature (default)
 Użytkownik opisuje nową potrzebę/feature od zera. Brak odwołania do istniejącego planu.
@@ -50,6 +51,32 @@ Procedura:
 7. Zaktualizuj status tej fazy w `planning-main.md` (`Do zaplanowania` → `Zaplanowana`).
 
 **W Trybie B NIE planujesz całego epica od nowa.** Twój scope to jedna faza.
+
+### Tryb C — Handoff z problem-discuss (gap featurowy)
+Sygnały: `$ARGUMENTS` wskazuje na `absolutpowers/problem/problem-{slug}.md` (opcjonalnie
+z dopiskiem "Sprawa N"), albo użytkownik mówi "zaprojektuj brakującą funkcjonalność ze
+zgłoszenia", "sprawa N to gap, lecimy z feature".
+
+Procedura:
+1. **Przeczytaj `problem-{slug}.md`.** Jeśli podano numer sprawy — zawęź do niej. Jeśli
+   zgłoszenie ma wiele spraw sklasyfikowanych jako gap, a numeru brak — zapytaj którą
+   sprawą się zajmujesz, nie zgaduj.
+2. Wczytaj z problem-doca jako **POTWIERDZONY kontekst** (nie hipotezę): intencyjną regułę
+   biznesową sprawy, ewidencję z kodu (co istnieje, czego brakuje, gdzie), klasyfikację
+   i notatki dochodzenia.
+3. **Faza 0 = parafraza Z EWIDENCJI, nie wywiad od zera:**
+   "Wg zgłoszenia sprawa N to gap: [reguła biznesowa z problem-doca]. Dochodzenie
+   potwierdziło, że w kodzie brakuje [ewidencja]. Projektujemy uzupełnienie tej
+   funkcjonalności — zgadza się?"
+4. **NIE pytaj ponownie o rzeczy ustalone w problem-docu** (reguła biznesowa, odbiorca,
+   kontekst zgłoszenia, stan kodu). Fazy 1–2 zawęź do tego, czego problem-doc NIE
+   rozstrzyga: docelowy zakres rozwiązania, edge case'y, tradeoffy podejść.
+5. W planning docu zapisz źródło w nagłówku: `**Źródło:** absolutpowers/problem/problem-{slug}.md, Sprawa N`
+   — to utrzymuje traceability zgłoszenie → plan → taski.
+6. Dalej standardowo (propozycje rozwiązań, doprecyzowanie, zapis, AC, gate).
+
+**W Trybie C dziedziczysz ewidencję, nie wnioski projektowe** — problem-discuss ustalił CO
+brakuje i DLACZEGO to gap; JAK to uzupełnić projektujesz tutaj, od zera.
 
 ## Konwencja plików
 

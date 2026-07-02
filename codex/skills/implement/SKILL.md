@@ -194,6 +194,7 @@ Codex does not have plugin-level phase worker or review gate agents in this plug
 ### Step O2: Execute One Phase
 
 For the pending phase:
+0. Set the phase status in the main tasks file from `pending` to `in-progress` (interruption marker; a phase found `in-progress` at session start with unfinished tasks means a previous session was interrupted — verify partial state against the phase file's task lists and ask the user before continuing).
 1. Follow the phase Read Scope and Write Scope.
 2. Implement only the tasks inside the phase file.
 3. Run the phase verification commands.
@@ -201,14 +202,14 @@ For the pending phase:
 5. Fill `Implementation Decisions / Remarks` in the phase file.
 6. Update `implementation-context.md` with concise handoff facts needed by later phases.
 7. Verify all items in `## Context Contract -> Provides` are fulfilled before marking the phase complete.
-8. Update the parent phase status in the main tasks file to `completed`.
+8. Update the parent phase status in the main tasks file from `in-progress` to `completed`.
 
 If required edits fall outside Write Scope, stop and explain why they are needed before proceeding. If execution of a phase appears stuck, stop and ask user for guidance.
 
 ### Step O3: Continue Through Phases
 
 - Repeat Step O1 and Step O2 for the next pending phase.
-- Keep `implementation-context.md` short. It is a handoff contract, not a work log.
+- Keep `implementation-context.md` short. It is a handoff contract, not a work log. HARD BUDGET: ≤10 lines per phase entry; when the file exceeds ~150 lines, compact it before starting the next phase (older `## Completed Phases` entries → one-line digest; drop entries no remaining phase needs).
 - Do not implement future phase requirements early unless the phase explicitly depends on a shared foundation change.
 
 ### Step O4: Final Verification
@@ -233,10 +234,19 @@ Do not perform Steps 4-6 during individual phases.
 ### Step 1: Read Tasks Document
 - Read the tasks file provided as argument
 - Understand the Project Context section
-- Find the first task with `**Status:** pending`
+- **Interruption check:** if any task has `**Status:** in-progress`, a previous session died
+  mid-task. Do NOT implement blindly on top of it: compare the task's `Create:`/`Modify:`
+  lists against the actual repo state (which files exist, `git status`/`git diff`) and report
+  what is already done vs missing. Ask the user: (a) finish the remaining part, (b) revert
+  partial changes and redo, (c) mark `completed` if verification confirms it is in fact done.
+- Otherwise find the first task with `**Status:** pending`
 
 ### Step 2: Implement the Task
-For the pending task:
+Before touching any code, update the task's status in the tasks file from
+`**Status:** pending` to `**Status:** in-progress` and save — this is the interruption
+marker for a future session.
+
+For the task:
 
 1. **Review task requirements**
    - Read all sections: Create, Modify, Description, Requirements, Tests, Example
@@ -257,7 +267,7 @@ For the pending task:
 
 ### Step 3: Update Status
 After successful implementation, update the tasks file in-place:
-- Change task status from `**Status:** pending` to `**Status:** completed`
+- Change task status from `**Status:** in-progress` to `**Status:** completed`
 - Fill in the "Implementation decisions / remarks" section if relevant
 - Save the file
 

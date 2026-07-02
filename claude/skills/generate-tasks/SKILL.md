@@ -100,10 +100,11 @@ Also read (if they exist):
 - **`./absolutpowers/patterns.md`** — established code patterns to reference in tasks
 - **`./absolutpowers/rules.md`** — project rules that implementation must comply with
 - **`./docs/adr/*.md`** — architecture decision records — past decisions that may constrain or inform implementation
+- **`./absolutpowers/project-memory.md`** — durable traps, warning signs, and workarounds from previous work. Use only entries with `Status: active` whose affected paths overlap the modules this plan will touch; ignore `superseded`/`archived`.
 - **`./absolutpowers/constitution.md`** — ratified project principles (pryncypia); treat as binding — tasks MUST NOT violate an article, and SHOULD cite the relevant Artykuł when it shapes a requirement.
 - **`## Acceptance Criteria` section** in the planning doc — if present, extract all `AC-N:` items for traceability mapping
 
-Use discovered patterns to write more specific tasks (e.g., "follow Repository pattern from `src/orders/OrderRepository.ts`"). Reference rules as constraints in task requirements where relevant. If an ADR is relevant to a task, reference it explicitly (e.g., "Per ADR `2026-04-15-event-driven-notifications.md`, use event bus instead of direct calls").
+Use discovered patterns to write more specific tasks (e.g., "follow Repository pattern from `src/orders/OrderRepository.ts`"). Reference rules as constraints in task requirements where relevant. If an ADR is relevant to a task, reference it explicitly (e.g., "Per ADR `2026-04-15-event-driven-notifications.md`, use event bus instead of direct calls"). If an active `project-memory.md` trap touches a task's files, weave it into that task's **Requirements** explicitly (e.g., "Uwaga: SecureData szyfruje kolumnę przy starcie — patrz project-memory.md, sekcja `billing`; wykonaj migrację danych PRZED zmianą modelu"). The plan must route around known traps by construction — do not leave them for the implementer to rediscover.
 
 ### Step 2: Proceed or Clarify
 If the input document has clear, complete requirements with no material gaps, proceed directly to Step 4. Most planning docs are self-contained — do NOT stop to ask for additional context by default.
@@ -243,9 +244,10 @@ Sequential tasks the agent executes in order. Each task:
 
 **Status values:**
 - `pending` - task not yet started
+- `in-progress` - task started in a session; encountering it at session start means a previous session was interrupted mid-task
 - `completed` - task finished and verified
 
-When agent completes a task, it updates status from `pending` to `completed` before proceeding to next task.
+The agent sets `pending` → `in-progress` when it STARTS a task, and `in-progress` → `completed` only after implementation and verification. A tasks doc fresh from generate-tasks contains only `pending`.
 
 ---
 
@@ -292,7 +294,7 @@ orchestrated
 **File:** `./absolutpowers/feature/tasks-{slug}/99-final-verification.md`
 
 ## Orchestrator Notes
-- Orchestrator updates statuses in this file.
+- Orchestrator updates statuses in this file (`pending` → `in-progress` when a phase starts, → `completed` after phase verification and review).
 - Workers update only their phase file and `implementation-context.md`.
 - Do not mark a phase completed until phase verification and `phase-review` pass.
 - Each phase file contains a Context Contract. Workers validate Requires before starting; `phase-review` checks Provides on completion.
@@ -369,6 +371,8 @@ Create `implementation-context.md` with this structure:
 
 ## Purpose
 Short handoff for phase workers. Keep this file concise. Add only facts that future phases need.
+HARD BUDGET: max 10 lines per phase entry across all sections combined; whole file target ≤150 lines.
+Every later worker reads this file — its size is paid on every phase.
 
 ## Completed Phases
 - None yet.
@@ -593,11 +597,15 @@ Agent(subagent_type="review-tasks", prompt="Review tasks document: ./absolutpowe
 
 **Jeśli VERDICT: REJECTED (1. raz):**
 - Wyświetl użytkownikowi listę problemów z review
-- Popraw tasks doc adresując każdy zgłoszony problem
-- Zapisz poprawiony plik i uruchom `review-tasks` ponownie
+- Popraw tasks doc adresując każdą pozycję `[BLOCKER]`; pozycje `[WARN]` popraw, jeśli poprawka jest tania — nie są warunkiem PASS
+- Zapisz poprawiony plik i uruchom `review-tasks` ponownie, PRZEKAZUJĄC poprzedni werdykt i listę poprawek (gate rozlicza stare issues jako FIXED/NOT-FIXED, nowe zgłasza tylko jako `[NEW]`):
 
-**Jeśli VERDICT: REJECTED (2. raz z podobnymi problemami):**
-- Pokaż użytkownikowi: "Review odrzucił plan po raz drugi z podobnymi problemami. Opcje: (a) popraw ponownie, (b) override review i kontynuuj, (c) zatrzymaj się i zbadaj ręcznie."
+```
+Agent(subagent_type="review-tasks", prompt="Re-review tasks document: ./absolutpowers/feature/tasks-{slug}.md. If Mode is orchestrated, also review all phase files referenced from Phase Overview and implementation-context.md. Previous verdict:\n{pełny poprzedni werdykt}\nApplied fixes:\n{lista: issue #N → co zmieniono}")
+```
+
+**Jeśli VERDICT: REJECTED (2. raz — czyli w werdykcie są pozycje NOT-FIXED lub `[NEW]` blockery):**
+- Pokaż użytkownikowi: "Review odrzucił taski po raz drugi (NOT-FIXED / nowe blockery). Opcje: (a) popraw ponownie, (b) override review i kontynuuj, (c) zatrzymaj się i zbadaj ręcznie."
 - Jeśli (a): popraw i uruchom `review-tasks` ostatni raz
 - Jeśli (b): kontynuuj jak przy PASS, dodaj notatkę `**Review override:** [data]` w nagłówku tasks doc
 - Jeśli (c): zatrzymaj się

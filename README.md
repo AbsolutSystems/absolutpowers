@@ -35,6 +35,7 @@ Creates `CLAUDE.md`, `AGENTS.md`, `absolutpowers/patterns.md`, `absolutpowers/ru
 /absolutpowers:implement @absolutpowers/feature/tasks-push-notifications.md  # BUILD+TEST
 /absolutpowers:review                                                        # AUDIT
 /absolutpowers:harvest @absolutpowers/feature/tasks-push-notifications.md     # CAPTURE (optional, pre-commit)
+/absolutpowers:ship @absolutpowers/feature/tasks-push-notifications.md        # CLOSE (commit + PR text from artifacts)
 ```
 
 Each step writes a file that feeds the next. Review gates between steps (Claude Code) catch issues automatically.
@@ -42,8 +43,8 @@ Each step writes a file that feeds the next. Review gates between steps (Claude 
 ## The Pipeline
 
 ```
-feature-discuss ──→ generate-tasks ──→ implement ──→ review ──→ harvest
-     WHAT?              HOW?          BUILD+TEST     AUDIT      CAPTURE
+feature-discuss ──→ generate-tasks ──→ implement ──→ review ──→ harvest ──→ ship
+     WHAT?              HOW?          BUILD+TEST     AUDIT      CAPTURE     CLOSE
        │                  │               │
        ▼                  ▼               ▼
   review-plan        review-tasks   review-implementation
@@ -79,9 +80,11 @@ Pick by how well the problem is already classified:
 After a skill produces output, a subagent reviews it:
 
 1. Reviews against criteria specific to that step
-2. Returns **PASS** or **REJECTED** + list of issues
-3. REJECTED → skill fixes and resubmits (up to 3 iterations)
+2. Returns **PASS** or **REJECTED** — every issue tagged `[BLOCKER]` or `[WARN]`
+3. REJECTED requires at least one `[BLOCKER]`; a review that finds only `[WARN]`s **passes** and lists them as non-blocking. The skill fixes blockers and resubmits (up to 3 iterations)
 4. Still REJECTED after 3 → shows remaining issues, asks you
+
+**Convergence contract:** on resubmit the skill passes the previous verdict + the fixes it applied, so the gate first accounts for each prior issue (`FIXED` / `NOT-FIXED`) and only then reports genuinely new findings (marked `[NEW]`). The verdict follows solely from `NOT-FIXED` blockers and `[NEW]` blockers — you reach PASS by clearing the reported list, not by chasing a fresh top-list each round.
 
 Codex skills run without gates.
 
@@ -97,7 +100,9 @@ tasks-{slug}.md (index)
   └─ review-implementation (final gate)
 ```
 
-`implementation-context.md` carries only concise handoff facts between phases. Small features get one `tasks-{slug}.md` instead.
+`implementation-context.md` carries only concise handoff facts between phases under a **hard budget** (≤10 lines added per phase, ≤150 lines total) — every worker pays for its size, so the orchestrator compacts it before spawning the next worker. Small features get one `tasks-{slug}.md` instead.
+
+Tasks move `pending → in-progress → completed`. `in-progress` is an **interruption marker**: if a run dies mid-task, the next session finds it, compares declared `Create:`/`Modify:` lists against the repo, and asks whether to finish, redo, or confirm-done — instead of blindly implementing on top of partial work.
 
 ## Skills Reference
 
@@ -109,7 +114,8 @@ tasks-{slug}.md (index)
 | `generate-tasks` | Planning doc → sequential tasks or orchestrated phase plan | `planning-*.md` → `tasks-{slug}.md` (+ phase dir) | both |
 | `implement` | Executes tasks TDD, marks `completed` in-place | `tasks-*.md` → code + tests | both |
 | `review` | 4-phase code-quality audit (semantic / edge / rules / GC) | branch → `reviews/YYYY-MM-DD-{branch}.md` | both |
-| `harvest` | Closeout: runs try-learn-skill → document-feature → document-module | `tasks-*.md` → learned skill + module docs | both |
+| `harvest` | Closeout: try-learn-skill → document-feature → document-module → archive artifacts | `tasks-*.md` → learned skill + module docs + `archives/{slug}/` | both |
+| `ship` | Commit message + PR description from artifacts, local commit (gated) | `tasks-*.md` + diff → conventional commit + PR text | both |
 | `debug` | Root-cause first, then size the fix (inline vs hand-off) | bug desc → fix or `planning-fix-{slug}.md` | both |
 | `problem-discuss` | Triage fuzzy multi-item client report: split, classify, route | report → `problem/problem-{slug}.md` | both |
 | `analyze` | Cross-artifact audit: AC→task→code matrix, 6 divergence classes | slug → `reviews/analyze-{slug}.md` | both |
@@ -117,12 +123,12 @@ tasks-{slug}.md (index)
 | `constitution` | Author/ratify project principles (pryncypia) | topic → `constitution.md` | both |
 | `update-ai-context` | Bootstrap/refresh `CLAUDE.md`, `AGENTS.md`, `patterns.md`, `rules.md` | path → context files | both |
 | `explain` | Standalone HTML onboarding report for a plan or diff | path/diff → `docs/onboarding/*.html` | both |
-| `try-learn-skill` | Extract reusable procedure → callable learned skill (human-gated) | `tasks-*.md` → `.claude/skills/learned/` | both |
+| `try-learn-skill` | Log procedure candidate to ledger; promote to learned skill on 2nd occurrence (human-gated) | `tasks-*.md` → `_candidates.md` / `.claude/skills/learned/` | both |
 | `document-feature` | Per-module prose docs from planning + diff (intelligent merge) | `tasks-*.md` → `docs/modules/{module}.md` | both |
 | `document-module` | Architecture docs from a code scan + C4 diagrams | module → `docs/modules/{slug}-architecture.md` + HTML | both |
 | `preboot` | Doc router / guardrail for the PreBoot.io library ecosystem | PreBoot usage → reads `./preboot-docs/` | both |
 
-Cards below cover the 5 core pipeline skills in depth. The rest behave as the table describes.
+Cards below cover the 6 core pipeline skills in depth. The rest behave as the table describes.
 
 ---
 
@@ -133,6 +139,7 @@ Interactive Product Owner / Product Architect session — discusses requirements
 - **When:** starting a feature, brainstorming, "chcę dodać…", "potrzebujemy…"
 - **In → Out:** feature description → `absolutpowers/feature/planning-{slug}.md` (optionally `docs/adr/YYYY-MM-DD-{slug}.md`)
 - **Trivial changes** (one-liner, config) skip the planning doc — the skill suggests direct implementation. **Epics** split into `planning-main.md` + per-phase docs in a `feature/{epic-slug}/` subfolder.
+- **Gap handoff (Mode C):** hand it a `problem-{slug}.md` from `problem-discuss` (item classified as a gap) and it inherits the confirmed evidence — business rule, what's missing, where — instead of re-interviewing from zero. It designs only *how* to fill the gap and stamps `**Źródło:** problem-{slug}.md, Sprawa N` for traceability.
 
 ```bash
 /absolutpowers:feature-discuss "eksport danych użytkowników do CSV z filtrowaniem"
@@ -144,7 +151,7 @@ Interactive Product Owner / Product Architect session — discusses requirements
 
 ### `/absolutpowers:generate-tasks`
 
-Reads a planning doc (or a review report, or a `planning-fix-` doc from `debug`) and produces a step-by-step plan for an AI agent: exact paths, signatures, tests, plus `Traces to: AC-N` traceability. Picks `single-file` mode (small) or `orchestrated` mode (phase files + `implementation-context.md` + final verification). Reads `constitution.md` as binding context. Runs the `review-tasks` gate.
+Reads a planning doc (or a review report, or a `planning-fix-` doc from `debug`) and produces a step-by-step plan for an AI agent: exact paths, signatures, tests, plus `Traces to: AC-N` traceability. Picks `single-file` mode (small) or `orchestrated` mode (phase files + `implementation-context.md` + final verification). Reads `constitution.md` as binding context and weaves **active `project-memory.md` traps** whose paths overlap a task into that task's Requirements (routes around known traps by construction). Runs the `review-tasks` gate.
 
 - **When:** after `feature-discuss`, or after `review` finds 3+ issues
 - **In → Out:** path to a planning doc / review report → `absolutpowers/feature/tasks-{slug}.md` (+ `tasks-{slug}/` for larger features)
@@ -158,7 +165,7 @@ Reads a planning doc (or a review report, or a `planning-fix-` doc from `debug`)
 
 ### `/absolutpowers:implement`
 
-Senior engineer executing tasks sequentially with TDD. Picks the first pending task/phase, updates status to `completed` in-place, proposes alternatives (asks first), runs the final verification task, then the `review-implementation` gate. Orchestrated plans → `implementation-worker` per phase + `phase-review` before advancing (Claude); Codex runs phase files sequentially in one session. Respects `constitution.md`. Can create ADRs and memory candidates.
+Senior engineer executing tasks sequentially with TDD. Marks a task `in-progress` before touching code and `completed` only after verification (interruption-safe — a task found `in-progress` at session start triggers partial-state recovery, not blind re-implementation), proposes alternatives (asks first), runs the final verification task, then the `review-implementation` gate. Orchestrated plans → `implementation-worker` per phase + `phase-review` before advancing (Claude); Codex runs phase files sequentially in one session. Respects `constitution.md`. Can create ADRs and memory candidates.
 
 - **When:** after `generate-tasks`
 - **In → Out:** path to a tasks file → implementation code + tests, updated tasks file
@@ -199,19 +206,35 @@ Thin pre-commit closeout orchestrator. Runs three sub-skills, each keeping its o
 
 ```
 harvest
-  ├─ try-learn-skill   → .claude/skills/learned/{name}/        (reusable procedure, human gate)
+  ├─ try-learn-skill   → _candidates.md / .claude/skills/learned/{name}/  (procedure ledger → skill, human gate)
   ├─ document-feature  → docs/modules/{module}.md              (per-module prose, mapping-confirm gate)
-  └─ document-module   → docs/modules/{slug}-architecture.md   (architecture + C4, only if architecture changed)
-                         + docs/architecture/{slug}.html
+  ├─ document-module   → docs/modules/{slug}-architecture.md   (architecture + C4, only if architecture changed)
+  │                      + docs/architecture/{slug}.html
+  └─ archive           → absolutpowers/archives/{slug}/        (move planning/tasks + summary.md, gated, always last)
 ```
 
-`document-module` runs only for touched modules whose architecture changed (new file / new public symbol / new cross-module import) — cosmetic edits are skipped to avoid noisy diagram churn. A sub-skill the project opted out of is skipped, not an error. Reminds you to review the result in `git diff` before committing.
+`document-module` runs only for touched modules whose architecture changed (new file / new public symbol / new cross-module import) — cosmetic edits are skipped to avoid noisy diagram churn. **Archiving** runs last (earlier steps still read the artifacts): once every task is `completed` it moves `planning-{slug}.md`/`tasks-{slug}.md` into `archives/{slug}/` with a `summary.md` (what/why/decisions/AC/where the durable knowledge lives), keeping the active `feature/` clean — gated, skipped for in-progress features. A sub-skill the project opted out of is skipped, not an error. Reminds you to review the result in `git diff`, then nudges once toward `ship`.
 
 - **When:** end of `implement`, before commit (`implement` prints one best-effort nudge toward it)
-- **In → Out:** path to a `tasks-*.md` / `planning-*.md` → learned skill + module docs
+- **In → Out:** path to a `tasks-*.md` / `planning-*.md` → learned skill + module docs + archived artifacts
 
 ```bash
 /absolutpowers:harvest @absolutpowers/feature/tasks-push-notifications.md
+```
+
+---
+
+### `/absolutpowers:ship`
+
+Feature closeout — turns the pipeline artifacts (planning = intent, tasks = scope, AC = verification, diff = truth) into a **conventional-commit message and a PR description** so you don't hand-write them or reverse-engineer them from the diff. With approval it makes the **local commit**. Autodetects the feature slug from the branch across `feature/` and `archives/` (harvest may already have moved the artifacts).
+
+- **When:** after `review`/`harvest`, changes ready to commit
+- **In → Out:** path to a `tasks-*.md` (or branch autodetect) + `git diff` → commit message + PR text, optional local commit
+- **Hard boundary:** never changes code or task statuses, never pushes, never opens a PR on its own (`gh pr create` only on explicit request, after `gh auth status`), never creates issues. Nothing is staged or committed before the human gate.
+
+```bash
+/absolutpowers:ship @absolutpowers/feature/tasks-push-notifications.md
+/absolutpowers:ship            # autodetect slug from current branch
 ```
 
 ## Situation → skill
@@ -228,7 +251,8 @@ Start from where you are, not from the skill list.
 | A fuzzy, multi-item client report | `problem-discuss` | Triage: split, classify, route per item |
 | A branch ready to merge | `review` (solo) / `triada-review` (multi-agent) | Code-quality audit |
 | Doubt: "is the feature consistent / any scope creep?" | `analyze` | AC→task→code traceability audit |
-| A finished feature, pre-commit | `harvest` | Captures knowledge: learned skill + docs |
+| A finished feature, pre-commit | `harvest` | Captures knowledge: learned skill + docs, archives artifacts |
+| Changes ready to commit | `ship` | Commit message + PR text from artifacts, local commit (gated) |
 | A change/plan to explain to a human | `explain` | Standalone HTML report |
 | The need to set project principles | `constitution` | Ratifies `constitution.md` (opt-in) |
 
@@ -287,13 +311,13 @@ Two files, two purposes:
 
 ### Learned skills vs `patterns.md`
 
-Learned skills are project-local callable procedures extracted by `try-learn-skill` into `.claude/skills/learned/learned-{name}/`. They differ from `patterns.md`:
+Learned skills are project-local callable procedures extracted by `try-learn-skill` into `.claude/skills/learned/learned-{name}/`. The bar is deliberately high: most features produce **no** skill — a first sighting of a non-obvious, reusable procedure is logged to `_candidates.md`, and a full skill is written only when the same procedure class recurs (promotion) or strong static reuse evidence justifies a fast-track. They differ from `patterns.md`:
 
 | | Learned skill | `patterns.md` |
 |---|---|---|
 | Captures | A **procedure** (steps/tools/decisions) | **Code structure** (recurring conventions) |
 | Form | Callable `SKILL.md` with narrow `TRIGGER when:` | Descriptive reference, read by generate-tasks / implement |
-| Lifecycle | NEW → UPDATE, `confidence: candidate → established`, `occurrences` | Re-scanned by `update-ai-context` |
+| Lifecycle | Ledger candidate (1st sighting) → promote on 2nd → NEW/UPDATE, `confidence: candidate → established`, `occurrences` | Re-scanned by `update-ai-context` |
 | Source | One finished feature + git diff | Whole-codebase scan (pattern used 3+ times) |
 
 "How the code is shaped" → `patterns.md`. "How to carry out a class of task" → learned skill.
@@ -345,7 +369,7 @@ Most agents are subagents that skills spawn automatically — you don't invoke t
 
 | Feature | Claude Code | Codex |
 |---|---|---|
-| Skills | 14 workflow + 1 PreBoot | 14 workflow + tech-lead-advisor + 1 PreBoot |
+| Skills | 15 workflow + 1 PreBoot | 15 workflow + tech-lead-advisor + 1 PreBoot |
 | Agents | 9 (review gates + phase worker + triada trio) | none |
 | Slash commands | `triada-review` | not available |
 | Multi-agent review | `triada-review` (3 parallel agents + synthesis) | not available (no parallel subagents) |
@@ -370,6 +394,7 @@ your-project/
 │   ├── reviews/
 │   │   ├── YYYY-MM-DD-{branch}.md      # Code review reports
 │   │   └── analyze-{slug}.md           # Cross-artifact audit reports
+│   ├── archives/{slug}/                # Archived planning/tasks + summary.md (from harvest)
 │   ├── memory-candidates/              # Proposed durable lessons (approval queue)
 │   ├── problem/problem-{slug}.md       # Problem triage reports
 │   ├── project-memory.md               # Approved operational memory
@@ -394,11 +419,11 @@ absolut-ai-skills/
 ├── claude/                            # Claude Code plugin
 │   ├── .claude-plugin/plugin.json
 │   ├── commands/                      # triada-review slash command
-│   ├── skills/                        # 14 workflow + 1 PreBoot skill
+│   ├── skills/                        # 15 workflow + 1 PreBoot skill
 │   └── agents/                        # 9 subagent definitions
 ├── codex/                             # Codex plugin
 │   ├── .codex-plugin/plugin.json
-│   ├── skills/                        # 14 workflow + tech-lead-advisor + 1 PreBoot skill
+│   ├── skills/                        # 15 workflow + tech-lead-advisor + 1 PreBoot skill
 │   └── scripts/
 ├── .claude-plugin/marketplace.json    # Claude marketplace → claude/
 ├── .agents/plugins/marketplace.json   # Codex marketplace → codex/
@@ -421,6 +446,16 @@ absolut-ai-skills/
 
 Versioning is SemVer, kept in sync across both manifests
 (`claude/.claude-plugin/plugin.json` + `codex/.codex-plugin/plugin.json`).
+
+### 3.12.0 — ship skill, gate convergence, interruptible task lifecycle
+- New `ship` skill (both trees) — feature closeout: generates a **conventional-commit message and PR description** from the pipeline artifacts (planning intent + tasks scope + AC + diff), and on approval makes the **local commit**. Autodetects the slug from the branch across `feature/` and `archives/`. Hard boundary: never touches code/task statuses, never pushes, never opens a PR on its own (`gh pr create` only on explicit request after `gh auth status`), never creates issues; nothing staged/committed before the human gate. Natural step after `review`/`harvest`
+- **Gate convergence protocol** across all three gates (`review-plan`, `review-tasks`, `review-implementation`) and their callers (Claude-only): every issue is tagged `[BLOCKER]` or `[WARN]`; `REJECTED` requires ≥1 blocker, a warns-only review **passes** with a `Warnings (non-blocking):` list. On resubmit the caller passes the previous verdict + applied fixes, so the gate accounts for each prior issue (`FIXED`/`NOT-FIXED`) before reporting new findings (marked `[NEW]`); the verdict follows solely from `NOT-FIXED` + `[NEW]` blockers. Fixes the "chase a fresh top-list every iteration" failure — you converge by clearing the reported list. Issue caps now list blockers first
+- **Interruptible task lifecycle** `pending → in-progress → completed` (both trees): a task/phase is marked `in-progress` before code is touched, so a run that dies mid-task leaves a marker. `implement` / `implementation-worker` detect it at session start and reconcile declared `Create:`/`Modify:` lists against the repo (finish / redo / confirm-done) instead of implementing on top of partial work; `review-implementation` and `phase-review` treat a lingering `in-progress` as a completeness `[BLOCKER]`; `review-tasks` warns if a fresh doc contains anything but `pending`
+- **`implementation-context.md` hard budget** (both trees): ≤10 lines added per phase, ≤150 lines total; the orchestrator compacts the file (digest older phases, drop entries no remaining phase needs) before spawning the next worker, and `phase-review` fails a materially over-budget entry — bounds the context every worker pays for
+- `generate-tasks` now reads **`project-memory.md`** and weaves each active trap whose paths overlap a task into that task's Requirements — the plan routes around known traps by construction instead of leaving them for the implementer to rediscover (both trees)
+- `feature-discuss` gains **Mode C — gap handoff from `problem-discuss`**: fed a `problem-{slug}.md` item classified as a gap, it inherits the confirmed evidence (business rule, what's missing, where) as fact, skips re-interviewing on settled points, designs only *how* to fill the gap, and stamps `**Źródło:** problem-{slug}.md, Sprawa N` for report→plan→tasks traceability (both trees)
+- `harvest` gains **KROK 4: artifact archiving** (always last — earlier steps still read the artifacts): once every task is `completed`, moves `planning-{slug}.md`/`tasks-{slug}.md` into `absolutpowers/archives/{slug}/` with a `summary.md` (what/why/decisions/AC/where durable knowledge lives), gated, skipped for in-progress features/epics. Also adds a one-shot nudge toward `ship` (both trees)
+- `try-learn-skill` reworked around a **candidate ledger** with an inverted default (both trees): most features → **no skill**. Adds an obviousness test (≥2 non-obvious steps surviving noun-substitution), logs a first sighting to `.claude/skills/learned/_candidates.md` without a gate, and promotes to a full learned-skill only on the **2nd occurrence** of the same class or a **fast-track** on strong static reuse evidence — abstraction built empirically by comparing two occurrences, not guessed from n=1. Module-specific gotchas are redirected to `document-feature`; ledger GC included. Supersedes the 3.11.0 reuse-surface gate
 
 ### 3.11.0 — try-learn-skill reuse-surface gate
 - `try-learn-skill` KROK 2: added an **empirical reuse-surface scan** (2B) — Grep/Glob the repo for *other* instances of the detected procedure's class, count candidates outside the feature diff. Generalizability is now proven from code, not judged from the feature's own artifacts (n=1 always self-describes as a class)
