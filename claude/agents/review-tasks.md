@@ -57,6 +57,7 @@ If a cross-phase dependency is *consumed but not declared* anywhere (not in Requ
   - Every `AC-N` item is referenced by at least one task's `**Traces to:**` field
   - No orphan AC (defined in plan but never traced by any task)
   - Tasks with `**Traces to:** none` that appear to cover an AC but don't reference it should be flagged
+  - For each task tracing to an AC, at least one **Tests:** entry embeds the corresponding literal `AC-N` token in a planned test name / display name (the pipeline verifies AC fulfillment by grepping test sources for these tokens). A traced AC with no token-bearing planned test is a `[BLOCKER]` AC_COVERAGE issue — it would silently degrade the fulfillment check back to guesswork.
   - If planning doc has no `## Acceptance Criteria` section, skip this check
 - For an epic phase: trace against the phase doc's AC and scope only. Do NOT require this tasks set to cover requirements that belong to other epic phases.
 
@@ -70,6 +71,7 @@ If a cross-phase dependency is *consumed but not declared* anywhere (not in Requ
 - Tasks are sequenced correctly — no task depends on something not yet built **within this tasks set** (cross-epic-phase dependencies declared per the section above are exempt)
 - Foundation tasks (models, types, interfaces) come before consumers (services, controllers)
 - Tests are co-located with implementation, not deferred to a separate "write all tests" task
+- Every implementation task carries a `**Test-first:**` field: `yes`, or `no` with a short reason. Missing field → `[WARN]` TEST_FIRST (if NO task in the doc has the field, treat the doc as legacy format and skip this check silently). A `no` without a reason, or a `no` on a task that is clearly business logic / validation / transformation → `[WARN]` TEST_FIRST with the suggested correction.
 - In orchestrated mode, phase dependencies are explicit and the main phase order matches those dependencies
 - For an epic phase: dependencies on earlier epic phases must be declared (in the phase doc, the main map, or Context Contract Requires); an undeclared cross-phase dependency is an ORDERING issue
 
@@ -128,7 +130,7 @@ Issues to address:
 ...
 ```
 
-Categories: TRACEABILITY, GRANULARITY, ORDERING, SPECIFICITY, VERIFICATION, CODE_REFERENCE, AC_COVERAGE, INTENT
+Categories: TRACEABILITY, GRANULARITY, ORDERING, SPECIFICITY, VERIFICATION, CODE_REFERENCE, AC_COVERAGE, INTENT, TEST_FIRST
 
 AC_COVERAGE issues use this format: `[AC_COVERAGE] General — AC-3 ("description...") not covered by any task`
 

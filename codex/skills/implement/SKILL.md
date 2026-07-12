@@ -252,12 +252,12 @@ For the task:
    - Read all sections: Create, Modify, Description, Requirements, Tests, Example
    - Check referenced files mentioned in the task
 
-2. **Implement using TDD (when appropriate)**
-   - Write tests first for: business logic, transformations, validation, pure functions
-   - Skip TDD for: configuration, simple wiring, scaffolding
-   - Run tests to confirm they fail
-   - Implement the code
-   - Run tests to confirm they pass
+2. **Implement following the task's `**Test-first:**` marker**
+   - `Test-first: yes` → write the tests from the **Tests:** section first, run them to confirm they FAIL, implement, run them to confirm they pass. The red run is part of the task — do not skip it.
+   - `Test-first: no (reason)` → implement directly; still add any tests listed in **Tests:** afterwards.
+   - Marker absent (older tasks doc) → decide yourself using the legacy rule: test-first for business logic, transformations, validation, pure functions; skip for configuration, simple wiring, scaffolding.
+   - When a test covers a traced AC, embed the literal `AC-N` token in the test name / display name (e.g. `shouldRejectEmptyQuery_AC4`, `@DisplayName("rejects empty query [AC-4]")`) — the AC fulfillment check greps for these tokens.
+   - Deviating from the marker is allowed ONLY with a reason recorded in **Implementation decisions / remarks** (e.g. "Test-first skipped: scaffold must exist before the test harness compiles"). A silent deviation is a review blocker.
 
 3. **Verify completion**
    - All files created/modified as specified
@@ -349,9 +349,12 @@ Promotion rules (apply when writing to project-memory.md):
 Skip this step entirely if no `## Acceptance Criteria` section was found in the planning doc.
 
 For each `AC-N` extracted at startup, determine fulfillment status:
-- `FULFILLED` — at least one task traces to this AC (via `**Traces to:** AC-N`), that task is `completed`, and its verification tests pass
+- `FULFILLED` — at least one task traces to this AC (via `**Traces to:** AC-N`), that task is `completed`, a grep over the project's test sources finds the literal `AC-N` token in at least one test name/annotation, and those tests pass
 - `PARTIAL` — at least one task traces to this AC but the task is not `completed` or implementation is incomplete
-- `NOT VERIFIED` — no task traces to this AC, or the tracing task has no tests covering it
+- `NOT VERIFIED (untested)` — a task traces to this AC, but no test source contains the `AC-N` token
+- `NOT VERIFIED (untraced)` — no task traces to this AC at all (plan-level gap that should have been caught before implementation)
+
+Determine test coverage by grepping test sources for the `AC-N` token — not by judgment. If the tasks doc predates the token convention (no `**Test-first:**` fields anywhere), fall back to judgment-based mapping and say so explicitly in the report.
 
 Print the fulfillment summary before the completion summary:
 
@@ -359,10 +362,10 @@ Print the fulfillment summary before the completion summary:
 AC Fulfillment:
 - AC-1: FULFILLED
 - AC-2: FULFILLED
-- AC-3: NOT VERIFIED — no test found
+- AC-3: NOT VERIFIED (untested) — token `AC-3` absent from test sources
 ```
 
-This step is informational — it does not block the completion summary.
+`NOT VERIFIED (untraced)` and legacy-mode results are informational. `NOT VERIFIED (untested)` is NOT — a traced AC without a token-matched test means the work is unfinished. Before printing the completion summary: write the missing test (smallest honest fix), or — if the AC is genuinely untestable at this level — record why in the tasks doc remarks and tell the user. Never present the feature as verified with untested traced ACs.
 
 In orchestrated mode: AC fulfillment report runs once after all phases are complete and final verification passes, before the completion summary.
 
@@ -456,7 +459,7 @@ When all tasks are complete (Step 7B), include the AC Fulfillment section if ACs
 AC Fulfillment:
 - AC-1: FULFILLED
 - AC-2: FULFILLED
-- AC-3: NOT VERIFIED — no test found
+- AC-3: NOT VERIFIED (untested) — token `AC-3` absent from test sources
 ```
 
 ### Optional: faza harvest (best-effort)

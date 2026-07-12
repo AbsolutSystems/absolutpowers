@@ -59,6 +59,7 @@ Then:
 - Tests cover success, failure, and edge cases as described
 - Tests actually assert meaningful behavior (not just "doesn't throw")
 - Test files are in correct locations following project conventions
+- Tasks marked `**Test-first:** yes` have their specified tests present and passing. A deviation from the marker (missing tests, or `Test-first: yes` visibly ignored) WITHOUT a reason recorded in that task's **Implementation decisions / remarks** is a `[BLOCKER]` TESTS issue; with a recorded, plausible reason it is a `[WARN]`. Tasks docs without any `**Test-first:**` fields are legacy format — skip this check silently.
 
 ### 5. Completeness
 - All tasks marked as completed have corresponding code changes; any task still `in-progress` means the implementation is unfinished — report it as a `[BLOCKER]` COMPLETENESS issue
@@ -79,10 +80,10 @@ Then:
   - For each `AC-N`, verify:
     - At least one completed task traces to it (via `**Traces to:** AC-N` field)
     - The tracing task's implementation exists in the code changes
-    - A test covers the behavioral expectation described in the AC
+    - A test covers the AC — verified by grepping the project's test sources for the literal `AC-N` token in test names/annotations (deterministic check, not judgment). If the tasks doc predates the token convention (no `**Test-first:**` fields anywhere), fall back to judgment-based mapping and state that explicitly in the report.
   - Report fulfillment status per AC:
-    - `FULFILLED` — implementation and test exist
-    - `NOT VERIFIED` — no test found for this AC
+    - `FULFILLED` — implementation exists and a token-matched (or, in legacy mode, judgment-matched) test exists
+    - `NOT VERIFIED` — no test found for this AC (in token mode: grep found no `AC-N` hit in test sources)
     - `MISSING` — no task traces to this AC or tracing task not implemented
   - `NOT VERIFIED` and `MISSING` are rejection reasons
   - For orchestrated tasks: read AC fulfillment across all phase files and the main tasks file

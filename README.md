@@ -112,7 +112,7 @@ Tasks move `pending → in-progress → completed`. `in-progress` is an **interr
 |---|---|---|---|
 | `feature-discuss` | PO/architect Q&A → planning doc + Acceptance Criteria | idea → `planning-{slug}.md` | both |
 | `generate-tasks` | Planning doc → sequential tasks or orchestrated phase plan | `planning-*.md` → `tasks-{slug}.md` (+ phase dir) | both |
-| `implement` | Executes tasks TDD, marks `completed` in-place | `tasks-*.md` → code + tests | both |
+| `implement` | Executes tasks per `Test-first:` marker, marks `completed` in-place | `tasks-*.md` → code + tests | both |
 | `review` | 4-phase code-quality audit (semantic / edge / rules / GC) | branch → `reviews/YYYY-MM-DD-{branch}.md` | both |
 | `harvest` | Closeout: try-learn-skill → document-feature → document-module → archive artifacts | `tasks-*.md` → learned skill + module docs + `archives/{slug}/` | both |
 | `ship` | Commit message + PR description from artifacts, local commit (gated) | `tasks-*.md` + diff → conventional commit + PR text | both |
@@ -151,7 +151,7 @@ Interactive Product Owner / Product Architect session — discusses requirements
 
 ### `/absolutpowers:generate-tasks`
 
-Reads a planning doc (or a review report, or a `planning-fix-` doc from `debug`) and produces a step-by-step plan for an AI agent: exact paths, signatures, tests, plus `Traces to: AC-N` traceability. Picks `single-file` mode (small) or `orchestrated` mode (phase files + `implementation-context.md` + final verification). Reads `constitution.md` as binding context and weaves **active `project-memory.md` traps** whose paths overlap a task into that task's Requirements (routes around known traps by construction). Runs the `review-tasks` gate.
+Reads a planning doc (or a review report, or a `planning-fix-` doc from `debug`) and produces a step-by-step plan for an AI agent: exact paths, signatures, tests, plus `Traces to: AC-N` traceability. Sets a **`Test-first:` marker** (`yes` / `no + reason`) on every task at generation time — the planner owns the TDD decision, not the implementer mid-flight — and embeds the literal `AC-N` token in the planned test names of AC-traced tasks so fulfillment is grep-verifiable, not judged. Picks `single-file` mode (small) or `orchestrated` mode (phase files + `implementation-context.md` + final verification). Reads `constitution.md` as binding context and weaves **active `project-memory.md` traps** whose paths overlap a task into that task's Requirements (routes around known traps by construction). Runs the `review-tasks` gate.
 
 - **When:** after `feature-discuss`, or after `review` finds 3+ issues
 - **In → Out:** path to a planning doc / review report → `absolutpowers/feature/tasks-{slug}.md` (+ `tasks-{slug}/` for larger features)
@@ -165,7 +165,7 @@ Reads a planning doc (or a review report, or a `planning-fix-` doc from `debug`)
 
 ### `/absolutpowers:implement`
 
-Senior engineer executing tasks sequentially with TDD. Marks a task `in-progress` before touching code and `completed` only after verification (interruption-safe — a task found `in-progress` at session start triggers partial-state recovery, not blind re-implementation), proposes alternatives (asks first), runs the final verification task, then the `review-implementation` gate. Orchestrated plans → `implementation-worker` per phase + `phase-review` before advancing (Claude); Codex runs phase files sequentially in one session. Respects `constitution.md`. Can create ADRs and memory candidates.
+Senior engineer executing tasks sequentially, following each task's `Test-first:` marker (write-tests-first + red run for `yes`, direct implement for `no`; legacy docs without the marker fall back to judgment). Embeds the `AC-N` token in tests covering a traced AC; AC fulfillment is then determined by grepping test sources for that token, and a traced AC with **no** token-matched test (`NOT VERIFIED (untested)`) now blocks completion instead of being merely informational. Marks a task `in-progress` before touching code and `completed` only after verification (interruption-safe — a task found `in-progress` at session start triggers partial-state recovery, not blind re-implementation), proposes alternatives (asks first), runs the final verification task, then the `review-implementation` gate. Orchestrated plans → `implementation-worker` per phase + `phase-review` before advancing (Claude); Codex runs phase files sequentially in one session. Respects `constitution.md`. Can create ADRs and memory candidates.
 
 - **When:** after `generate-tasks`
 - **In → Out:** path to a tasks file → implementation code + tests, updated tasks file
@@ -355,10 +355,10 @@ Most agents are subagents that skills spawn automatically — you don't invoke t
 |---|---|---|
 | `qa-enrichment` | feature-discuss | Generates behavioral Acceptance Criteria |
 | `review-plan` | feature-discuss | Validates planning completeness, feasibility, architecture, AC quality |
-| `review-tasks` | generate-tasks | Validates traceability, granularity, ordering, specificity, AC coverage, **Intent Fidelity** |
+| `review-tasks` | generate-tasks | Validates traceability, granularity, ordering, specificity, AC coverage, `Test-first:` markers, AC-token tests, **Intent Fidelity** |
 | `implementation-worker` | implement | Implements one orchestrated phase with a fresh, narrow context |
 | `phase-review` | implement | Lightweight gate after one orchestrated phase |
-| `review-implementation` | implement | Validates correctness, patterns, rules, tests, safety, AC fulfillment |
+| `review-implementation` | implement | Validates correctness, patterns, rules, tests, safety, `Test-first:` adherence, AC fulfillment (token-grep) |
 | `tech-lead-advisor` | triada-review / manual | Goal, architecture, overengineering, readability |
 | `codebase-auditor` | triada-review | Security, correctness, test quality (JSON verdict) |
 | `ui-reviewer` | triada-review | UI states, interactions, a11y, data, UI races, user goal (JSON verdict) |
@@ -446,6 +446,11 @@ absolut-ai-skills/
 
 Versioning is SemVer, kept in sync across both manifests
 (`claude/.claude-plugin/plugin.json` + `codex/.codex-plugin/plugin.json`).
+
+### 3.13.0 — Test-first marker + grep-verifiable AC fulfillment
+- **`Test-first:` marker per task** (both trees): `generate-tasks` decides TDD-or-not at generation time and stamps every implementation task `**Test-first:** yes | no ([reason])` — the planner owns the decision, not the implementer mid-flight. `yes` for business logic / transformations / validation / pure functions / bug-fix regressions; `no` (reason mandatory) for config / CRUD wiring / scaffolding / docs. `implement` follows the marker (`yes` → write tests first, confirm the **red run**, implement, confirm green; `no` → implement then add listed tests); deviating requires a recorded justification in the task remarks and is a review blocker otherwise. Docs with no `Test-first:` field anywhere are treated as legacy and fall back to judgment silently
+- **Grep-verifiable AC fulfillment** (both trees): AC-traced tasks embed the literal `AC-N` token in their planned test names / display names (e.g. `shouldRejectEmptyQuery_AC4`, `@DisplayName("… [AC-4]")`). AC fulfillment is now determined by **grepping test sources for the token** instead of by judgment — the final verification task greps every traced `AC-N` and fails on a miss. New fulfillment states: `NOT VERIFIED (untested)` (task traces the AC but no test carries the token) and `NOT VERIFIED (untraced)` (no task traces it). `untested` is **no longer informational** — a traced AC without a token-matched test means the work is unfinished and blocks proceeding to the review gate; the smallest honest fix is to write the missing test (or record why it's untestable). Legacy docs fall back to judgment-based mapping and say so explicitly
+- **Gate enforcement (Claude-only):** `review-tasks` gains category **`TEST_FIRST`** (missing/unreasoned marker → `[WARN]`) and an `AC_COVERAGE` blocker when a traced AC has no token-bearing planned test; `review-implementation` verifies AC fulfillment by grepping test sources for the `AC-N` token and treats a `Test-first: yes` marker silently ignored (no tests, no recorded reason) as a `[BLOCKER]` TESTS issue
 
 ### 3.12.0 — ship skill, gate convergence, interruptible task lifecycle
 - New `ship` skill (both trees) — feature closeout: generates a **conventional-commit message and PR description** from the pipeline artifacts (planning intent + tasks scope + AC + diff), and on approval makes the **local commit**. Autodetects the slug from the branch across `feature/` and `archives/`. Hard boundary: never touches code/task statuses, never pushes, never opens a PR on its own (`gh pr create` only on explicit request after `gh auth status`), never creates issues; nothing staged/committed before the human gate. Natural step after `review`/`harvest`

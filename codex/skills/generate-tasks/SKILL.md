@@ -151,6 +151,7 @@ If the planning doc contains a `## Acceptance Criteria` section, apply these rul
 - A task may trace to multiple ACs; one AC may be traced by multiple tasks.
 - Infrastructural tasks (scaffolding, config, CI setup) may have `**Traces to:** none` with a brief parenthetical reason, e.g., `**Traces to:** none (infrastructure task)`.
 - The final verification task traces to all ACs collectively, e.g., `**Traces to:** AC-1, AC-2, AC-3, AC-4, AC-5`.
+- For every task that traces to an AC, the planned **Tests:** entries covering that AC must embed the literal `AC-N` token in the test name / display name (e.g. `shouldRejectEmptyQuery_AC4`, `@DisplayName("rejects empty query [AC-4]")`). This makes AC fulfillment verifiable by grep instead of by judgment.
 - If the planning doc has no `## Acceptance Criteria` section, skip traceability entirely — do not error, do not invent AC identifiers.
 
 ---
@@ -208,6 +209,7 @@ Sequential tasks the agent executes in order. Each task:
 ### Task [N]: [Action-Oriented Title]
 **Status:** pending
 **Traces to:** AC-N, AC-M
+**Test-first:** yes | no ([short reason when no])
 
 **Create:**
 - `full/path/to/NewFile.ts`
@@ -332,6 +334,7 @@ Read before starting:
 ### Task 1: [Action]
 **Status:** pending
 **Traces to:** AC-N, AC-M
+**Test-first:** yes | no ([short reason when no])
 
 **Requirements:**
 - [specific requirement]
@@ -404,10 +407,11 @@ The final verification phase file `99-final-verification.md` must contain the sa
 
 ## Task Guidelines
 
-**Approach:**
-- Prefer Test-Driven Development (TDD) where it makes sense - write tests first, then implementation
-- TDD is especially useful for: business logic, data transformations, validation, pure functions
-- TDD may be skipped for: configuration, simple CRUD wiring, UI scaffolding
+**Approach — Test-first marker:**
+- Every implementation task gets a `**Test-first:**` field decided HERE, at generation time — the planner owns this decision, not the implementer mid-implementation.
+- `Test-first: yes` for: business logic, data transformations, validation, pure functions, bug-fix regression tasks.
+- `Test-first: no ([reason])` for: configuration, simple CRUD wiring, UI scaffolding, docs — the reason is mandatory, one short phrase.
+- `implement` follows the marker; deviating requires a recorded justification in the task's remarks and is reviewable. The marker set here is the contract.
 
 **Granularity:**
 - One logical unit of work per task
@@ -428,6 +432,7 @@ The final verification phase file `99-final-verification.md` must contain the sa
 - Method signatures with types
 - References to existing code patterns
 - Required tests with descriptions
+- Test-first marker (`yes` / `no` with reason) on every implementation task
 - Code examples for non-obvious implementations
 - Configuration changes
 - A final verification task as the LAST task, with concrete project commands
@@ -473,6 +478,7 @@ Run the project's final verification commands against the fully integrated chang
 - Run frontend build/typecheck command: `[exact command from project]`
 - Run lint or formatter check command: `[exact command from project]`
 - If the project uses formatter gates such as `spotlessCheck`, run them here instead of inventing a generic formatting command
+- If the planning doc contains `## Acceptance Criteria`: for every `AC-N` traced by any task, grep the project's test sources for the literal token `AC-N` (scoped to the test locations from the project context section) — every traced AC must appear in at least one test name/annotation; a missing token means this verification fails
 - Record any command that is intentionally skipped as `not applicable` with a short reason
 - Do not mark this task as completed if any required verification command fails
 
@@ -480,6 +486,7 @@ Run the project's final verification commands against the fully integrated chang
 - Backend build/test exits with code 0
 - Frontend build/typecheck exits with code 0
 - Lint / formatter check exits with code 0
+- Every traced `AC-N` token found in test sources (grep hit per token; skip when the planning doc has no AC section)
 
 **Implementation decisions / remarks:**
 - Commands executed: [fill after completion]
@@ -503,6 +510,7 @@ npm run typecheck
 ### Task 3: Create ArchiveService
 **Status:** pending
 **Traces to:** AC-2, AC-5
+**Test-first:** yes
 
 **Create:**
 - `src/services/ArchiveService.ts`
@@ -522,8 +530,8 @@ Service for archiving files to backup storage with checksum validation. Uses Sft
 - Log operations at INFO level, errors at ERROR level
 
 **Tests:**
-- Success: file archived, correct checksum returned
-- Failure: SFTP error throws ArchiveException
+- Success: file archived, correct checksum returned — `archivesFileWithValidChecksum_AC2`
+- Failure: SFTP error throws ArchiveException — `throwsArchiveExceptionOnSftpError_AC5`
 - Edge: empty buffer handled gracefully
 
 **Implementation decisions / remarks:**
