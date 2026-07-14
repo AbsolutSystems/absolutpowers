@@ -221,7 +221,7 @@ W Codex użyj odpowiedniego skilla `explain` z pluginu `absolutpowers`. Wynikiem
 
 ### Czy muszę używać wszystkich skilli po kolei?
 
-Nie. Każdy skill działa samodzielnie. Ale pipeline `feature-discuss → generate-tasks → implement → review` daje najlepsze rezultaty, bo każdy krok buduje na poprzednim.
+Nie. Każdy skill działa samodzielnie. Ale pipeline `feature-discuss → generate-tasks → implement → review` (potem closeout `ship`) daje najlepsze rezultaty, bo każdy krok buduje na poprzednim. `review` to punkt domknięcia; `ship` to mechaniczny closeout po nim (commit + archiwizacja), nie kolejna bramka.
 
 ### Co jeśli review gate odrzuci mój plan 3 razy?
 

@@ -167,7 +167,7 @@ claude -p "/goal <same condition>" --output-format stream-json --verbose
 | `document-module` | Architecture docs from a code scan + C4 diagrams | module → `docs/modules/{slug}-architecture.md` + HTML | all |
 | `preboot` | Doc router / guardrail for the PreBoot.io library ecosystem | PreBoot usage → reads `./preboot-docs/` | all |
 
-Cards below cover the 6 core pipeline skills in depth. The rest behave as the table describes.
+Cards below cover 6 key skills in depth (the four pipeline skills plus `try-learn-skill` and `ship`). The rest behave as the table describes.
 
 ---
 
@@ -509,6 +509,11 @@ pi -e /path/to/absolut-ai-skills
 
 Versioning is SemVer, kept in sync across both manifests
 (`.claude-plugin/plugin.json` + `.codex-plugin/plugin.json`, both at repo root since 5.0.0).
+
+### 5.1.1 — `ship` terminal-state + spójne framowanie closeout (review 5.x)
+- **`ship` gets a `## Terminal state` block** — it was the only pipeline-adjacent skill without one. Declares ship as the **mechanical closeout after `review`** (local commit + artifact archiving, then push/merge = the human's move), explicitly **not a gate/chain link**. Resolves the review finding that ship's role was framed two incompatible ways across docs
+- **Consistent closeout framing:** `hooks/session-context.md` (injected every session) now names `@ship` as the post-`review` closeout instead of omitting it; `docs/getting-started.md` FAQ no longer contradicts its own skills table (both now show `review` → `ship` closeout); README "6 core pipeline skills" relabeled (try-learn/ship are covered in depth but aren't pipeline-gate skills). Convention settled: four gated pipeline skills with `review` as the `/goal` closure point, `ship` as the closeout after
+- Outcome of a full solo review of the whole 5.x delta vs 3.13.0 (report in `absolutpowers/reviews/2026-07-14-release-5x-vs-3130.md`): executable/config surfaces (`.pi` extension, hook chain, forked scripts, vendored companion) all clean, no HIGH/MED code findings
 
 ### 5.1.0 — `try-learn-skill` → codebase-scan; `harvest` removed, archiving folded into `ship`
 - **`try-learn-skill` reworked from feature-artifact to codebase scan.** It no longer learns from a single finished feature's `planning`+`tasks`+`diff` (n=1 → one-off skills). It now **scans the whole codebase** (optional scope arg; threshold N, default 3) for repeated, non-obvious procedures — a pattern qualifies only with **≥N occurrences carrying `file:line` evidence** AND **≥2 non-obvious steps surviving noun-substitution**. Survivors are presented as a **batch**; only user-ticked candidates are written to `.claude/skills/learned/` (human gate preserved). The candidate ledger (`_candidates.md`), the "promote on 2nd occurrence" mechanism, and fast-track are gone — the scan supplies repetition evidence in one pass. A new explicit **boundary vs `update-ai-context`** (passive docs vs active invocable procedures) is written into the skill
