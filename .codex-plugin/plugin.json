@@ -1,0 +1,41 @@
+{
+  "name": "absolutpowers",
+  "version": "5.0.0",
+  "description": "AI-assisted development lifecycle skills for planning, implementation, review, debugging, human onboarding reports, and shared Claude/Codex project context.",
+  "author": {
+    "name": "Absolut Systems",
+    "url": "https://github.com/AbsolutSystems/absolutpowers"
+  },
+  "homepage": "https://github.com/AbsolutSystems/absolutpowers",
+  "repository": "https://github.com/AbsolutSystems/absolutpowers",
+  "license": "MIT",
+  "keywords": [
+    "planning",
+    "implementation",
+    "review",
+    "debugging",
+    "explain",
+    "onboarding",
+    "claude",
+    "codex"
+  ],
+  "skills": "./skills/",
+  "interface": {
+    "displayName": "AbsolutPowers",
+    "shortDescription": "Plan, implement, review, debug, explain, and maintain shared AI context",
+    "longDescription": "A shared development workflow plugin for Codex and Claude projects. It covers feature discussion, task generation, implementation, review, debugging, human-readable onboarding reports, and synchronized CLAUDE.md / AGENTS.md project context.",
+    "developerName": "Absolut Systems",
+    "category": "Coding",
+    "capabilities": [
+      "Interactive",
+      "Write"
+    ],
+    "websiteURL": "https://github.com/AbsolutSystems/absolutpowers",
+    "privacyPolicyURL": "https://github.com/AbsolutSystems/absolutpowers",
+    "termsOfServiceURL": "https://github.com/AbsolutSystems/absolutpowers",
+    "defaultPrompt": [
+      "Use absolutpowers to discuss, implement, review, explain, and keep CLAUDE.md plus AGENTS.md in sync."
+    ],
+    "brandColor": "#1F4B99"
+  }
+}

@@ -10,7 +10,7 @@
     {
       "name": "absolutpowers",
       "description": "Development lifecycle skills: feature design, task generation, implementation, review, debugging",
-      "source": "./claude",
+      "source": ".",
       "category": "development"
     }
   ]

@@ -1,0 +1,39 @@
+#!/usr/bin/env bash
+# SessionStart hook for the absolutpowers plugin.
+# Mechanism vendored from obra/superpowers (MIT License) — see VENDORED.md.
+# Content is our own: reads hooks/session-context.md and re-injects it as
+# additionalContext, instead of the full using-superpowers dispatcher.
+
+set -euo pipefail
+
+# Determine plugin root directory
+SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
+PLUGIN_ROOT="$(cd "${SCRIPT_DIR}/.." && pwd)"
+
+# Read the shared session-context content (also read by the Pi extension).
+session_context_content=$(cat "${PLUGIN_ROOT}/hooks/session-context.md" 2>&1 || echo "Error reading session-context.md")
+
+# Escape string for JSON embedding using bash parameter substitution.
+# Each ${s//old/new} is a single C-level pass - orders of magnitude
+# faster than a character-by-character loop.
+escape_for_json() {
+    local s="$1"
+    s="${s//\\/\\\\}"
+    s="${s//\"/\\\"}"
+    s="${s//$'\n'/\\n}"
+    s="${s//$'\r'/\\r}"
+    s="${s//$'\t'/\\t}"
+    printf '%s' "$s"
+}
+
+session_context_escaped=$(escape_for_json "$session_context_content")
+session_context="<EXTREMELY_IMPORTANT>\n${session_context_escaped}\n</EXTREMELY_IMPORTANT>"
+
+# Output context injection as JSON for Claude Code.
+# Claude Code hooks expect hookSpecificOutput.additionalContext (nested).
+# Codex reads AGENTS.md instead — this hook is Claude-only.
+#
+# Uses printf instead of heredoc to work around bash 5.3+ heredoc hang.
+printf '{\n  "hookSpecificOutput": {\n    "hookEventName": "SessionStart",\n    "additionalContext": "%s"\n  }\n}\n' "$session_context" | cat
+
+exit 0

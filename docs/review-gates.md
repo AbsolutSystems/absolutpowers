@@ -39,10 +39,11 @@ all phases + final verification ──▶ review-implementation ──▶ PASS /
 
 ## Dostępność
 
-| Platforma | Review gates |
+| Harness | Review gates |
 |-----------|-------------|
-| Claude Code | Tak (subagenty w `claude/agents/`, w tym `phase-review` dla orchestrated implementation) |
-| Codex | Nie (brak wsparcia dla plugin-level agentów) |
+| Claude Code | Tak (zarejestrowane subagenty w `agents/`, w tym `phase-review` dla orchestrated implementation) |
+| Codex | Nie — precyzyjnie: Codex nie ma rejestru **zarejestrowanych typów agentów** (nie da się wystawić `agents/*.md` jako nazwanej tożsamości subagenta), więc `Agent(subagent_type="review-tasks", ...)` nie ma do czego się odnieść. To nie znaczy braku dispatchu subagentów — Codex ma `multi_agent=true` → `spawn_agent`/`wait_agent`/`close_agent` — po prostu nic nie jest zarejestrowane do dispatchowania |
+| Pi | Nie jako pełny gate — z tego samego powodu (brak rejestru typów agentów). Degradacja dwustopniowa: jeśli zainstalowany `pi-subagents`, dispatch generycznego subagenta z treścią docelowego `agents/{name}.md` jako promptem; inaczej review inline z jawną notą o braku pełnej izolacji. Zobacz `references/pi-tools.md` ("Review gates on Pi") |
 
 ## qa-enrichment
 

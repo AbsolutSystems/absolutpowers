@@ -5,7 +5,11 @@ Ten przewodnik przeprowadzi Cię przez instalację i pierwsze użycie AbsolutPow
 ## Wymagania
 
 - [Claude Code](https://docs.anthropic.com/en/docs/claude-code) CLI lub IDE extension (VS Code / JetBrains)
-- Opcjonalnie: [Codex](https://github.com/openai/codex) jeśli chcesz korzystać z obu platform
+- Opcjonalnie: [Codex](https://github.com/openai/codex) i/lub [Pi](https://github.com/earendil-works/pi), jeśli chcesz korzystać z więcej niż jednego harnessu
+
+Od wersji 5.0.0 repo to **jedno** drzewo `skills/` — każdy harness dostaje dokładnie ten sam
+`SKILL.md`, plus cienki manifest/integrację (`.claude-plugin/`, `.codex-plugin/`,
+`.pi/extensions/`). Zainstaluj osobno dla każdego harnessu, którego używasz.
 
 ## Instalacja
 
@@ -17,10 +21,22 @@ Ten przewodnik przeprowadzi Cię przez instalację i pierwsze użycie AbsolutPow
 ```
 
 Zrestartuj Claude Code. Wpisz `/absolutpowers:` — autouzupełnianie pokaże dostępne skille.
+Hook `SessionStart` (`hooks/hooks.json`) automatycznie wstrzykuje dyscyplinę pipeline'u
+(`hooks/session-context.md`) przy starcie, `clear` i po `compact`.
 
 ### Codex
 
-Otwórz dowolne repozytorium w Codex. Repo AbsolutPowers Skills eksponuje marketplace w `.agents/plugins/marketplace.json`. Zainstaluj plugin `absolutpowers` z repo marketplace.
+Otwórz dowolne repozytorium w Codex. Repo AbsolutPowers Skills eksponuje marketplace w `.agents/plugins/marketplace.json`. Zainstaluj plugin `absolutpowers` z repo marketplace. Codex czyta `AGENTS.md` (symlink do `CLAUDE.md`) jako bootstrap — nie ma tu hooka sesyjnego.
+
+### Pi
+
+Do lokalnego developmentu uruchom Pi z tym checkoutem jako tymczasowym pakietem:
+
+```bash
+pi -e /path/to/absolut-ai-skills
+```
+
+`.pi/extensions/absolutpowers.ts` rejestruje `skills/` w Pi i wstrzykuje `hooks/session-context.md` przy `session_start` i po `session_compact` — tę samą treść, którą czyta hook Claude. Pi ma natywne skille, więc nie trzeba kompatybilnego narzędzia `Skill`; dispatch subagentów (`pi-subagents`) to opcjonalny pakiet — patrz `references/pi-tools.md` co degraduje bez niego.
 
 ### Weryfikacja instalacji
 
@@ -35,7 +51,9 @@ Otwórz dowolne repozytorium w Codex. Repo AbsolutPowers Skills eksponuje market
 
 Plus komenda `/absolutpowers:triada-review` (równoległy multi-agent review).
 
-**Codex:** wpisz `$absolutpowers` i sprawdź autouzupełnianie. Te same workflow skille, plus skill `tech-lead-advisor`. Brak komend i bramek (Codex nie ma plugin-level subagentów).
+**Codex:** wpisz `$absolutpowers` i sprawdź autouzupełnianie — te same 15 workflow skille + `preboot` (jeden wspólny wierzchołek `skills/`, bez osobnej kopii). Brak komend i brak review gate'ów — nie dlatego, że Codex nie potrafi wywołać subagenta (ma `multi_agent=true` → `spawn_agent`/`wait_agent`/`close_agent`), ale dlatego, że nie ma rejestru nazwanych typów agentów (`agents/*.md`), więc `Agent(subagent_type=...)` nie ma do czego się odnieść.
+
+**Pi:** te same 15 workflow skilli + `preboot`, ładowane natywnie. Review gate'y degradują dwustopniowo — dispatch generycznego subagenta (jeśli zainstalowany `pi-subagents`) z treścią docelowego `agents/{name}.md` jako promptem, albo review inline z jawną notą o braku pełnej izolacji. Szczegóły: `references/pi-tools.md`.
 
 ## Krok 1: Przygotuj projekt
 
@@ -160,7 +178,9 @@ W Claude Code dla orchestrated tasków `implement` działa jako orkiestrator:
 5. Dopiero po `VERDICT: PASS` oznacza fazę jako `completed`
 6. Po wszystkich fazach uruchamia final verification i pełny `review-implementation`
 
-W Codex phase files są wykonywane sekwencyjnie w tej samej sesji, bez plugin-level subagentów.
+W Codex i Pi phase files są domyślnie wykonywane sekwencyjnie w tej samej sesji — nie ma rejestru
+`implementation-worker`/`phase-review` jako nazwanych typów agentów. Na Pi z zainstalowanym
+`pi-subagents` można opcjonalnie dispatchować każdą fazę jako subagenta (patrz `references/pi-tools.md`).
 
 Po ukończeniu wszystkich tasków — automatyczny review gate sprawdza kod.
 

@@ -4,34 +4,49 @@ Jak modyfikować skille, agentów i strukturę pluginu.
 
 ## Struktura repozytorium
 
+Od wersji 5.0.0 repo trzyma **jedno** host-agnostyczne drzewo skilli — bez luster
+`claude/`/`codex/`, bez skryptów sync, bez detekcji driftu (nie ma czego porównywać):
+
 ```
 absolut-ai-skills/
-├── claude/                          # Claude Code plugin
-│   ├── .claude-plugin/plugin.json   # Plugin manifest (wersja, opis)
-│   ├── skills/                      # Skille — po jednym katalogu na skill
-│   │   └── {skill-name}/
-│   │       └── SKILL.md             # Definicja skilla (frontmatter + prompt)
-│   └── agents/                      # Subagenty — po jednym pliku na agenta
-│       └── {agent-name}.md          # Definicja agenta (frontmatter + prompt)
+├── skills/                          # jedno źródło prawdy dla każdego harnessu
+│   ├── {skill-name}/
+│   │   └── SKILL.md                 # definicja skilla (frontmatter + prompt), host-agnostyczna
+│   └── vendored/                    # skille zvendorowane z obra/superpowers (MIT) — patrz VENDORED.md
 │
-├── codex/                           # Codex plugin
-│   ├── .codex-plugin/plugin.json    # Plugin manifest
-│   ├── skills/                      # Skille (bez agent gates, bez Claude frontmatter)
-│   └── scripts/
-│       └── sync_claude_to_agents.py # CLAUDE.md → AGENTS.md sync helper
+├── agents/                          # subagenty — top-level, Claude-only
+│   └── {agent-name}.md              # definicja agenta (frontmatter + prompt)
+├── commands/                        # slash commands — top-level, Claude-only
+│   └── triada-review.md
 │
-├── .claude-plugin/marketplace.json  # Claude marketplace (wskazuje na claude/)
-├── .agents/plugins/marketplace.json # Codex marketplace (wskazuje na codex/)
+├── references/                      # mapowania per-harness, czytane warunkowo
+│   └── pi-tools.md                  # np. dispatch subagentów, degradacja review gate'ów na Pi
 │
-├── scripts/
-│   ├── diff-skills.sh               # Porównanie skilli Claude vs Codex
-│   └── sync_claude_to_agents.py     # CLAUDE.md → AGENTS.md sync w projektach
+├── hooks/                           # slim hook Claude (SessionStart)
+│   ├── hooks.json
+│   ├── run-hook.cmd
+│   ├── session-start
+│   └── session-context.md           # wspólna treść bootstrap — czyta ją też integracja Pi
 │
-├── docs/                            # Dokumentacja
+├── .pi/extensions/absolutpowers.ts  # integracja Pi (rejestruje skills/, wstrzykuje session-context.md)
+│
+├── .claude-plugin/plugin.json       # manifest Claude (root)
+├── .claude-plugin/marketplace.json  # marketplace Claude → source: "."
+├── .codex-plugin/plugin.json        # manifest Codex (root)
+├── .agents/plugins/marketplace.json # marketplace Codex → source.path: "."
+├── AGENTS.md                        # symlink → CLAUDE.md (bootstrap dla Codex)
+│
+├── VENDORED.md                      # log vendoringu: źródła, przypięty SHA, lokalne modyfikacje
+├── LICENSE-VENDORED                 # pełny tekst licencji MIT dla treści zvendorowanej
+│
+├── docs/                            # dokumentacja
 └── README.md
 ```
 
-## Anatomia skilla (Claude Code)
+Dodanie kolejnego harnessu to nowa integracja + opcjonalny `references/{harness}-tools.md` —
+**zero edycji skilli**. Zobacz `CLAUDE.md` → "Adding a New Harness" po szczegółowy przepis.
+
+## Anatomia skilla
 
 ```markdown
 ---
@@ -39,14 +54,18 @@ name: skill-name
 description: >
   Opis skilla — kiedy się triggeruje, co robi.
   TRIGGER when: lista fraz wyzwalających.
-allowed-tools: Read, Glob, Grep, Agent, ...
-argument-hint: "[opis argumentu]"
+allowed-tools: Read, Glob, Grep, Agent, ...   # Claude only — inertne/ignorowane na Codex/Pi
+argument-hint: "[opis argumentu]"             # Claude only — inertne/ignorowane na Codex/Pi
 ---
 
 # Nagłówek
 
 Prompt skilla — instrukcje dla AI agenta.
 ```
+
+Jeden plik `SKILL.md` obsługuje wszystkie harnessy. Treść body musi być host-agnostyczna —
+frontmatter Claude-only i sekcje wywołujące zarejestrowane agenty są tolerowane i inertne na
+Codex/Pi (traktowane jako zwykła proza), więc nie wymagają osobnej kopii pliku.
 
 ### Frontmatter
 
@@ -62,7 +81,15 @@ Prompt skilla — instrukcje dla AI agenta.
 Reszta pliku po frontmatter to prompt — instrukcje w Markdown. Zmienne:
 - `$ARGUMENTS` — argument podany przez użytkownika przy wywołaniu
 
-## Anatomia agenta (Claude Code)
+### Różnice per harness — `references/{harness}-tools.md`
+
+Kiedy konkretny harness potrzebuje innego mapowania akcji na prymitywy (np. dispatch subagenta,
+degradacja review gate'a, task tracking) — ta różnica idzie do `references/{harness}-tools.md`,
+czytanego warunkowo przez skill/integrację danego harnessu. Nigdy nie forkuj treści `SKILL.md` per
+harness. Przykład: `references/pi-tools.md` opisuje mapowanie akcji na prymitywy Pi i dwustopniową
+degradację zarejestrowanych bramek review.
+
+## Anatomia agenta (Claude Code only)
 
 ```markdown
 ---
@@ -95,6 +122,11 @@ Prompt agenta.
 
 **Ograniczenia agentów w pluginach:** `hooks`, `mcpServers`, `permissionMode` nie są obsługiwane.
 
+Agenty (`agents/*.md`) to **zarejestrowane typy** — mechanizm dostępny wyłącznie w pluginach
+Claude Code. Codex i Pi nie mają odpowiednika tej rejestracji (patrz `CLAUDE.md` → "Review Gates
+(Claude only)" po precyzyjne rozróżnienie: brak rejestru ≠ brak dispatchu subagentów — Codex ma
+`multi_agent=true`/`spawn_agent`, Pi ma opcjonalny `pi-subagents`).
+
 ### Jak skill uruchamia agenta
 
 W SKILL.md dodaj `Agent` do `allowed-tools`, potem w promptcie:
@@ -107,37 +139,21 @@ Agent(subagent_type="review-plan", prompt="Review planning document: ./absolutpo
 \```
 ```
 
-AI agent przeczyta tę instrukcję i użyje narzędzia Agent z odpowiednimi parametrami.
-
-## Anatomia skilla (Codex)
-
-Identyczny format jak Claude, ale **bez** pól `allowed-tools` i `argument-hint` w frontmatter. Bez referencji do agentów w promptcie.
+AI agent przeczyta tę instrukcję i użyje narzędzia Agent z odpowiednimi parametrami. Na Codex/Pi
+ta sama sekcja jest inertna (zwykła proza) — patrz `references/pi-tools.md` po wzorzec degradacji.
 
 ## Dodawanie nowego skilla
 
-### Claude Code
-
-1. Utwórz `claude/skills/{skill-name}/SKILL.md`
-2. Zdefiniuj frontmatter z `name`, `description`, `allowed-tools`, `argument-hint`
-3. Napisz prompt
-
-### Codex
-
-1. Utwórz `codex/skills/{skill-name}/SKILL.md`
-2. Zdefiniuj frontmatter z `name`, `description` (bez `allowed-tools`, `argument-hint`)
-3. Napisz prompt (bez referencji do agentów)
-
-### Na obu platformach
-
-Utwórz skill w obu katalogach. Użyj drift detection żeby sprawdzić różnice:
-
-```bash
-./scripts/diff-skills.sh --diff
-```
+1. Utwórz `skills/{skill-name}/SKILL.md`
+2. Zdefiniuj frontmatter z `name`, `description`, opcjonalnie `allowed-tools`/`argument-hint`
+   (Claude-only pola — zostaw jeśli skill ich używa, będą inertne na innych harnessach)
+3. Napisz prompt — host-agnostyczny; jeśli fragment dotyczy tylko jednego harnessu, rozważ
+   przeniesienie go do `references/{harness}-tools.md` zamiast wplatania warunków w body
+4. Jeden plik obsługuje Claude Code, Codex i Pi — nie ma potrzeby tworzyć kopii per platforma
 
 ## Dodawanie nowego agenta
 
-1. Utwórz `claude/agents/{agent-name}.md`
+1. Utwórz `agents/{agent-name}.md` (top-level, Claude-only)
 2. Zdefiniuj frontmatter
 3. Napisz prompt
 4. W SKILL.md odpowiedniego skilla: dodaj `Agent` do `allowed-tools` i instrukcję spawnu
@@ -166,14 +182,17 @@ Kontrakt ownership:
 - `phase-review` jest read-only i zwraca tylko `VERDICT: PASS` albo `VERDICT: REJECTED`
 - pełny `review-implementation` zostaje końcowym gate'em po wszystkich fazach
 
-Codex nie ma plugin-level agentów, więc jego `implement` wykonuje phase files sekwencyjnie w tej samej sesji.
+Codex i Pi nie mają rejestru zarejestrowanych typów agentów, więc `implement` wykonuje phase
+files sekwencyjnie w tej samej sesji na obu (Pi może opcjonalnie dispatchować przez
+`pi-subagents`, jeśli zainstalowany — patrz `references/pi-tools.md`).
 
 ## Modyfikacja istniejącego skilla
 
-1. Edytuj SKILL.md w `claude/skills/` lub `codex/skills/` (albo w obu)
-2. Sprawdź drift: `./scripts/diff-skills.sh --diff`
-3. Jeśli zmiana dotyczy obu platform — ręcznie zsynchronizuj
-4. Jeśli zmiana jest Claude-only (np. agent gate) — edytuj tylko `claude/`
+1. Edytuj `skills/{skill-name}/SKILL.md` — jedna edycja serwuje wszystkie harnessy
+2. Jeśli zmiana dotyczy zachowania specyficznego dla jednego harnessu — rozważ, czy powinna
+   trafić do `references/{harness}-tools.md` zamiast rozgałęziać body skilla
+3. Jeśli zmiana jest Claude-only (np. nowa sekcja agent gate) — dodaj ją jako sekcję tolerowaną
+   przez pozostałe harnessy (proza inertna), nie jako osobny plik
 
 ### Zmiany w formacie tasków
 
@@ -182,20 +201,17 @@ Codex nie ma plugin-level agentów, więc jego `implement` wykonuje phase files 
 - `orchestrated` — parent `tasks-{slug}.md`, katalog `tasks-{slug}/`, phase files, `implementation-context.md`, `99-final-verification.md`
 
 Przy zmianach w tym formacie aktualizuj razem:
-- `claude/skills/generate-tasks/SKILL.md`
-- `claude/skills/implement/SKILL.md`
-- `claude/agents/review-tasks.md`
-- `claude/agents/review-implementation.md`
-- `claude/agents/qa-enrichment.md` (jeśli zmiana dotyczy AC w tasks, np. format pola `Traces to:`)
-- `codex/skills/generate-tasks/SKILL.md`
-- `codex/skills/implement/SKILL.md`
+- `skills/generate-tasks/SKILL.md`
+- `skills/implement/SKILL.md`
+- `agents/review-tasks.md`
+- `agents/review-implementation.md`
+- `agents/qa-enrichment.md` (jeśli zmiana dotyczy AC w tasks, np. format pola `Traces to:`)
 - dokumentację w `README.md` i `docs/`
 
 ### PreBoot skill
 
-PreBoot jest obsługiwany przez jeden skill:
-- `claude/skills/preboot/SKILL.md`
-- `codex/skills/preboot/SKILL.md`
+PreBoot jest obsługiwany przez jeden skill na całe repo:
+- `skills/preboot/SKILL.md`
 
 Nie dodawaj z powrotem osobnych skilli `preboot-core`, `preboot-query`, `preboot-saga` itd. `preboot` ma tylko wykrywać moduł i routować agenta do lokalnej dokumentacji projektu w `./preboot-docs/`.
 
@@ -210,13 +226,13 @@ Zasady:
 Wersja w manifestach platform — wszystkie deklarowane wersje muszą być zgodne:
 
 ```
-claude/.claude-plugin/plugin.json     → "version"
-codex/.codex-plugin/plugin.json       → "version"
+.claude-plugin/plugin.json    → "version"
+.codex-plugin/plugin.json     → "version"
 ```
 
 Konwencja SemVer:
-- **Major** (X.0.0) — zmiana struktury, breaking changes
-- **Minor** (0.X.0) — nowy skill, nowy agent, nowy feature
+- **Major** (X.0.0) — zmiana struktury, breaking changes (np. kolaps do jednego drzewa w 5.0.0)
+- **Minor** (0.X.0) — nowy skill, nowy agent, nowy feature, nowy harness
 - **Patch** (0.0.X) — poprawki promptów, bugfixy
 
 ## Testowanie zmian
@@ -230,9 +246,16 @@ Konwencja SemVer:
 
 ### Lokalne testowanie Codex
 
-1. Edytuj SKILL.md w `codex/skills/`
+1. Edytuj SKILL.md w `skills/`
 2. Otwórz projekt testowy w Codex
-3. Zainstaluj plugin z repo marketplace
+3. Zainstaluj plugin z repo marketplace (`.agents/plugins/marketplace.json`)
+4. Wywołaj skill
+
+### Lokalne testowanie Pi
+
+1. Edytuj SKILL.md w `skills/` (lub `.pi/extensions/absolutpowers.ts` / `references/pi-tools.md`)
+2. Uruchom Pi z tym checkoutem jako tymczasowym pakietem: `pi -e /path/to/absolut-ai-skills`
+3. Sprawdź czy bootstrap (`hooks/session-context.md`) wstrzykuje się przy starcie sesji i po compaction
 4. Wywołaj skill
 
 ### Testowanie review gate'ów
@@ -251,27 +274,30 @@ Konwencja SemVer:
 5. Sprawdź czy `phase-review` blokuje przejście dalej przy scope/test/handoff problemach
 6. Sprawdź czy finalny `review-implementation` czyta wszystkie phase files
 
-## Drift management
-
-Skille Claude i Codex będą z czasem coraz bardziej się różnić — to zamierzone. Żeby trzymać kontrolę:
+## Walidacja strukturalna (bez systemu budowania)
 
 ```bash
-# Podsumowanie różnic
-./scripts/diff-skills.sh
+# Manifesty to poprawny JSON
+for f in $(git ls-files '*.json'); do python3 -m json.tool "$f" >/dev/null || echo "BAD: $f"; done
 
-# Pełny diff
-./scripts/diff-skills.sh --diff
+# Hook emituje poprawny JSON
+CLAUDE_PLUGIN_ROOT=. bash hooks/session-start | python3 -m json.tool >/dev/null
+
+# Każdy SKILL.md ma frontmatter
+for f in $(git ls-files 'skills/**/SKILL.md'); do head -1 "$f" | grep -q '^---$' || echo "NO FM: $f"; done
 ```
 
-Oczekiwane różnice:
-- Frontmatter (`allowed-tools`, `argument-hint`) — Claude only
-- Sekcje agent gate — Claude only
-- Orchestrated execution przez `implementation-worker` i `phase-review` — Claude only
-- Codex fallback wykonuje phase files sekwencyjnie bez plugin-level agentów
-- `preboot` powinien pozostać zsynchronizowany między Claude i Codex, bo nie używa Claude-only agentów
-- `$ARGUMENTS` vs nieco inna składnia — platform-specific
+## Vendoring z obra/superpowers
 
-Nieoczekiwane różnice do zsynchronizowania:
-- Zmiana w fazach/krokach skilla
-- Nowe sekcje w promptcie
-- Zmiana formatu output
+`skills/vendored/` trzyma skille skopiowane, przycięte i dostosowane z
+[obra/superpowers](https://github.com/obra/superpowers) na licencji MIT. Zasady:
+
+- Pełna proweniencja (źródłowa ścieżka, przypięty SHA, lokalne modyfikacje) w `VENDORED.md`
+- Pełny tekst licencji w `LICENSE-VENDORED`
+- Każdy zvendorowany plik ma jednolinijkową notę MIT/source zaraz po frontmatter
+- Śledzenie upstreamu jest kwartalne i selektywne (patrz proces w `VENDORED.md`) — nie
+  auto-sync, nie parytet wersji z obrą
+- `vendor/superpowers/` (klon roboczy poza repo pluginu, gitignorowany) to jedyne źródło do
+  kopiowania — nie kopiuj z GitHub bez przypiętego SHA
+
+Nie dodawaj nowych zvendorowanych skilli bez aktualizacji `VENDORED.md`.

@@ -1,12 +1,16 @@
 # AbsolutPowers
 
-AI-assisted development lifecycle — from feature design through implementation to code review. Works with **Claude Code** and **Codex**.
+AI-assisted development lifecycle — from feature design through implementation to code review. Works with **Claude Code**, **Codex**, and **Pi**.
 
 Instead of ad-hoc prompting, AbsolutPowers gives your AI agent a structured workflow. Each skill owns one phase. Skills chain into a pipeline with automated quality gates (Claude Code) that catch problems before they cascade.
+
+As of **5.0.0** the repo is one host-agnostic skill tree under `skills/` — not mirrored per-harness trees — plus a thin manifest/integration per harness (Claude, Codex, Pi) and a small set of skills vendored under MIT from [obra/superpowers](https://github.com/obra/superpowers) in `skills/vendored/`. See [Repo Structure](#repo-structure-this-repository) and [Attribution](#attribution).
 
 ## Quick Start
 
 ### 1. Install
+
+Installation differs by harness. If you use more than one, install AbsolutPowers separately for each.
 
 **Claude Code**
 
@@ -15,9 +19,21 @@ Instead of ad-hoc prompting, AbsolutPowers gives your AI agent a structured work
 /plugin install absolutpowers@absolutpowers-skills
 ```
 
-Restart Claude Code, then type `/absolutpowers:` — autocomplete lists every skill.
+Restart Claude Code, then type `/absolutpowers:` — autocomplete lists every skill. The bundled `hooks/hooks.json` `SessionStart` hook re-injects pipeline discipline (`hooks/session-context.md`) at startup, `clear`, and after `compact`.
 
-**Codex** — open the repo in Codex → repo marketplace (`.agents/plugins/marketplace.json`) → install `absolutpowers`.
+**Codex**
+
+Open this repo (or a project that vendors it) in Codex → repo marketplace (`.agents/plugins/marketplace.json`) → install `absolutpowers`. Codex reads `AGENTS.md` (a symlink to `CLAUDE.md`) as its bootstrap context; there is no session hook on Codex.
+
+**Pi**
+
+For local development, run Pi with this checkout loaded as a temporary extension source:
+
+```bash
+pi -e /path/to/absolut-ai-skills
+```
+
+`.pi/extensions/absolutpowers.ts` registers `skills/` with Pi and re-injects `hooks/session-context.md` at `session_start` and after `session_compact` — the same shared bootstrap content the Claude hook reads, never duplicated. Pi has native skill support, so no compatibility `Skill` tool is required; subagent dispatch (`pi-subagents`) is an optional companion package — see `references/pi-tools.md` for what degrades without it.
 
 ### 2. Bootstrap project context (once)
 
@@ -86,7 +102,7 @@ After a skill produces output, a subagent reviews it:
 
 **Convergence contract:** on resubmit the skill passes the previous verdict + the fixes it applied, so the gate first accounts for each prior issue (`FIXED` / `NOT-FIXED`) and only then reports genuinely new findings (marked `[NEW]`). The verdict follows solely from `NOT-FIXED` blockers and `[NEW]` blockers — you reach PASS by clearing the reported list, not by chasing a fresh top-list each round.
 
-Codex skills run without gates.
+Codex and Pi run without gates — not because dispatch is unavailable (Codex has `spawn_agent`/`wait_agent`/`close_agent`, Pi has the optional `pi-subagents` package) but because AbsolutPowers' review gates are **registered Claude Code agent types** (`agents/*.md`), and neither harness has an equivalent registry to resolve them against. See `references/pi-tools.md` for how Pi degrades a review gate (dispatch a generic subagent fed the target `agents/{name}.md` as its prompt, or review inline with an explicit non-isolation disclaimer).
 
 ### Orchestrated implementation (Claude Code only)
 
@@ -104,29 +120,52 @@ tasks-{slug}.md (index)
 
 Tasks move `pending → in-progress → completed`. `in-progress` is an **interruption marker**: if a run dies mid-task, the next session finds it, compares declared `Create:`/`Modify:` lists against the repo, and asks whether to finish, redo, or confirm-done — instead of blindly implementing on top of partial work.
 
+`implementation-worker` reports one of four statuses — `DONE`, `DONE_WITH_CONCERNS`, `NEEDS_CONTEXT`, `BLOCKED` — so the orchestrator can re-supply missing context or escalate model tier before falling back to human intervention. Every dispatch (worker, `phase-review`, `review-implementation`) names an explicit model per role (transcription/standard/most-capable for the worker, diff-scaled for `phase-review`, always most-capable for the final gate). A git-anchored `progress.md` ledger — one line per phase — makes resumption authoritative across interrupted sessions, and a generated review package (diff + status, no live `git diff`) is what reviewers actually read.
+
+### Driving the whole pipeline under `/goal` (Claude Code only)
+
+[`/goal`](https://code.claude.com/docs/en/goal) (Claude Code v2.1.139+) keeps one session working across turns until a completion condition holds — after each turn a small fast model checks the condition and either stops or tells Claude to keep going. It's the native way to run the AbsolutPowers pipeline unattended, from `feature-discuss` all the way to a merged feature, without prompting each step.
+
+Each of the four pipeline skills ends with a `## Terminal state` block written as **prose**. That is deliberate and it's what makes `/goal` work: the evaluator **reads the conversation, not your files** — it can't parse a frontmatter key. The three intermediate skills state "pipeline is NOT closed — continue to the terminal skill", so a `/goal` run doesn't stop early after `generate-tasks` or `implement`; `review`/`triada-review` is the distinguished closure point where "feature delivered" first becomes true.
+
+Practical use:
+
+```bash
+# unattended, to completion, from an interactive session
+/goal feature X delivered = review PASS and branch merged to main, or stop after 25 turns
+
+# headless, single invocation
+claude -p "/goal <same condition>" --output-format stream-json --verbose
+```
+
+- **Write the condition against what Claude surfaces** — a review verdict, a build exit code, `git status` clean — not against something only a tool run would prove.
+- **Bound it** with `or stop after N turns` so a stuck run terminates.
+- **Pair with [auto mode](https://code.claude.com/docs/en/auto-mode-config)** for truly unattended runs — `/goal` alone doesn't change permissions, so Claude still prompts for tool calls your settings don't already allow.
+- Escalation stays **in-session**: a phase that returns `BLOCKED`/`NEEDS_CONTEXT` is handled by the orchestrator within the same run — there is no cross-invocation handoff file to manage.
+
 ## Skills Reference
 
-`both` = Claude Code + Codex. `Claude` = Claude Code only (needs agents / parallel subagents / external API).
+`all` = every harness (Claude Code, Codex, Pi — one shared `skills/{name}/SKILL.md`). `Claude` = Claude Code only (needs a registered agent type and/or parallel subagent dispatch).
 
-| Skill | What it does | In → Out | Trees |
+| Skill | What it does | In → Out | Harnesses |
 |---|---|---|---|
-| `feature-discuss` | PO/architect Q&A → planning doc + Acceptance Criteria | idea → `planning-{slug}.md` | both |
-| `generate-tasks` | Planning doc → sequential tasks or orchestrated phase plan | `planning-*.md` → `tasks-{slug}.md` (+ phase dir) | both |
-| `implement` | Executes tasks per `Test-first:` marker, marks `completed` in-place | `tasks-*.md` → code + tests | both |
-| `review` | 4-phase code-quality audit (semantic / edge / rules / GC) | branch → `reviews/YYYY-MM-DD-{branch}.md` | both |
-| `harvest` | Closeout: try-learn-skill → document-feature → document-module → archive artifacts | `tasks-*.md` → learned skill + module docs + `archives/{slug}/` | both |
-| `ship` | Commit message + PR description from artifacts, local commit (gated) | `tasks-*.md` + diff → conventional commit + PR text | both |
-| `debug` | Root-cause first, then size the fix (inline vs hand-off) | bug desc → fix or `planning-fix-{slug}.md` | both |
-| `problem-discuss` | Triage fuzzy multi-item client report: split, classify, route | report → `problem/problem-{slug}.md` | both |
-| `analyze` | Cross-artifact audit: AC→task→code matrix, 6 divergence classes | slug → `reviews/analyze-{slug}.md` | both |
+| `feature-discuss` | PO/architect Q&A → planning doc + Acceptance Criteria | idea → `planning-{slug}.md` | all |
+| `generate-tasks` | Planning doc → sequential tasks or orchestrated phase plan | `planning-*.md` → `tasks-{slug}.md` (+ phase dir) | all |
+| `implement` | Executes tasks per `Test-first:` marker, marks `completed` in-place | `tasks-*.md` → code + tests | all |
+| `review` | 4-phase code-quality audit (semantic / edge / rules / GC) | branch → `reviews/YYYY-MM-DD-{branch}.md` | all |
+| `harvest` | Closeout: try-learn-skill → document-feature → document-module → archive artifacts | `tasks-*.md` → learned skill + module docs + `archives/{slug}/` | all |
+| `ship` | Commit message + PR description from artifacts, local commit (gated) | `tasks-*.md` + diff → conventional commit + PR text | all |
+| `debug` | Root-cause first, then size the fix (inline vs hand-off) | bug desc → fix or `planning-fix-{slug}.md` | all |
+| `problem-discuss` | Triage fuzzy multi-item client report: split, classify, route | report → `problem/problem-{slug}.md` | all |
+| `analyze` | Cross-artifact audit: AC→task→code matrix, 6 divergence classes | slug → `reviews/analyze-{slug}.md` | all |
 | `triada-review` | Parallel 3-agent branch review + synthesis | branch → report in session | Claude |
-| `constitution` | Author/ratify project principles (pryncypia) | topic → `constitution.md` | both |
-| `update-ai-context` | Bootstrap/refresh `CLAUDE.md`, `AGENTS.md`, `patterns.md`, `rules.md` | path → context files | both |
-| `explain` | Standalone HTML onboarding report for a plan or diff | path/diff → `docs/onboarding/*.html` | both |
-| `try-learn-skill` | Log procedure candidate to ledger; promote to learned skill on 2nd occurrence (human-gated) | `tasks-*.md` → `_candidates.md` / `.claude/skills/learned/` | both |
-| `document-feature` | Per-module prose docs from planning + diff (intelligent merge) | `tasks-*.md` → `docs/modules/{module}.md` | both |
-| `document-module` | Architecture docs from a code scan + C4 diagrams | module → `docs/modules/{slug}-architecture.md` + HTML | both |
-| `preboot` | Doc router / guardrail for the PreBoot.io library ecosystem | PreBoot usage → reads `./preboot-docs/` | both |
+| `constitution` | Author/ratify project principles (pryncypia) | topic → `constitution.md` | all |
+| `update-ai-context` | Bootstrap/refresh `CLAUDE.md`, `AGENTS.md`, `patterns.md`, `rules.md` | path → context files | all |
+| `explain` | Standalone HTML onboarding report for a plan or diff | path/diff → `docs/onboarding/*.html` | all |
+| `try-learn-skill` | Log procedure candidate to ledger; promote to learned skill on 2nd occurrence (human-gated) | `tasks-*.md` → `_candidates.md` / `.claude/skills/learned/` | all |
+| `document-feature` | Per-module prose docs from planning + diff (intelligent merge) | `tasks-*.md` → `docs/modules/{module}.md` | all |
+| `document-module` | Architecture docs from a code scan + C4 diagrams | module → `docs/modules/{slug}-architecture.md` + HTML | all |
+| `preboot` | Doc router / guardrail for the PreBoot.io library ecosystem | PreBoot usage → reads `./preboot-docs/` | all |
 
 Cards below cover the 6 core pipeline skills in depth. The rest behave as the table describes.
 
@@ -165,7 +204,7 @@ Reads a planning doc (or a review report, or a `planning-fix-` doc from `debug`)
 
 ### `/absolutpowers:implement`
 
-Senior engineer executing tasks sequentially, following each task's `Test-first:` marker (write-tests-first + red run for `yes`, direct implement for `no`; legacy docs without the marker fall back to judgment). Embeds the `AC-N` token in tests covering a traced AC; AC fulfillment is then determined by grepping test sources for that token, and a traced AC with **no** token-matched test (`NOT VERIFIED (untested)`) now blocks completion instead of being merely informational. Marks a task `in-progress` before touching code and `completed` only after verification (interruption-safe — a task found `in-progress` at session start triggers partial-state recovery, not blind re-implementation), proposes alternatives (asks first), runs the final verification task, then the `review-implementation` gate. Orchestrated plans → `implementation-worker` per phase + `phase-review` before advancing (Claude); Codex runs phase files sequentially in one session. Respects `constitution.md`. Can create ADRs and memory candidates.
+Senior engineer executing tasks sequentially, following each task's `Test-first:` marker (write-tests-first + red run for `yes`, direct implement for `no`; legacy docs without the marker fall back to judgment). Embeds the `AC-N` token in tests covering a traced AC; AC fulfillment is then determined by grepping test sources for that token, and a traced AC with **no** token-matched test (`NOT VERIFIED (untested)`) now blocks completion instead of being merely informational. Marks a task `in-progress` before touching code and `completed` only after verification (interruption-safe — a task found `in-progress` at session start triggers partial-state recovery, not blind re-implementation), proposes alternatives (asks first), runs the final verification task, then the `review-implementation` gate. Orchestrated plans → `implementation-worker` per phase + `phase-review` before advancing (Claude); Codex runs phase files sequentially in one session. Orchestrated runs (Claude) route worker results through a 4-status protocol (`DONE`/`DONE_WITH_CONCERNS`/`NEEDS_CONTEXT`/`BLOCKED`), dispatch every subagent with an explicit per-role model, resume from a git-anchored `progress.md` ledger, and hand reviewers a generated review package instead of a live diff. Respects `constitution.md`. Can create ADRs and memory candidates.
 
 - **When:** after `generate-tasks`
 - **In → Out:** path to a tasks file → implementation code + tests, updated tasks file
@@ -367,16 +406,20 @@ Most agents are subagents that skills spawn automatically — you don't invoke t
 
 ## Platform Differences
 
-| Feature | Claude Code | Codex |
-|---|---|---|
-| Skills | 15 workflow + 1 PreBoot | 15 workflow + tech-lead-advisor + 1 PreBoot |
-| Agents | 9 (review gates + phase worker + triada trio) | none |
-| Slash commands | `triada-review` | not available |
-| Multi-agent review | `triada-review` (3 parallel agents + synthesis) | not available (no parallel subagents) |
-| Review gates | automatic after each step + `phase-review` | not available |
-| Orchestrated implementation | worker subagent per phase | sequential phase files in one session |
-| Skill invocation | `/absolutpowers:skill-name` | `$absolutpowers skill-name` |
-| AI context | `CLAUDE.md` (source) | `AGENTS.md` (mirror) |
+Every harness shares the exact same `skills/{name}/SKILL.md` — 15 workflow skills + `preboot`, plus `skills/vendored/` (not user-facing pipeline skills). What differs is the thin per-harness layer on top:
+
+| Feature | Claude Code | Codex | Pi |
+|---|---|---|---|
+| Skills | 15 workflow + 1 PreBoot (shared tree) | same shared tree | same shared tree |
+| Registered agent types | 9 (`agents/*.md`: review gates + phase worker + triada trio) | none — no plugin-level agent-type registry | none — no plugin-level agent-type registry |
+| Subagent dispatch primitive | `Agent(subagent_type=...)` against a registered type | available (`multi_agent=true` → `spawn_agent`/`wait_agent`/`close_agent`), but nothing registered to dispatch *to* for gates | available via optional `pi-subagents` package |
+| Slash commands | `triada-review` | not available | not available |
+| Multi-agent review | `triada-review` (3 parallel registered agents + synthesis) | not available (no registered tech-lead/security/UI agent types) | not available (same reason) |
+| Review gates | automatic after each step + `phase-review` | not available — see `references/pi-tools.md`-style degradation (none written yet for Codex) | degrades: dispatch a generic subagent fed `agents/{name}.md`, or review inline (non-isolation disclaimer) — see `references/pi-tools.md` |
+| Orchestrated implementation | worker subagent per phase | sequential phase files in one session | sequential phase files in one session (or dispatched via `pi-subagents` if installed) |
+| Skill invocation | `/absolutpowers:skill-name` | `$absolutpowers skill-name` | native Pi skill invocation / `read` the `SKILL.md` |
+| Session bootstrap | `hooks/hooks.json` `SessionStart` hook reads `hooks/session-context.md` | reads `AGENTS.md` (symlink to `CLAUDE.md`) | `.pi/extensions/absolutpowers.ts` reads `hooks/session-context.md` at `session_start`/`session_compact` |
+| AI context | `CLAUDE.md` (source) | `AGENTS.md` (symlink to `CLAUDE.md`, not a generated mirror) | `CLAUDE.md` (via the extension's injected context) |
 
 ## Project Structure (in your repo)
 
@@ -403,7 +446,7 @@ your-project/
 │   └── constitution.md                 # Ratified principles / pryncypia (≠ rules.md)
 ├── docs/adr/YYYY-MM-DD-{slug}.md        # Architecture Decision Records
 ├── CLAUDE.md                            # AI context (Claude Code)
-└── AGENTS.md                            # AI context mirror (Codex)
+└── AGENTS.md                            # AI context mirror (Codex), generated by update-ai-context
 ```
 
 Recommended `.gitignore` — keep planning docs and reviews (they're documentation), exclude the approval queue:
@@ -414,24 +457,47 @@ absolutpowers/memory-candidates/
 
 ## Repo Structure (this repository)
 
+Since 5.0.0 there is **one** host-agnostic skill tree — no `claude/`/`codex/` mirrors, no
+sync scripts, no drift-detection script. Each harness gets a thin manifest/integration on
+top of the same `skills/` (the obra/superpowers pattern):
+
 ```
 absolut-ai-skills/
-├── claude/                            # Claude Code plugin
-│   ├── .claude-plugin/plugin.json
-│   ├── commands/                      # triada-review slash command
-│   ├── skills/                        # 15 workflow + 1 PreBoot skill
-│   └── agents/                        # 9 subagent definitions
-├── codex/                             # Codex plugin
-│   ├── .codex-plugin/plugin.json
-│   ├── skills/                        # 15 workflow + tech-lead-advisor + 1 PreBoot skill
-│   └── scripts/
-├── .claude-plugin/marketplace.json    # Claude marketplace → claude/
-├── .agents/plugins/marketplace.json   # Codex marketplace → codex/
-├── scripts/
-│   ├── diff-skills.sh                 # Drift detection between platforms
-│   └── sync_claude_to_agents.py       # CLAUDE.md → AGENTS.md sync
+├── skills/                            # single source of truth, one body per harness
+│   ├── {name}/SKILL.md                # 15 workflow skills + preboot (host-agnostic body;
+│   │                                  # Claude-only frontmatter/gate sections are inert elsewhere)
+│   └── vendored/                      # skills vendored from obra/superpowers (MIT) — see VENDORED.md
+│       ├── using-git-worktrees/
+│       ├── systematic-debugging/
+│       ├── verification-before-completion/
+│       ├── dispatching-parallel-agents/
+│       ├── finishing-a-development-branch/
+│       ├── executing-plans/
+│       └── subagent-driven-development/
+├── agents/                            # 9 subagent definitions — Claude-only, top-level
+├── commands/                          # triada-review slash command — Claude-only, top-level
+├── references/                        # per-harness primitive mappings, read conditionally
+│   └── pi-tools.md                    # Pi tool mapping + review-gate degradation path
+├── hooks/                             # slim Claude SessionStart hook
+│   ├── hooks.json
+│   ├── run-hook.cmd
+│   ├── session-start
+│   └── session-context.md             # shared bootstrap content — also read by the Pi extension
+├── .pi/extensions/absolutpowers.ts    # Pi integration (registers skills/, injects session-context.md)
+├── .claude-plugin/plugin.json         # Claude manifest (root)
+├── .claude-plugin/marketplace.json    # Claude marketplace → source: "."
+├── .codex-plugin/plugin.json          # Codex manifest (root)
+├── .agents/plugins/marketplace.json   # Codex marketplace → source.path: "."
+├── AGENTS.md                          # symlink → CLAUDE.md (Codex bootstrap)
+├── VENDORED.md                        # vendoring log: source paths, pinned SHA, local modifications
+├── LICENSE-VENDORED                   # MIT license text for vendored obra/superpowers content
+├── docs/
 └── README.md
 ```
+
+Adding a harness costs a new integration + optional `references/{harness}-tools.md` — zero
+skill edits. See `CLAUDE.md` → "Adding a New Harness" for the recipe, and "Attribution" below
+for the vendoring rationale.
 
 ## Updating
 
@@ -440,12 +506,43 @@ absolut-ai-skills/
 /plugin install absolutpowers@absolutpowers-skills
 
 # Codex — pull the repo and reinstall from the local marketplace
+
+# Pi — re-run with the checkout loaded, or reinstall the package if published
+pi -e /path/to/absolut-ai-skills
 ```
 
 ## Changelog
 
 Versioning is SemVer, kept in sync across both manifests
-(`claude/.claude-plugin/plugin.json` + `codex/.codex-plugin/plugin.json`).
+(`.claude-plugin/plugin.json` + `.codex-plugin/plugin.json`, both at repo root since 5.0.0).
+
+### 5.0.0 — Migracja hybrydowa Superpowers (single-tree + vendoring + fuzje + terminal-state)
+
+Jeden breaking release domykający całą migrację hybrydową obry/superpowers, dostarczoną w trzech fazach implementacyjnych (żadna nie była osobnym release'em — numery pośrednie były checkpointami rozwojowymi, tu skonsolidowane).
+
+**Faza 1 — architektura jednodrzewowa + vendoring + Pi:**
+- **Breaking structural change (major):** collapsed the two mirrored trees (`claude/`, `codex/`) into **one host-agnostic skill tree** at `skills/{name}/SKILL.md` — a single body serves every harness; Claude-only frontmatter (`allowed-tools`, `argument-hint`) and agent-gate sections are tolerated and inert on Codex/Pi. Adopts the obra/superpowers pattern: thin per-harness manifest/integration on top of one shared tree, per-harness differences isolated to `references/{harness}-tools.md` (read conditionally), zero skill duplication
+- **New harness: Pi.** `.pi/extensions/absolutpowers.ts` registers `skills/` and re-injects the shared `hooks/session-context.md` bootstrap at `session_start`/`session_compact`; `references/pi-tools.md` maps skill actions (subagent dispatch, review gates, task tracking) to Pi primitives, including a two-tier degradation path for AbsolutPowers' registered review-gate agents (dispatch a generic subagent fed the target `agents/{name}.md`, or review inline with an explicit non-isolation disclaimer)
+- **New `skills/vendored/`** — seven no-fusion skills vendored verbatim (MIT) from [obra/superpowers](https://github.com/obra/superpowers) `v6.1.1`: `using-git-worktrees`, `systematic-debugging`, `verification-before-completion`, `dispatching-parallel-agents`, `finishing-a-development-branch`, `executing-plans`, `subagent-driven-development`. Plus a vendored, telemetry-hard-removed visual companion for `feature-discuss` (not yet wired in). Full provenance (source path, pinned SHA, local modifications) in `VENDORED.md`; full license text in `LICENSE-VENDORED`
+- **New slim Claude hook:** `hooks/hooks.json` (`SessionStart`, vendored mechanism from obra/superpowers) drives `hooks/run-hook.cmd` → `hooks/session-start`, which re-injects `hooks/session-context.md` — the pipeline chain, the `in-progress` return-to-checklist rule, and the two guardian skills (`debug`/`systematic-debugging`, `verification-before-completion`) — at startup, `clear`, and after `compact`. The same `session-context.md` is the single source the Pi extension reads too
+- **Manifests and marketplaces moved to repo root:** `.claude-plugin/plugin.json`, `.codex-plugin/plugin.json`, `.claude-plugin/marketplace.json` (`source: "."`), `.agents/plugins/marketplace.json` (`source.path: "."`) — no longer nested under `claude/`/`codex/`. `AGENTS.md` is now a symlink to `CLAUDE.md` (not a hand-maintained mirror in this repo) — the Codex bootstrap channel
+- **Removed:** both former per-harness mirror trees, the drift-detection helper script (there is nothing left to drift between), and the CLAUDE.md→AGENTS.md sync helper script (both its top-level copy and the one duplicated inside the former Codex tree). The former Codex-tree `tech-lead-advisor` skill (a shadow of the Claude-only `tech-lead-agent`) is gone with it — Codex loses that standalone trigger, an accepted regression since registered agents/gates are Claude-only by design
+- **Factual correction:** "Codex lacks plugin-level subagent support" was imprecise and is retired. The precise statement: Codex and Pi lack **registered agent type definitions** (no mechanism to install `agents/*.md` as a named subagent identity), but subagent *dispatch* exists on both (Codex `multi_agent=true` → `spawn_agent`/`wait_agent`/`close_agent`; Pi's optional `pi-subagents`) — so the execution pattern is portable even though AbsolutPowers' specific registered-agent review gates are Claude-only. See `CLAUDE.md` → "Review Gates (Claude only)" and `references/pi-tools.md`
+- Docs (`README.md`, `CLAUDE.md`, `docs/`) rewritten for the single-tree layout; `docs/contributing.md` no longer describes two trees, drift detection, or sync scripts
+
+**Faza 2 — orkiestrowany `implement` ← `subagent-driven-development` (4 grafty):**
+- **4-status worker protocol (Claude-only):** `implementation-worker` now returns `DONE | DONE_WITH_CONCERNS | NEEDS_CONTEXT | BLOCKED` instead of the old 3-state `COMPLETED`/`BLOCKED`/`FAILED`. The orchestrator (`implement` Step O3) handles each on its own path — `NEEDS_CONTEXT` re-supplies missing context and re-dispatches the same phase (not an escalation); only `BLOCKED` walks the 4-rung escalation ladder (context → stronger model → decompose the phase → escalate to the human)
+- **Explicit model routing per role:** every subagent dispatch in the orchestrated process — `implementation-worker`, `phase-review`, `review-implementation` — MUST carry an explicit `model=`; inheriting the orchestrator's model is no longer acceptable for any role. Worker tiers: `haiku` (phase file has complete, ready-to-transcribe code), `sonnet` (integration/multi-file work, `Risk: low|medium`, and the fallback when completeness is ambiguous), `opus` (`Risk: high`). `phase-review` is scaled to diff size/risk; the final `review-implementation` gate is always `opus`
+- **`progress.md` ledger (git-anchored, durable progress):** a new committed file beside `implementation-context.md`, one line per phase (`Faza N: complete (commits base7..head7, review clean)`), appended after `phase-review` PASS. Authoritative on resume over the human-facing phase status table when the two disagree — Step O1 reads the ledger first
+- **Forked `review-package`/`sdd-workspace` scripts** (MIT, from vendored `subagent-driven-development`, attributed in `VENDORED.md`) generate a file-based diff+status package that `phase-review` (per-phase range) and `review-implementation` (whole-branch range, via the ledger's earliest `base7`) read directly — reviewers no longer run their own `git diff`/status commands
+- **Scope-guarded to orchestrated mode:** the 4-status protocol, model-routing table, and ledger apply only when `## Mode` is `orchestrated`; `Single-File Process` is unaffected (keeps `pending`/`in-progress`/`completed`, resumes from the in-file marker, no ledger)
+
+**Faza 3 — jawne kontrakty terminal-state (`/goal`-aware):**
+- **`## Terminal state` block in all 4 pipeline skills** (`feature-discuss`, `generate-tasks`, `implement`, `review`): each declares what it delivers, names the next link as `@<skill>`, and — for the three intermediate skills — states the pipeline is **not closed**, so a [`/goal`](https://code.claude.com/docs/en/goal) run continues down the chain instead of stopping mid-pipeline. `review`/`triada-review` is the distinguished **closure point** (fix-loop or merge/ship), naming no forward `@skill`
+- **Prose, not machine format:** the `/goal` evaluator reads the conversation, not files — no frontmatter `next:` key, deliberately (an unused parser would be YAGNI). See the "Driving the whole pipeline under `/goal`" section above
+- **Execution Handoff resolved:** `generate-tasks` documents that `implement` is the sole executor driven by the `## Mode` field (`orchestrated`/`single-file`) — the AbsolutPowers analog of obra's `subagent-driven-development` vs `executing-plans` split, a resolved decision rather than a missing feature
+- **Latent bug fix:** `agents/implementation-worker.md` now filters `project-memory.md` to `Status: active` entries (ignoring `superseded`/`archived`), matching every other pipeline component — it was the only one reading memory unfiltered
+- **`gnhf` cleanup:** dead "gnhf" label relabeled to "headless" in the live `feature-discuss` prompt (fallback logic untouched), stripped from archived Faza-2 planning docs; migration plan Faza 4 rescoped from the unused gnhf tool onto native `/goal`
 
 ### 3.13.0 — Test-first marker + grep-verifiable AC fulfillment
 - **`Test-first:` marker per task** (both trees): `generate-tasks` decides TDD-or-not at generation time and stamps every implementation task `**Test-first:** yes | no ([reason])` — the planner owns the decision, not the implementer mid-flight. `yes` for business logic / transformations / validation / pure functions / bug-fix regressions; `no` (reason mandatory) for config / CRUD wiring / scaffolding / docs. `implement` follows the marker (`yes` → write tests first, confirm the **red run**, implement, confirm green; `no` → implement then add listed tests); deviating requires a recorded justification in the task remarks and is a review blocker otherwise. Docs with no `Test-first:` field anywhere are treated as legacy and fall back to judgment silently
@@ -471,7 +568,7 @@ Versioning is SemVer, kept in sync across both manifests
 - `harvest` skill: archive path `absolutpowers/archiwa/` → `absolutpowers/archives/` (English, consistent with `feature/`, `problem/`, `reviews/`) (both trees)
 
 ### 3.10.0 — Remove tasks-to-issues
-- Removed the `tasks-to-issues` skill (Claude-only GitHub Issues export) — `claude/skills/tasks-to-issues/`, README/docs/CLAUDE.md references, and the `tasks-{slug}.issues.md` back-map artifact. The pipeline is again fully file-bound inside `absolutpowers/`; no outward-facing channel
+- Removed the `tasks-to-issues` skill (Claude-only GitHub Issues export) — its former Claude-tree skill directory, README/docs/CLAUDE.md references, and the `tasks-{slug}.issues.md` back-map artifact. The pipeline is again fully file-bound inside `absolutpowers/`; no outward-facing channel
 - Claude skill count: 15 → 14 workflow (+ 1 PreBoot)
 
 ### 3.9.0 — Constitution + cross-artifact analyze + Intent Fidelity + tasks-to-issues + debug handoff
@@ -527,7 +624,39 @@ Versioning is SemVer, kept in sync across both manifests
 
 - [Claude Code](https://docs.anthropic.com/en/docs/claude-code) CLI or IDE extension
 - [Codex](https://github.com/openai/codex) (optional, for the Codex target)
+- [Pi](https://github.com/earendil-works/pi) (optional, for the Pi target — local extension load, see [Install](#1-install))
+
+## Vendored Skills & Hook
+
+AbsolutPowers vendors (copies, trims, adapts) a small set of skills and one hook mechanism from
+[obra/superpowers](https://github.com/obra/superpowers) under MIT, instead of depending on it at
+runtime — full control over content, no marketplace dependency, no conflict between two plugins'
+priorities. Full provenance table (source path, pinned SHA, per-file local modifications) lives in
+[`VENDORED.md`](./VENDORED.md); full license text in [`LICENSE-VENDORED`](./LICENSE-VENDORED).
+
+- **`skills/vendored/{name}/`** — seven no-fusion skills, copied verbatim beyond a one-line MIT note:
+  `using-git-worktrees`, `systematic-debugging`, `verification-before-completion`,
+  `dispatching-parallel-agents`, `finishing-a-development-branch`, `executing-plans`,
+  `subagent-driven-development`. Plus a vendored visual companion for `feature-discuss`
+  (`skills/feature-discuss/visual-companion.md` + `companion-scripts/`) with all remote-telemetry
+  code paths hard-removed — not just disabled — so no external request is possible; not yet wired
+  into `feature-discuss/SKILL.md` (a future fusion phase, out of scope here)
+- **`hooks/`** — the slim Claude `SessionStart` hook mechanism (`hooks.json`, `run-hook.cmd`,
+  `session-start`) is vendored from the same source; the content it injects
+  (`hooks/session-context.md`) is entirely AbsolutPowers' own
+
+Vendoring is one-way and selective — not every obra/superpowers skill is pulled in, and upstream
+changes are reviewed quarterly (see `VENDORED.md` for the process), not auto-synced.
 
 ## License
 
 MIT — [Absolut Systems](https://github.com/AbsolutSystems)
+
+### Attribution
+
+`skills/vendored/` and the `hooks/` SessionStart mechanism are adapted from
+[obra/superpowers](https://github.com/obra/superpowers), created by **Jesse Vincent** and the team
+at [Prime Radiant](https://primeradiant.com), licensed MIT. The full upstream license text is
+preserved verbatim in [`LICENSE-VENDORED`](./LICENSE-VENDORED); per-file provenance and local
+modifications are tracked in [`VENDORED.md`](./VENDORED.md). AbsolutPowers' own code, skills, and
+docs remain MIT-licensed by Absolut Systems as stated above.

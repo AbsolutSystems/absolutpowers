@@ -1,0 +1,465 @@
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Onboarding — Faza 1: feature-discuss ← brainstorming (fuzja obry)</title>
+<script src="https://cdn.jsdelivr.net/npm/mermaid/dist/mermaid.min.js"></script>
+<script>mermaid.initialize({ startOnLoad: true, theme: 'neutral', securityLevel: 'loose' });</script>
+<style>
+  :root {
+    --bg: #0f172a;
+    --bg-soft: #1e293b;
+    --card: #ffffff;
+    --ink: #1e293b;
+    --ink-soft: #475569;
+    --muted: #64748b;
+    --line: #e2e8f0;
+    --accent: #4f46e5;
+    --accent-soft: #eef2ff;
+    --happy: #059669;
+    --happy-bg: #ecfdf5;
+    --edge: #d97706;
+    --edge-bg: #fffbeb;
+    --sec: #dc2626;
+    --sec-bg: #fef2f2;
+    --blocker: #dc2626;
+    --warn: #d97706;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    background: #f1f5f9;
+    color: var(--ink);
+    line-height: 1.6;
+  }
+  header.hero {
+    background: linear-gradient(135deg, #4f46e5 0%, #7c3aed 55%, #2563eb 100%);
+    color: #fff;
+    padding: 48px 32px 40px;
+  }
+  header.hero .wrap { max-width: 1080px; margin: 0 auto; }
+  header.hero .kicker {
+    text-transform: uppercase;
+    letter-spacing: 2px;
+    font-size: 12px;
+    opacity: .82;
+    margin: 0 0 10px;
+  }
+  header.hero h1 { margin: 0 0 12px; font-size: 32px; line-height: 1.2; }
+  header.hero p.sub { margin: 0; font-size: 16px; opacity: .92; max-width: 760px; }
+  .badges { margin-top: 20px; display: flex; flex-wrap: wrap; gap: 10px; }
+  .badge {
+    background: rgba(255,255,255,.16);
+    border: 1px solid rgba(255,255,255,.28);
+    padding: 5px 12px;
+    border-radius: 999px;
+    font-size: 13px;
+    backdrop-filter: blur(4px);
+  }
+  main { max-width: 1080px; margin: 0 auto; padding: 8px 32px 80px; }
+  section { margin-top: 44px; }
+  h2 {
+    font-size: 23px;
+    margin: 0 0 18px;
+    padding-bottom: 10px;
+    border-bottom: 2px solid var(--line);
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+  h2 .num {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 34px; height: 34px;
+    border-radius: 9px;
+    background: var(--accent);
+    color: #fff;
+    font-size: 15px;
+    flex: 0 0 auto;
+  }
+  h3 { font-size: 17px; margin: 24px 0 10px; color: var(--ink); }
+  p { margin: 0 0 14px; }
+  .card {
+    background: var(--card);
+    border: 1px solid var(--line);
+    border-radius: 14px;
+    padding: 22px 24px;
+    box-shadow: 0 1px 3px rgba(15,23,42,.06);
+  }
+  .grid { display: grid; gap: 16px; }
+  .grid-2 { grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); }
+  .decision-card {
+    border-left: 4px solid var(--accent);
+    background: var(--card);
+    border: 1px solid var(--line);
+    border-left: 4px solid var(--accent);
+    border-radius: 10px;
+    padding: 16px 18px;
+  }
+  .decision-card h4 { margin: 0 0 6px; font-size: 15px; color: var(--accent); }
+  .decision-card p { margin: 0; font-size: 14.5px; color: var(--ink-soft); }
+  code {
+    background: #f1f5f9;
+    padding: 1px 6px;
+    border-radius: 5px;
+    font-family: "SF Mono", Menlo, Consolas, monospace;
+    font-size: 13px;
+    color: #b91c1c;
+  }
+  .mermaid {
+    background: var(--card);
+    border: 1px solid var(--line);
+    border-radius: 14px;
+    padding: 20px;
+    text-align: center;
+    overflow-x: auto;
+  }
+  table { width: 100%; border-collapse: collapse; font-size: 14px; }
+  th, td { text-align: left; padding: 10px 12px; border-bottom: 1px solid var(--line); vertical-align: top; }
+  th { background: var(--bg-soft); color: #fff; font-weight: 600; font-size: 12.5px; text-transform: uppercase; letter-spacing: .5px; }
+  tr:last-child td { border-bottom: none; }
+  .ac-id { font-weight: 700; white-space: nowrap; color: var(--accent); }
+  .tag {
+    display: inline-block;
+    font-size: 11px;
+    font-weight: 700;
+    padding: 2px 9px;
+    border-radius: 999px;
+    text-transform: uppercase;
+    letter-spacing: .4px;
+  }
+  .tag.happy { background: var(--happy-bg); color: var(--happy); }
+  .tag.edge { background: var(--edge-bg); color: var(--edge); }
+  .tag.sec { background: var(--sec-bg); color: var(--sec); }
+  .tag.blocker { background: var(--sec-bg); color: var(--blocker); border: 1px solid #fca5a5; }
+  .tag.warn { background: var(--edge-bg); color: var(--warn); border: 1px solid #fcd34d; }
+  ul.clean { margin: 0; padding-left: 20px; }
+  ul.clean li { margin-bottom: 8px; }
+  .risk {
+    border: 1px solid var(--line);
+    border-radius: 10px;
+    padding: 14px 16px;
+    background: var(--card);
+  }
+  .risk .sev { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: .5px; }
+  .risk h4 { margin: 4px 0 6px; font-size: 15px; }
+  .risk p { margin: 0; font-size: 14px; color: var(--ink-soft); }
+  .risk .mit { margin-top: 8px; font-size: 13.5px; }
+  .risk .mit b { color: var(--happy); }
+  .pill-row { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 6px; }
+  .filecard { display: flex; gap: 12px; align-items: flex-start; }
+  .filecard .st { font-size: 11px; font-weight: 700; padding: 3px 9px; border-radius: 6px; white-space: nowrap; }
+  .st.mod { background: #eef2ff; color: #4338ca; }
+  .st.new { background: #ecfdf5; color: #047857; }
+  .st.ref { background: #fef9c3; color: #854d0e; }
+  .st.upd { background: #f1f5f9; color: #475569; }
+  .filecard code { color: var(--ink); background: #f8fafc; }
+  footer { text-align: center; color: var(--muted); font-size: 13px; padding: 30px; border-top: 1px solid var(--line); }
+  .callout {
+    background: var(--accent-soft);
+    border: 1px solid #c7d2fe;
+    border-radius: 10px;
+    padding: 14px 18px;
+    font-size: 14.5px;
+    color: #3730a3;
+  }
+  .legend { display: flex; flex-wrap: wrap; gap: 14px; margin: 4px 0 16px; font-size: 13px; color: var(--muted); }
+  .legend span { display: inline-flex; align-items: center; gap: 6px; }
+  .dot { width: 12px; height: 12px; border-radius: 3px; display: inline-block; }
+</style>
+</head>
+<body>
+<header class="hero">
+  <div class="wrap">
+    <p class="kicker">Onboarding · Epic „Fuzja mechaniki obry" · Faza 1</p>
+    <h1>feature-discuss ← brainstorming</h1>
+    <p class="sub">Wszczepienie dojrzałej, przetestowanej-przez-community mechaniki <code>brainstorming</code> obry do skilla <code>feature-discuss</code> metodą rewrite-to-unify — z zachowaniem całej warstwy domenowej Absolut Systems.</p>
+    <div class="badges">
+      <span class="badge">Data: 2026-07-13</span>
+      <span class="badge">Metoda: rewrite-to-unify</span>
+      <span class="badge">Deliverable: skills/feature-discuss/SKILL.md</span>
+      <span class="badge">15 Acceptance Criteria</span>
+      <span class="badge">Status planu: Zaplanowana</span>
+    </div>
+  </div>
+</header>
+
+<main>
+
+  <!-- 1. TL;DR -->
+  <section>
+    <h2><span class="num">1</span> TL;DR</h2>
+    <div class="card">
+      <p>Faza 1 łączy dwa światy: gęstą warstwę domenową <code>feature-discuss</code> (583 linie — Tryb A/B/C, rozdział CO/JAK, Faza 0 parafraza, tryb epica main+stuby, ADR, QA-enrichment, gates <code>[BLOCKER]</code>/<code>[WARN]</code>) oraz czystą, dojrzałą mechanikę <code>brainstorming</code> obry (160 linii — HARD-GATE, prezentacja sekcjami, dekompozycja przed pytaniami, spec self-review, visual companion).</p>
+      <p>Wybrano <b>szkielet = feature-discuss</b> (więcej warstwy domenowej do stracenia) i wszczepiono do niego 5 mechanizmów obry jako grafty w istniejące fazy — bez porzucania czegokolwiek i bez duplikowania istniejących mechanizmów.</p>
+      <p>Efekt: po fuzji <code>feature-discuss</code> egzekwuje akceptację designu przed jakąkolwiek implementacją (HARD-GATE dla KAŻDEGO projektu), prezentuje design przyswajalnymi sekcjami, flaguje zbyt-duże projekty ZANIM zada pytania szczegółowe, robi self-review specu przed bramką QA i oferuje wizualny companion just-in-time.</p>
+      <p>To NIE jest kod aplikacyjny — jedyny deliverable z realną zmianą logiki to plik-prompt skilla <code>skills/feature-discuss/SKILL.md</code> (plus wąskie rozszerzenie <code>allowed-tools</code> i podpięcie martwego dotąd <code>visual-companion.md</code>).</p>
+    </div>
+  </section>
+
+  <!-- 2. Kluczowe decyzje -->
+  <section>
+    <h2><span class="num">2</span> Kluczowe decyzje</h2>
+    <div class="grid grid-2">
+      <div class="decision-card">
+        <h4>Szkielet = feature-discuss</h4>
+        <p>583 linie warstwy domenowej vs 160 linii czystej mechaniki obry. Odwrotny wybór wymagałby odtworzenia Trybu A/B/C, epica, ADR i gate'ów — cały ciężar. Świadome odstępstwo od hipotezy epica („obra częściej szkielet, bo community-tested").</p>
+      </div>
+      <div class="decision-card">
+        <h4>Fork gate ↔ micro-change</h4>
+        <p>HARD-GATE rządzi <b>AKCEPTACJĄ</b>, nie ciężarem doca. Znaczy „brak implementacji przed <b>zaakceptowanym</b> designem", nie „przed docem". Micro-change przeżywa jako lekka ścieżka pod tym samym gate; anty-wzorzec „too simple" celuje w pomijanie akceptacji.</p>
+      </div>
+      <div class="decision-card">
+        <h4>Fork dekompozycja ↔ epic</h4>
+        <p>Dekompozycja <b>ROZSZERZA</b>, nie zastępuje. Obra = <i>timing</i> (flaguj przed pytaniami), feature-discuss = <i>machinery</i> (main+stuby+Tryb B). Zero duplikacji mechanizmu splitu, zysk = wcześniejsze flagowanie.</p>
+      </div>
+      <div class="decision-card">
+        <h4>Companion jako cross-cutting</h4>
+        <p>Visual companion podpięty jako samodzielna sekcja przekrojowa (jak blok HARD-GATE), odwoływana z faz pytających (1/3/4). Plus wąskie, celowe rozszerzenie <code>allowed-tools</code> — nie luzowanie pozostałych grantów.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- 3. Diagram architektury -->
+  <section>
+    <h2><span class="num">3</span> Diagram architektury — mapa 5 wszczepień</h2>
+    <p>Gdzie w skillu <code>feature-discuss</code> ląduje każdy z pięciu mechanizmów obry:</p>
+    <div class="mermaid">
+graph TD
+    subgraph OBRA["Mechanika brainstorming (obra)"]
+      M1["Wczesny scope-check<br/>(dekompozycja)"]
+      M2["HARD-GATE<br/>+ anty-wzorzec too-simple"]
+      M3["Prezentacja sekcjami<br/>akceptacja per sekcja"]
+      M4["Spec self-review"]
+      M5["Visual companion<br/>just-in-time"]
+    end
+
+    subgraph FD["skills/feature-discuss/SKILL.md (szkielet)"]
+      FM["Frontmatter<br/>allowed-tools (wąskie rozszerzenie)"]
+      HDR["Nagłówek roli"]
+      RT["Router trybu A/B/C"]
+      P1["Faza 1 — Zrozumienie"]
+      P2["Faza 2 — Analiza kodu"]
+      P3["Faza 3 — Propozycja / rekomendacja"]
+      P4["Faza 4 — Doprecyzowanie"]
+      P5["Faza 5 — Zapis + Micro-change"]
+      P5A["Faza 5A — Spec self-review (NOWA)"]
+      P5B["Faza 5B — QA-enrichment"]
+      VC["Sekcja Visual Companion (cross-cutting)"]
+    end
+
+    M1 -->|"graft na WEJŚCIE Fazy 1"| P1
+    M2 -->|"jawny blok PO nagłówku roli + zasada #1"| HDR
+    M3 -->|"przepisany koniec Fazy 3"| P3
+    M4 -->|"nowa faza między 5 a 5B"| P5A
+    M5 -->|"samodzielna sekcja + frontmatter"| VC
+    M5 -.->|"rozszerza granty"| FM
+
+    HDR --> RT --> P1 --> P2 --> P3 --> P4 --> P5 --> P5A --> P5B
+    VC -.->|"wskaźnik"| P1
+    VC -.->|"wskaźnik"| P3
+    VC -.->|"wskaźnik"| P4
+
+    style M1 fill:#eef2ff,stroke:#4f46e5
+    style M2 fill:#fef2f2,stroke:#dc2626
+    style M3 fill:#ecfdf5,stroke:#059669
+    style M4 fill:#fffbeb,stroke:#d97706
+    style M5 fill:#f0f9ff,stroke:#0284c7
+    style P5A fill:#fffbeb,stroke:#d97706,stroke-width:2px
+    style VC fill:#f0f9ff,stroke:#0284c7,stroke-width:2px
+    style HDR fill:#fef2f2,stroke:#dc2626,stroke-width:2px
+    </div>
+  </section>
+
+  <!-- 4. Diagram przepływu -->
+  <section>
+    <h2><span class="num">4</span> Diagram przepływu — sesja feature-discuss po fuzji</h2>
+    <div class="legend">
+      <span><span class="dot" style="background:#4f46e5"></span> istniejący krok</span>
+      <span><span class="dot" style="background:#dc2626"></span> HARD-GATE (nowy)</span>
+      <span><span class="dot" style="background:#059669"></span> prezentacja sekcjami (nowy)</span>
+      <span><span class="dot" style="background:#d97706"></span> self-review (nowy)</span>
+      <span><span class="dot" style="background:#0284c7"></span> companion (cross-cutting)</span>
+    </div>
+    <div class="mermaid">
+flowchart TD
+    START([Request użytkownika]) --> GATE{{"HARD-GATE: brak implementacji<br/>przed zaakceptowanym designem"}}
+    GATE --> F0["Faza 0 — Parafraza intencji"]
+    F0 --> SC{"Wczesny scope-check:<br/>wiele niezależnych podsystemów?"}
+    SC -->|"TAK"| EPIC["Kieruj do detekcji/splitu epica<br/>(Faza 3 → main+stuby → Tryb B)"]
+    SC -->|"NIE"| F1["Faza 1 — Zrozumienie (pytania)"]
+    F1 -. "companion?" .-> COMP(["Visual companion<br/>just-in-time · fallback → terminal"])
+    F1 --> F2["Faza 2 — Analiza kodu (bez pytań)"]
+    F2 --> F3["Faza 3 — Propozycja podejścia"]
+    F3 --> SEKCJE["Prezentacja design SEKCJAMI<br/>architektura / komponenty / data flow /<br/>błędy / testy — akceptacja per sekcja"]
+    SEKCJE -. "companion?" .-> COMP
+    SEKCJE -->|"sekcja nie gra"| SEKCJE
+    SEKCJE --> F4["Faza 4 — Doprecyzowanie"]
+    F4 -. "companion?" .-> COMP
+    F4 --> ACC{{"Akceptacja designu przez użytkownika"}}
+    ACC -->|"micro-change (CO+GDZIE)"| MICRO["Fast-path: implementuj<br/>bez planning-doca — PO akceptacji"]
+    ACC -->|"standard / Tryb B"| F5["Faza 5 — Zapis planning/phase-doca"]
+    F5 --> F5A["Faza 5A — Spec self-review<br/>placeholdery / sprzeczność / scope / dwuznaczność"]
+    F5A --> F5B["Faza 5B — QA-enrichment (AC)"]
+    F5B --> RP{{"review-plan (gate) — emituje severity"}}
+    EPIC --> F3
+
+    style GATE fill:#fef2f2,stroke:#dc2626,stroke-width:2px
+    style ACC fill:#fef2f2,stroke:#dc2626,stroke-width:2px
+    style ACC2 fill:#fef2f2,stroke:#dc2626
+    style SC fill:#eef2ff,stroke:#4f46e5,stroke-width:2px
+    style SEKCJE fill:#ecfdf5,stroke:#059669,stroke-width:2px
+    style F5A fill:#fffbeb,stroke:#d97706,stroke-width:2px
+    style COMP fill:#f0f9ff,stroke:#0284c7,stroke-width:2px
+    style MICRO fill:#f1f5f9,stroke:#64748b
+    </div>
+    <div class="callout" style="margin-top:16px;">HARD-GATE stoi na samym wejściu i przed akceptacją designu — micro-change fast-path startuje dopiero PO akceptacji CO+GDZIE, więc spełnia gate zamiast go obchodzić. Faza 5A jest wąska: nie emituje severity (to zostaje bramce review-plan) i nie dotyczy micro-change / main / stubów.</div>
+  </section>
+
+  <!-- 5. Pytania dla człowieka -->
+  <section>
+    <h2><span class="num">5</span> Pytania dla człowieka</h2>
+    <div class="grid grid-2">
+      <div class="card">
+        <h3 style="margin-top:0;">Severity taksonomia</h3>
+        <p><code>[BLOCKER]</code>/<code>[WARN]</code> (absolutpowers) ↔ Critical/Important/Minor (obra). Spec self-review celowo NIE emituje severity, więc Faza 1 nie wymusza tej decyzji.</p>
+        <div class="pill-row">
+          <span class="tag blocker">[BLOCKER]</span>
+          <span class="tag warn">[WARN]</span>
+          <span class="tag" style="background:#f1f5f9;color:#475569;">Critical / Important / Minor</span>
+        </div>
+        <p style="margin-top:12px;"><b>Punktowane do Fazy 2/3</b> — decyzja przy fazie, która pierwsza dotknie gate emitującego severity.</p>
+      </div>
+      <div class="card">
+        <h3 style="margin-top:0;">Pełne wsparcie companion na Codex/Pi</h3>
+        <p>Visual companion zależy od Node (<code>start-server.sh</code> zakłada środowisko dev). W Fazie 1 dostarczamy wyłącznie <b>graceful fallback do terminala</b> — brak Node = cicha kontynuacja, nigdy błąd.</p>
+        <p style="margin-top:12px;">Pełne wsparcie companion na Codex/Pi jest <b>poza scope Fazy 1</b> — to przekrojowe pytanie maina epica.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- 6. Ryzyka -->
+  <section>
+    <h2><span class="num">6</span> Ryzyka</h2>
+    <div class="grid grid-2">
+      <div class="risk">
+        <span class="sev" style="color:var(--edge)">Rezydualne · monitorować</span>
+        <h4>Podwójne flagowanie epica</h4>
+        <p>Scope-check na wejściu Fazy 1 + detekcja w Fazie 3 mogą zdublować komunikat.</p>
+        <p class="mit"><b>Mitygacja:</b> scope-check ma <i>kierować</i> do Fazy 3, nie <i>duplikować</i> jej komunikatu (AC-8: odrębny, krótszy).</p>
+      </div>
+      <div class="risk">
+        <span class="sev" style="color:var(--sec)">Rezydualne · komunikacyjne</span>
+        <h4>Gate mylony z zakazem micro-change</h4>
+        <p>Użytkownik może odczytać HARD-GATE jako zakaz szybkiej ścieżki one-linerów.</p>
+        <p class="mit"><b>Mitygacja:</b> jawne zdanie rekoncyliacji w ≥2 miejscach — bloku gate i Fazie 5 (AC-9).</p>
+      </div>
+      <div class="risk">
+        <span class="sev" style="color:var(--edge)">Środowiskowe</span>
+        <h4>Companion bez Node</h4>
+        <p><code>start-server.sh</code> zakłada środowisko dev; Codex/Pi i nocne runy gnhf mogą go nie mieć.</p>
+        <p class="mit"><b>Mitygacja:</b> oferta companion NIGDY nie blokuje — brak Node = cicho w terminalu (AC-10, AC-14, AC-15).</p>
+      </div>
+      <div class="risk">
+        <span class="sev" style="color:var(--edge)">Utrzymaniowe</span>
+        <h4>Rozdęcie SKILL.md</h4>
+        <p>583 linie + 5 wszczepień → ryzyko przekroczenia rozsądnej długości / przepalenia kontekstu.</p>
+        <p class="mit"><b>Mitygacja:</b> rewrite-to-unify (nie append) — konsolidacja miękkiego „NIE PISZ KODU" w jawny gate; szczegóły companion w osobnym pliku.</p>
+      </div>
+      <div class="risk">
+        <span class="sev" style="color:var(--sec)">Bezpieczeństwo / uprawnienia</span>
+        <h4>Powierzchnia allowed-tools</h4>
+        <p>Companion wymaga grantu Bash-exec (<code>companion-scripts/*</code>) i Write do <code>.superpowers/brainstorm/**</code>; zbyt szeroki wzorzec (np. <code>Bash(*)</code>) rozluźniłby skill.</p>
+        <p class="mit"><b>Mitygacja:</b> granty maksymalnie wąskie (dokładne ścieżki + katalog ekranów), krok 7 weryfikuje że reszta nietknięta; <code>.superpowers/</code> do <code>.gitignore</code> (AC-12, AC-13).</p>
+      </div>
+      <div class="risk">
+        <span class="sev" style="color:var(--muted)">Odroczone</span>
+        <h4>Severity punktowana</h4>
+        <p>Mapowanie <code>[BLOCKER]</code>/<code>[WARN]</code> ↔ Critical/Important/Minor nie jest rozstrzygane tutaj.</p>
+        <p class="mit"><b>Mitygacja:</b> spec self-review nie emituje severity → świadomie punktowane do Fazy 2/3.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- 7. Mapa plików -->
+  <section>
+    <h2><span class="num">7</span> Mapa plików</h2>
+    <div class="card grid" style="gap:18px;">
+      <div class="filecard">
+        <span class="st mod">MODYFIKACJA</span>
+        <div>
+          <code>skills/feature-discuss/SKILL.md</code>
+          <p style="margin:6px 0 0;font-size:14px;color:var(--ink-soft);">Jedyny plik z realną zmianą logiki: 5 wszczepień (scope-check, HARD-GATE, prezentacja sekcjami, Faza 5A, companion) + rozszerzenie <code>allowed-tools</code> w frontmatter (Bash <code>companion-scripts/*</code> + Write <code>**/.superpowers/brainstorm/**/*.html</code>). <code>name</code>/<code>description</code>/<code>argument-hint</code> i Router A/B/C nietknięte.</p>
+        </div>
+      </div>
+      <div class="filecard">
+        <span class="st ref">ODWOŁYWANY</span>
+        <div>
+          <code>skills/feature-discuss/visual-companion.md</code>
+          <p style="margin:6px 0 0;font-size:14px;color:var(--ink-soft);">Bez zmian treści — dotąd martwy kod (SKILL.md go nie odwoływał, <code>grep companion</code> = 0 trafień). Faza 1 głównie go PODPINA. Ewentualna adaptacja PL nagłówka.</p>
+        </div>
+      </div>
+      <div class="filecard">
+        <span class="st new">UTWORZONY</span>
+        <div>
+          <code>docs/adr/2026-07-13-faza1-feature-discuss-brainstorming-fuzja.md</code>
+          <p style="margin:6px 0 0;font-size:14px;color:var(--ink-soft);">ADR lokalny fazy: szkielet=feature-discuss + rekoncyliacja gate↔micro-change + rekoncyliacja dekompozycja↔epic. Status: Accepted.</p>
+        </div>
+      </div>
+      <div class="filecard">
+        <span class="st upd">STATUS</span>
+        <div>
+          <code>absolutpowers/feature/superpowers-faza2-fuzje/planning-main.md</code>
+          <p style="margin:6px 0 0;font-size:14px;color:var(--ink-soft);">Aktualizacja statusu Fazy 1: „Do zaplanowania" → „Zaplanowana" po PASS review-plan.</p>
+        </div>
+      </div>
+    </div>
+    <div class="callout" style="margin-top:14px;">Poza scope edycji tej fazy (do świadomości): wzmianka w <code>README.md</code> / <code>docs/</code> o wchłonięciu mechaniki — należy do fazy implementacyjnej, nie planistycznej.</div>
+  </section>
+
+  <!-- 8. Acceptance Criteria -->
+  <section>
+    <h2><span class="num">8</span> Acceptance Criteria (15)</h2>
+    <div class="legend">
+      <span><span class="tag happy">Happy path</span> AC-1 … AC-7</span>
+      <span><span class="tag edge">Edge cases</span> AC-8 … AC-12</span>
+      <span><span class="tag sec">Security</span> AC-13 … AC-15</span>
+    </div>
+    <div class="card" style="padding:0;overflow:hidden;">
+    <table>
+      <thead>
+        <tr><th style="width:70px;">ID</th><th style="width:110px;">Grupa</th><th>Kryterium</th></tr>
+      </thead>
+      <tbody>
+        <tr><td class="ac-id">AC-1</td><td><span class="tag happy">Happy</span></td><td>SKILL.md zawiera jawny blok HARD-GATE po nagłówku roli, przed Routerem trybu — żadna implementacja (kod, scaffolding, wywołanie skilla implementacyjnego) nie następuje przed zaakceptowanym designem, dla KAŻDEGO projektu niezależnie od rozmiaru.</td></tr>
+        <tr><td class="ac-id">AC-2</td><td><span class="tag happy">Happy</span></td><td>Blok HARD-GATE (lub sąsiadujący akapit) jawnie adresuje anty-wzorzec „to zbyt proste, by projektować" — prostota projektu nie zwalnia z wymogu akceptacji.</td></tr>
+        <tr><td class="ac-id">AC-3</td><td><span class="tag happy">Happy</span></td><td>W Fazie 3, po rekomendacji podejścia, design prezentowany rozbity na sekcje (min.: architektura, komponenty, data flow, obsługa błędów, testy) z osobnym pytaniem o akceptację po każdej sekcji — nie jedną łączną rekomendacją.</td></tr>
+        <tr><td class="ac-id">AC-4</td><td><span class="tag happy">Happy</span></td><td>Faza 3 jawnie instruuje skalowanie długości każdej sekcji do złożoności tematu (krótka dla prostych, rozwinięta dla niuansowych) — nie jednolita długość.</td></tr>
+        <tr><td class="ac-id">AC-5</td><td><span class="tag happy">Happy</span></td><td>Na wejściu Fazy 1, przed pierwszym pytaniem szczegółowym, działa scope-check: wiele niezależnych podsystemów → zatrzymanie drążenia i skierowanie do detekcji/splitu epica (Faza 3).</td></tr>
+        <tr><td class="ac-id">AC-6</td><td><span class="tag happy">Happy</span></td><td>Nowa Faza 5A wstawiona między zapis doca (Faza 5) a QA-enrichment (Faza 5B): jednoprzebiegowy skan pod kątem placeholderów/TODO, sprzeczności, dopasowania zakresu i dwuznaczności, fix inline bez ponownego pełnego review.</td></tr>
+        <tr><td class="ac-id">AC-7</td><td><span class="tag happy">Happy</span></td><td>SKILL.md jawnie odwołuje <code>visual-companion.md</code> i opisuje ofertę just-in-time (własna wiadomość), decyzję per-pytanie browser↔terminal oraz zaadaptowaną (nie surowo wklejoną z EN) treść user-facing po polsku.</td></tr>
+        <tr><td class="ac-id">AC-8</td><td><span class="tag edge">Edge</span></td><td>Komunikat wczesnego scope-checku jest odrębny i krótszy niż komunikat detekcji epica w Fazie 3 — kieruje do niego, nie powiela, by epic nie był flagowany dwukrotnie tym samym komunikatem.</td></tr>
+        <tr><td class="ac-id">AC-9</td><td><span class="tag edge">Edge</span></td><td>Zdanie rekoncyliacji „micro-change spełnia gate, nie obchodzi go" pojawia się w ≥2 miejscach — w bloku HARD-GATE oraz w opisie Fazy 5 (micro-change).</td></tr>
+        <tr><td class="ac-id">AC-10</td><td><span class="tag edge">Edge</span></td><td>Brak dostępnego Node (Codex/Pi, run gnhf) → feature-discuss kontynuuje wyłącznie w trybie terminalowym, bez próby uruchomienia companion i bez błędu przerywającego sesję.</td></tr>
+        <tr><td class="ac-id">AC-11</td><td><span class="tag edge">Edge</span></td><td>Faza 5A uruchamia się wyłącznie dla standardowego feature'a i phase-doca w Trybie B — SKILL.md jawnie wyklucza micro-change, <code>planning-main.md</code> i stuby faz epica.</td></tr>
+        <tr><td class="ac-id">AC-12</td><td><span class="tag edge">Edge</span></td><td>Po rewrite frontmatter pozostaje poprawny; jedyna dozwolona zmiana znacząca to rozszerzenie <code>allowed-tools</code> o wąskie granty companion — <code>name</code>/<code>description</code>/<code>argument-hint</code> i reszta grantów niezmienione; Router A/B/C i formaty doców nienaruszone.</td></tr>
+        <tr><td class="ac-id">AC-13</td><td><span class="tag sec">Security</span></td><td>Visual companion nie wykonuje kodu z projektu ani z requestu użytkownika — serwuje wyłącznie statyczny render (diagram/HTML), niezależnie od treści pytania.</td></tr>
+        <tr><td class="ac-id">AC-14</td><td><span class="tag sec">Security</span></td><td>Niedostępność/błąd companion (brak Node, zablokowany port, sandbox) nigdy nie jest interpretowany jako domyślna akceptacja designu — HARD-GATE nadal wymaga jawnej akceptacji.</td></tr>
+        <tr><td class="ac-id">AC-15</td><td><span class="tag sec">Security</span></td><td>W trybie nieinteraktywnym (gnhf) sesja nie zawiesza się w oczekiwaniu na decyzję dot. companion — brak odpowiedzi = rezygnacja z companion, proces kontynuuje bez niego.</td></tr>
+      </tbody>
+    </table>
+    </div>
+  </section>
+
+</main>
+
+<footer>
+  AbsolutPowers · Onboarding fazy planistycznej · Faza 1 epica „Fuzja mechaniki obry" · wygenerowano 2026-07-13<br/>
+  Źródła: planning-phase-1-feature-discuss.md · planning-main.md · ADR 2026-07-13-faza1-feature-discuss-brainstorming-fuzja.md
+</footer>
+
+</body>
+</html>

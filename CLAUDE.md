@@ -4,22 +4,22 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## What This Is
 
-AbsolutPowers — a Claude Code + Codex plugin providing AI-assisted development lifecycle skills: problem intake/triage, feature discussion, task generation, implementation, review, debugging, project context management, and project constitution. Version 3.13.0.
+AbsolutPowers — a Claude Code + Codex + Pi plugin providing AI-assisted development lifecycle skills: problem intake/triage, feature discussion, task generation, implementation, review, debugging, project context management, and project constitution. Version 5.0.0. As of 5.0.0 the repo is a single host-agnostic skill tree (see Repository Layout) with thin per-harness manifests/integrations, replacing the earlier two mirrored `claude/`/`codex/` trees; it also introduces `skills/vendored/` — selected skills vendored from [obra/superpowers](https://github.com/obra/superpowers) under MIT (see `VENDORED.md`, `LICENSE-VENDORED`).
 
 ## Repository Layout
 
-Two parallel plugin trees share most skill logic but differ in platform capabilities:
+One host-agnostic skill tree serves every harness (Claude Code, Codex, Pi); thin per-harness manifests and integrations layer on top (obra/superpowers pattern):
 
-- `claude/` — Claude Code plugin. Has `skills/`, `agents/`, `commands/`, and `.claude-plugin/plugin.json`
-- `codex/` — Codex plugin. Has `skills/`, `.codex-plugin/plugin.json`. No agents or commands (Codex lacks plugin-level subagent support)
+- `skills/{name}/SKILL.md` — single source of truth. Host-agnostic body; Claude-only sections (frontmatter `allowed-tools`/`argument-hint`, agent gate sections) are inert on Codex/Pi.
+- `skills/vendored/{name}/` — vendored obra/superpowers skills with MIT attribution (see `VENDORED.md`, `LICENSE-VENDORED`).
+- `agents/{name}.md`, `commands/{name}.md` — top-level, Claude-only; other harnesses ignore them.
+- `hooks/` — slim Claude SessionStart hook (`hooks.json` + `run-hook.cmd` + `session-start`) plus shared `hooks/session-context.md`.
+- `references/{harness}-tools.md` — per-harness primitive mappings, read conditionally. Adding a harness = new integration/manifest + optional reference, zero skill edits.
 
-Skills live in `{platform}/skills/{name}/SKILL.md`. Agents live in `claude/agents/{name}.md` (Claude only). Slash commands live in `claude/commands/{name}.md` (Claude only).
-
-Supporting files:
-- `scripts/diff-skills.sh` — drift detection between Claude and Codex skill files
-- `scripts/sync_claude_to_agents.py` — CLAUDE.md → AGENTS.md sync helper for target projects
-- `.claude-plugin/marketplace.json` → points to `claude/`
-- `.agents/plugins/marketplace.json` → points to `codex/`
+Manifests and marketplaces (all top-level, pointing at repo root):
+- `.claude-plugin/plugin.json` — Claude manifest; `.claude-plugin/marketplace.json` → `source: "."`.
+- `.codex-plugin/plugin.json` — Codex manifest; `.agents/plugins/marketplace.json` → `source.path: "."`.
+- `AGENTS.md` — symlink to `CLAUDE.md` (bootstrap for harnesses that read AGENTS.md, e.g. Codex).
 
 ## Skill and Agent File Format
 
@@ -61,6 +61,10 @@ feature-discuss → generate-tasks → implement → review
   (gate)            (gate)           (gate)
 ```
 
+### Terminal-state contract (prose, `/goal`-aware)
+
+Each of the four pipeline skills ends with a `## Terminal state` section (prose, Polish — no machine format / frontmatter key). The three intermediate skills (`feature-discuss`, `generate-tasks`, `implement`) declare what they deliver, name the next link as `@<skill>` (`@generate-tasks` / `@implement` / `@review`), and explicitly state the pipeline is **not closed** — so a session driven by Claude Code's `/goal` continues down the chain instead of stopping mid-pipeline. `review`/`triada-review` is the distinguished **closure point** (fix-loop or merge/ship), not a chain link — it names no forward `@skill`. There is no separate "execution-mode" fork: `implement` is the sole executor, and the `## Mode` field (`orchestrated`/`single-file`) set by `generate-tasks` is the absolutpowers analog of obra's `subagent-driven-development` vs `executing-plans` split (a resolved decision, not a missing feature).
+
 ### Intake / triage front door
 
 `problem-discuss` is an optional entry point **upstream** of the pipeline. It takes a fuzzy,
@@ -78,8 +82,8 @@ problem-discuss (no gate — investigative, like debug)
 
 Output: `absolutpowers/problem/problem-{slug}.md`. Hard boundary: it investigates and routes
 only — it does not fix, plan, or write tasks. Cousin of `debug` (breadth-first triage vs depth
-root-cause); both trees, no gate. Keep the `debug` "vs problem-discuss" note in sync so triggers
-do not collide.
+root-cause); no gate, on every harness. Keep the `debug` "vs problem-discuss" note in sync so
+triggers do not collide.
 
 `debug` reads `problem-{slug}.md` (when routed from `problem-discuss`) as the starting point for
 Phase 1 — confirms/deepens the evidence instead of re-deriving from scratch. For large root-cause
@@ -99,13 +103,13 @@ tasks-{slug}.md (orchestrator index)
 
 ### Harvest Phase (closeout)
 
-After `implement`, before commit, an optional **harvest phase** gathers durable knowledge from the finished feature. `implement` prints one best-effort nudge toward `harvest`, a thin orchestrator that runs `try-learn-skill` (reusable procedure → `.claude/skills/learned/`), then `document-feature` (per-module prose docs → `docs/modules/`), then `document-module` (module architecture + C4 → `docs/modules/{slug}-architecture.md` + `docs/architecture/`, **only for touched modules whose architecture changed**), each keeping its own gate. `document-feature` is distinct from `document-module` (code-scan of one module → architecture + C4 diagrams, on-demand, `docs/modules/{slug}-architecture.md` + `docs/architecture/{slug}.html`), `update-ai-context` (code-scan → broad `CLAUDE.md`), and `explain` (ephemeral HTML). Both skills live in both trees.
+After `implement`, before commit, an optional **harvest phase** gathers durable knowledge from the finished feature. `implement` prints one best-effort nudge toward `harvest`, a thin orchestrator that runs `try-learn-skill` (reusable procedure → `.claude/skills/learned/`), then `document-feature` (per-module prose docs → `docs/modules/`), then `document-module` (module architecture + C4 → `docs/modules/{slug}-architecture.md` + `docs/architecture/`, **only for touched modules whose architecture changed**), each keeping its own gate. `document-feature` is distinct from `document-module` (code-scan of one module → architecture + C4 diagrams, on-demand, `docs/modules/{slug}-architecture.md` + `docs/architecture/{slug}.html`), `update-ai-context` (code-scan → broad `CLAUDE.md`), and `explain` (ephemeral HTML).
 
 ### Constitution Skill
 
 `constitution` is a standalone ceremony skill (not part of the linear pipeline) that guides
 authoring and ratification of `absolutpowers/constitution.md` — the project's ratified
-principles (pryncypia/osąd). Both trees.
+principles (pryncypia/osąd).
 
 Two-file distinction (never merge):
 - `absolutpowers/constitution.md` — pryncypia/osąd; ratified principles, values, hard limits.
@@ -121,7 +125,9 @@ Pipeline wiring:
 
 ### Review Gates (Claude only)
 
-Subagents auto-verify each pipeline step. PASS or REJECTED with issues. Up to 3 fix iterations, then asks user. Codex runs without gates.
+Subagents auto-verify each pipeline step. PASS or REJECTED with issues. Up to 3 fix iterations, then asks user.
+
+**Precise Codex/Pi statement (do not simplify to "no subagent support"):** Codex and Pi lack **registered agent type definitions** — there is no mechanism to load `agents/*.md` as an installable subagent identity the way Claude Code plugins do, so `Agent(subagent_type="review-tasks", ...)` calls have nothing to resolve to. That is *not* the same as lacking subagent dispatch: Codex exposes `multi_agent=true` → `spawn_agent`/`wait_agent`/`close_agent` primitives, and Pi has the optional `pi-subagents` package. So the *execution pattern* (dispatch a subagent, hand it a prompt, wait, read its verdict) is portable across harnesses — only the *registry* (named, reusable agent types) is Claude-only. Practical effect: review gates as AbsolutPowers implements them (named `agents/*.md` types) are Claude-only, but a harness can still run the same review inline or via a generic dispatched subagent fed the `agents/{name}.md` body as its prompt. See `references/pi-tools.md` ("Review gates on Pi") for the worked-out degradation path; an equivalent `references/codex-tools.md` can be added following the same pattern (see "Adding a New Harness" below).
 
 ### Orchestrated Implementation (Claude only)
 
@@ -134,7 +140,9 @@ Ownership contract:
 - `implement` orchestrator updates phase status in parent tasks file
 - `phase-review` is read-only, returns VERDICT only
 
-### Cross-artifact Audit: `analyze` (both trees)
+`implementation-worker` returns one of four `PHASE_RESULT` values — `DONE`, `DONE_WITH_CONCERNS`, `NEEDS_CONTEXT`, `BLOCKED` — instead of the older 3-state `COMPLETED`/`BLOCKED`/`FAILED`; the orchestrator (Step O3) branches on each independently, escalating (context → model → decomposition → human) only for `BLOCKED`. Every subagent dispatch (`implementation-worker`, `phase-review`, `review-implementation`) carries an explicit `model=` sized per role — transcription-tier `haiku`/standard `sonnet`/most-capable `opus` for the worker (by phase `Risk:` and code completeness), diff-scaled for `phase-review`, always `opus` for the final `review-implementation` gate. Progress is durable across three files: the phase file (full spec), `implementation-context.md` (narrow handoff), and a git-anchored `progress.md` ledger (one line per phase, `Faza N: complete (commits base7..head7, review clean)`) that Step O1 treats as authoritative on resume over the human-facing status table. Before dispatching each `phase-review`/`review-implementation` call, the orchestrator generates a `review-package` (forked from vendored `subagent-driven-development`) and passes its path in the prompt so reviewers read one file instead of running their own diff.
+
+### Cross-artifact Audit: `analyze`
 
 `analyze` is an on-demand cross-artifact consistency audit — not a pipeline gate.
 Invoke it at any point after `generate-tasks` (or before merge) to get a consolidated
@@ -147,7 +155,7 @@ AC→task→code traceability matrix and detect divergences that per-step gates 
 - Output: `absolutpowers/reviews/analyze-{slug}.md`, verdict CONSISTENT / INCONSISTENT
 - Hard boundary: audits and routes only — routes missing tasks to `generate-tasks`,
   missing code to `implement`; never fixes, plans, or writes code
-- Both trees; Claude may delegate matrix build to a subagent
+- Claude may delegate matrix build to a subagent
 
 `review-tasks` gained criterion **#7 Intent Fidelity** (category `INTENT`, Claude-only
 gate): judges whether the task set as a whole achieves the *goal/intent* of the
@@ -168,49 +176,81 @@ scopes, then synthesizes one report (JSON per agent → merged verdict).
 Defaults are baked into the command; an optional per-project
 `.claude/triada-review.agents.json` can override role → `subagent_type`, `enabled`,
 and `scope`. This is separate from the pipeline gates and from the solo `review`
-skill — see the `review` SKILL for the distinction. Codex has no equivalent
-(needs parallel subagents).
+skill — see the `review` SKILL for the distinction. Codex/Pi have no equivalent —
+not because dispatch is unavailable, but because there is no registered
+`tech-lead-advisor`/`codebase-auditor`/`ui-reviewer` agent type to fan out to, and
+no built-in mechanism to run three dispatched subagents in parallel and merge
+their verdicts.
 
 ## Key Development Commands
 
 ```bash
-# Detect drift between Claude and Codex skills
-./scripts/diff-skills.sh           # summary
-./scripts/diff-skills.sh --diff    # full diff
-
 # Install plugin locally (Claude Code)
 /plugin install absolutpowers@absolutpowers-skills
 
 # Test a skill in a project directory
 /absolutpowers:{skill-name} [args]
+
+# Validate every manifest is valid JSON
+for f in $(git ls-files '*.json'); do python3 -m json.tool "$f" >/dev/null || echo "BAD: $f"; done
+
+# Validate the SessionStart hook emits valid JSON
+CLAUDE_PLUGIN_ROOT=. bash hooks/session-start | python3 -m json.tool >/dev/null
+
+# Validate every SKILL.md has frontmatter
+for f in $(git ls-files 'skills/**/SKILL.md'); do head -1 "$f" | grep -q '^---$' || echo "NO FM: $f"; done
+
+# Typecheck the Pi extension (requires @earendil-works/pi-coding-agent resolvable, e.g. a
+# temporary node_modules symlink to a local/global install; remove it afterwards, do not commit)
+npx --package=typescript@latest -- tsc --noEmit --module esnext --moduleResolution bundler \
+  --target es2022 --skipLibCheck .pi/extensions/absolutpowers.ts
 ```
 
-## Cross-Platform Editing Rules
+## Cross-Harness Editing Rules
 
-When modifying task format or pipeline behavior, update these files together:
-- `claude/skills/generate-tasks/SKILL.md`
-- `claude/skills/implement/SKILL.md`
-- `claude/agents/review-tasks.md`
-- `claude/agents/review-implementation.md`
-- `codex/skills/generate-tasks/SKILL.md`
-- `codex/skills/implement/SKILL.md`
-- `README.md` and `docs/`
+There is now one skill tree, so there are no mirror files to keep in sync. A single edit to a `skills/{name}/SKILL.md` serves every harness. Keep skill bodies host-agnostic:
 
-When modifying `analyze` (cross-artifact audit) or the divergence class list, update both trees together:
-- `claude/skills/analyze/SKILL.md`
-- `codex/skills/analyze/SKILL.md`
+- Claude-only frontmatter (`allowed-tools`, `argument-hint`) and agent gate sections are tolerated and inert on Codex/Pi — do not duplicate skills per harness.
+- Per-harness differences belong in `references/{harness}-tools.md` (read conditionally), never in a forked skill body.
+- When changing task format or pipeline behavior, also update the relevant `agents/*.md`, `commands/*.md`, `README.md`, and `docs/`.
 
-Expected drift (Claude-only additions): `allowed-tools`, `argument-hint` in frontmatter, agent gate sections, orchestrated worker delegation. Unexpected drift to sync: changed phases/steps, new prompt sections, output format changes.
+## Adding a New Harness
+
+The obra/superpowers pattern this repo adopted in 5.0.0 is designed so a new harness costs an
+integration, not a rewrite. To add harness `{h}`:
+
+1. **Add a thin manifest/integration for `{h}`**, following the shape of the existing ones —
+   `.codex-plugin/plugin.json` (declarative manifest, points at `./skills/`) or
+   `.pi/extensions/absolutpowers.ts` (a small extension: register the skill directory, inject
+   `hooks/session-context.md` at session start/compact). Nothing here duplicates skill content;
+   it only wires the harness up to the one shared tree.
+2. **Add an optional `references/{h}-tools.md`** if the harness has primitives that differ enough
+   from Claude's to need a mapping (subagent dispatch, task tracking, review-gate degradation —
+   see `references/pi-tools.md` for the template). Not every harness needs one — add it only when
+   a skill actually needs to branch on harness-specific tooling.
+3. **Zero skill edits.** `skills/{name}/SKILL.md` bodies stay host-agnostic. If `{h}` chokes on a
+   specific frontmatter key or prose section, that content moves into `references/{h}-tools.md`
+   (read conditionally), never into a forked copy of the skill.
+4. **Gates and the Claude hook degrade gracefully.** Registered review-gate agent types
+   (`agents/*.md`) and `hooks/` are Claude-only; `{h}` either dispatches a generic subagent fed the
+   target agent's prompt, runs the review inline with an explicit non-isolation disclaimer, or (for
+   session bootstrap) reads `hooks/session-context.md` directly from its own extension — the same
+   file `hooks/session-start` reads, never duplicated inline.
+
+**Realized examples of this exact pattern:** Codex (`.codex-plugin/plugin.json`, no
+`references/codex-tools.md` yet — not needed so far, gates simply don't run) and Pi
+(`.pi/extensions/absolutpowers.ts` + `references/pi-tools.md`, which documents the `pi-subagents`
+dispatch path and the two-tier review-gate degradation).
 
 ## PreBoot Skill
 
-One shared `preboot` skill (not per-module). Acts as documentation router — maps detected PreBoot API usage to local `./preboot-docs/` in the target project. Does not ship bundled API docs. Stops if local docs missing. Should stay synchronized between Claude and Codex.
+One shared `preboot` skill (not per-module, one copy in `skills/preboot/`, served to every harness). Acts as documentation router — maps detected PreBoot API usage to local `./preboot-docs/` in the target project. Does not ship bundled API docs. Stops if local docs missing.
 
 ## Versioning
 
 SemVer across both manifests (must match):
-- `claude/.claude-plugin/plugin.json` → `"version"`
-- `codex/.codex-plugin/plugin.json` → `"version"`
+- `.claude-plugin/plugin.json` → `"version"`
+- `.codex-plugin/plugin.json` → `"version"`
 
 Major = breaking structure changes. Minor = new skill/agent/feature. Patch = prompt fixes/bugfixes.
 

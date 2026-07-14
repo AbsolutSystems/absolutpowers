@@ -1,0 +1,444 @@
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Onboarding — Faza 3: jawne kontrakty terminal-state pipeline</title>
+<script src="https://cdn.jsdelivr.net/npm/mermaid/dist/mermaid.min.js"></script>
+<style>
+  :root {
+    --bg: #f7f8fa;
+    --card: #ffffff;
+    --text: #1f2430;
+    --muted: #5c6472;
+    --border: #e2e6ec;
+    --accent: #3b6ef5;
+    --accent-soft: #eaf0ff;
+    --before-bg: #eef2f7;
+    --before-border: #b9c4d4;
+    --after-bg: #eafaf0;
+    --after-border: #9ad9b4;
+    --verified-bg: #e8f6ec;
+    --verified-border: #4caf72;
+    --inferred-bg: #fff5e6;
+    --inferred-border: #e0a53b;
+    --q-bg: #fff4f4;
+    --q-border: #e06666;
+    --risk-high-bg: #fdeaea; --risk-high-border: #e06666;
+    --risk-med-bg: #fff6e6; --risk-med-border: #e0a53b;
+    --risk-low-bg: #eef6ec; --risk-low-border: #6fb86f;
+    --code-bg: #f0f2f6;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #14171d;
+      --card: #1c2029;
+      --text: #e4e8f0;
+      --muted: #9aa3b2;
+      --border: #2c313c;
+      --accent: #7aa2ff;
+      --accent-soft: #23304f;
+      --before-bg: #232833;
+      --before-border: #3a4657;
+      --after-bg: #1d2e26;
+      --after-border: #35624a;
+      --verified-bg: #17301f;
+      --verified-border: #3c8c5c;
+      --inferred-bg: #33280f;
+      --inferred-border: #b3862e;
+      --q-bg: #331d1d;
+      --q-border: #b35050;
+      --risk-high-bg: #331d1d; --risk-high-border: #b35050;
+      --risk-med-bg: #33280f; --risk-med-border: #b3862e;
+      --risk-low-bg: #1a2a1a; --risk-low-border: #4c7a4c;
+      --code-bg: #262b35;
+    }
+  }
+  * { box-sizing: border-box; }
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    line-height: 1.6;
+    margin: 0;
+    padding: 2rem 1rem 4rem;
+  }
+  .wrap { max-width: 900px; margin: 0 auto; }
+  h1 { font-size: 1.7rem; line-height: 1.25; margin: 0 0 .3rem; }
+  h2 { font-size: 1.3rem; margin: 0 0 1rem; padding-bottom: .4rem; border-bottom: 2px solid var(--border); }
+  h3 { font-size: 1.05rem; margin: 1.4rem 0 .5rem; }
+  .subtitle { color: var(--muted); margin: 0 0 1.5rem; }
+  .card {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 1.4rem 1.6rem;
+    margin: 0 0 1.5rem;
+    box-shadow: 0 1px 3px rgba(0,0,0,.04);
+  }
+  code, .mono {
+    background: var(--code-bg);
+    padding: .1rem .35rem;
+    border-radius: 5px;
+    font-family: "SFMono-Regular", Consolas, "Liberation Mono", monospace;
+    font-size: .88em;
+  }
+  pre { background: var(--code-bg); padding: 1rem; border-radius: 8px; overflow-x: auto; font-size: .85rem; }
+  pre code { background: none; padding: 0; }
+  a { color: var(--accent); }
+  ul, ol { padding-left: 1.3rem; }
+  li { margin: .25rem 0; }
+  .toc ul { list-style: none; padding-left: 0; columns: 2; }
+  .toc li { margin: .3rem 0; }
+  .badge {
+    display: inline-block; font-size: .72rem; font-weight: 600;
+    padding: .1rem .5rem; border-radius: 20px; vertical-align: middle;
+    border: 1px solid; margin-right: .3rem;
+  }
+  .b-verified { background: var(--verified-bg); border-color: var(--verified-border); color: var(--verified-border); }
+  .b-inferred { background: var(--inferred-bg); border-color: var(--inferred-border); color: var(--inferred-border); }
+  .legend span { margin-right: 1rem; }
+  table { width: 100%; border-collapse: collapse; margin: 1rem 0; font-size: .9rem; }
+  .scroll-x { overflow-x: auto; }
+  th, td { text-align: left; padding: .6rem .7rem; border: 1px solid var(--border); vertical-align: top; }
+  th { background: var(--accent-soft); }
+  tbody tr:nth-child(even) td { background: rgba(127,127,127,.05); }
+  td.col-before { background: var(--before-bg) !important; border-left: 3px solid var(--before-border); }
+  td.col-after  { background: var(--after-bg) !important; border-left: 3px solid var(--after-border); }
+  .panel { border-left: 4px solid; border-radius: 8px; padding: .9rem 1.1rem; margin: 1rem 0; }
+  .panel-q { background: var(--q-bg); border-color: var(--q-border); }
+  .panel h4 { margin: .2rem 0 .6rem; }
+  .risk { border-radius: 8px; padding: .8rem 1.1rem; margin: .8rem 0; border-left: 4px solid; }
+  .risk-high { background: var(--risk-high-bg); border-color: var(--risk-high-border); }
+  .risk-med { background: var(--risk-med-bg); border-color: var(--risk-med-border); }
+  .risk-low { background: var(--risk-low-bg); border-color: var(--risk-low-border); }
+  .risk .lvl { font-weight: 700; font-size: .72rem; text-transform: uppercase; letter-spacing: .05em; }
+  .mermaid { text-align: center; margin: 1rem 0; }
+  footer { color: var(--muted); font-size: .82rem; margin-top: 2rem; border-top: 1px solid var(--border); padding-top: 1rem; }
+  .tag { font-size: .72rem; padding: .05rem .4rem; border-radius: 4px; background: var(--accent-soft); color: var(--accent); font-weight: 600; }
+  .ac { font-family: monospace; font-size: .8rem; color: var(--muted); }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<h1>Faza 3 migracji — jawne kontrakty <em>terminal-state</em> pipeline</h1>
+<p class="subtitle">Onboarding dla człowieka · plan: <code>absolutpowers/feature/planning-faza3-integracja-pipeline.md</code> · repo AbsolutPowers (meta-feature na samym pluginie)</p>
+
+<div class="card">
+  <strong>Legenda oznaczeń:</strong>
+  <p class="legend" style="margin:.5rem 0 0">
+    <span class="badge b-verified">zweryfikowane</span> sprawdzone bezpośrednio w plikach repo (grep/odczyt).
+    <span class="badge b-inferred">wnioskowane</span> odczytane z planu lub założone — do potwierdzenia przez człowieka.
+  </p>
+</div>
+
+<div class="card toc">
+  <h2 style="border:none;margin-bottom:.5rem">Spis treści</h2>
+  <ul>
+    <li><a href="#tldr">1. TL;DR</a></li>
+    <li><a href="#pytania">2. Pytania i decyzje dla człowieka</a></li>
+    <li><a href="#stan">3. Stan przed → po</a></li>
+    <li><a href="#zakres">4. Cztery strumienie pracy</a></li>
+    <li><a href="#diagramy">5. Diagramy</a></li>
+    <li><a href="#uzasadnienie">6. Wybrane rozwiązania</a></li>
+    <li><a href="#ryzyka">7. Ryzyka</a></li>
+    <li><a href="#pliki">8. Mapa plików</a></li>
+    <li><a href="#glosariusz">9. Glosariusz</a></li>
+  </ul>
+</div>
+
+<!-- ============ TL;DR ============ -->
+<div class="card" id="tldr">
+  <h2>1. TL;DR</h2>
+  <p>
+    To mały <strong>meta-feature na samym repo AbsolutPowers</strong> (skille to pliki markdown/prompt — brak runtime'u i build systemu; wszystkie AC są grep/strukturalne).
+    Sedno: do 4 skilli pipeline (<code>feature-discuss</code>, <code>generate-tasks</code>, <code>implement</code>, <code>review</code>) dodajemy
+    ujednolicony blok prozą <code>## Terminal state</code> deklarujący, co dany skill dostarcza i jaki jest następny krok w łańcuchu.
+  </p>
+  <p>
+    Cel: model prowadzony przez <strong><code>/goal</code></strong> Claude Code („Set a goal Claude checks before stopping") nie może
+    <strong>zatrzymać się przedwcześnie w środku pipeline'u</strong> (np. uznać robotę za skończoną po <code>generate-tasks</code>).
+    Blok jawnie mówi „pipeline niedomknięty aż do skilla terminalnego (<code>review</code>/<code>triada-review</code>/ship)".
+    Świadomie <strong>bez formatu maszynowego</strong> — <code>/goal</code> czyta prozę, nie parser (YAGNI).
+  </p>
+  <p>
+    Dodatkowo 3 mniejsze poprawki wychwycone w review:
+    <strong>(1)</strong> udokumentowanie „Execution Handoff" jako N/A (jeden egzekutor: <code>implement</code> sterowany polem <code>Mode</code>, nie fork obry subagent-driven-vs-executing-plans);
+    <strong>(2)</strong> dodanie brakującego filtra <code>Status: active</code> przy odczycie project-memory do <code>agents/implementation-worker.md</code> — realna naprawa latentnego buga;
+    <strong>(3)</strong> cleanup martwego labelu „gnhf" (strip w archiwach + <em>relabel</em> w żywym <code>feature-discuss</code>).
+  </p>
+</div>
+
+<!-- ============ PYTANIA ============ -->
+<div class="card" id="pytania">
+  <h2>2. Pytania i decyzje dla człowieka</h2>
+  <p style="color:var(--muted)">Najcenniejsza sekcja — tu potrzebny jest człowiek. 5 pozycji.</p>
+
+  <div class="panel panel-q">
+    <h4>Q1 — Zakres grepa AC-9 kontra istniejący plik onboarding <span class="badge b-verified">zweryfikowane</span></h4>
+    <p>
+      AC-9 wymaga, by <code>grep -rl "gnhf" … docs/</code> zwracał <strong>pusto</strong>. Ale w repo już istnieje
+      <code>docs/onboarding/faza1-feature-discuss-brainstorming-2026-07-13.html</code>, który zawiera <strong>3 wystąpienia „gnhf"</strong>.
+      Plan nie wymienia tego pliku na liście do sprzątnięcia. <strong>Bez jego wyczyszczenia AC-9 nie przejdzie.</strong>
+      Decyzja: czyścimy też ten HTML, zawężamy grep AC-9, czy uznajemy artefakt onboardingowy za wyjęty spod reguły?
+    </p>
+  </div>
+
+  <div class="panel panel-q">
+    <h4>Q2 — Ten raport też zawiera token „gnhf" <span class="badge b-verified">zweryfikowane</span></h4>
+    <p>
+      Ironia meta-feature'u: ten plik (<code>docs/onboarding/faza3-…html</code>) omawia cleanup gnhf, więc <strong>sam zawiera token „gnhf"</strong>
+      i leży w <code>docs/</code> — czyli w zasięgu grepa AC-9. Jeśli AC-9 sprawdza się po wygenerowaniu tego raportu, wynik nie będzie pusty.
+      Powiązane z Q1 — ta sama decyzja o zakresie grepa (rozdzielić „shipowany prompt" od „dokumentacji człowieka" wygląda na najzdrowsze wyjście).
+    </p>
+  </div>
+
+  <div class="panel panel-q">
+    <h4>Q3 — Czy <code>ship</code> dostaje blok terminal-state? <span class="badge b-inferred">wnioskowane</span></h4>
+    <p>
+      Otwarte pytanie z planu. <code>review</code> jest gate'em (fix-loop / merge), nie ostatnim ogniwem — realnym punktem
+      „dowieziony feature" bywa merge/PR przez <code>ship</code>. <code>ship</code> nie był w pierwotnej czwórce.
+      Wstępnie: tak, ale do potwierdzenia — inaczej łańcuch pod <code>/goal</code> może się urwać na review zamiast na merge.
+    </p>
+  </div>
+
+  <div class="panel panel-q">
+    <h4>Q4 — Faza 4 planu migracji: rescope czy wyciąć? <span class="badge b-inferred">wnioskowane</span></h4>
+    <p>
+      gnhf jest nieużywany, a Faza 4 planu migracji jest o „gnhf/headless". AC-10 wymaga tylko <em>notki</em> przy Fazie 4, że wymaga rescope'u.
+      Ostateczna decyzja (rescope vs całkowite wycięcie) jest świadomie <strong>poza tym featurem</strong> — trzeba ją podjąć osobno.
+    </p>
+  </div>
+
+  <div class="panel panel-q">
+    <h4>Q5 — „Docs sweep" jest warunkowy <span class="badge b-verified">zweryfikowane</span></h4>
+    <p>
+      Krok 5 planu i pliki <code>CLAUDE.md</code>/<code>README.md</code> są oznaczone „jeśli potrzeba". Żaden AC (AC-1..AC-13) nie wymusza edycji CLAUDE.md/README.
+      Decyzja: czy opis pipeline w CLAUDE.md ma wspomnieć o kontrakcie terminal-state, czy zostawiamy dokumentację bez zmian? Ryzyko cichego pominięcia.
+    </p>
+  </div>
+</div>
+
+<!-- ============ STAN PRZED PO ============ -->
+<div class="card" id="stan">
+  <h2>3. Stan przed → po</h2>
+  <p>To refaktor spójności (nie nowa maszyneria) — stąd tabela porównawcza. Kolumna „Przed" odzwierciedla zweryfikowany stan repo.</p>
+  <div class="scroll-x">
+  <table>
+    <thead>
+      <tr><th>Aspekt</th><th class="col-before">Przed</th><th class="col-after">Po</th><th>Dlaczego</th></tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td>Deklaracja końca skilla</td>
+        <td class="col-before">Ad-hoc: <code>feature-discuss</code> ma luźne „Następny krok" (l. 355, 406), <code>generate-tasks</code> ma jedną linię (l. 647), <code>implement</code> i <code>review</code> — <strong>nic</strong>. <span class="badge b-verified">zweryfikowane</span></td>
+        <td class="col-after">Ujednolicony blok <code>## Terminal state</code> na końcu każdego z 4 plików, ten sam wording/format.</td>
+        <td>Spójność + przewidywalny handoff.</td>
+      </tr>
+      <tr>
+        <td>Zachowanie pod <code>/goal</code></td>
+        <td class="col-before">Brak jawnego „pipeline niedomknięty" → model może uznać cel za osiągnięty po kroku pośrednim.</td>
+        <td class="col-after">Blok kroków pośrednich jawnie stwierdza: kontynuuj do skilla terminalnego zanim uznasz cel za dowieziony.</td>
+        <td>Anty-przedwczesny-stop.</td>
+      </tr>
+      <tr>
+        <td>Skill terminalny</td>
+        <td class="col-before">Nieoznaczony — nic nie mówi „tu pipeline realnie się domyka".</td>
+        <td class="col-after"><code>review</code>/<code>triada-review</code> jawnie oznaczony jako punkt domknięcia (gate: fix-loop albo merge/ship), <strong>nie</strong> „→ następny skill".</td>
+        <td>Odróżnić gate od ogniwa łańcucha.</td>
+      </tr>
+      <tr>
+        <td>Execution Handoff</td>
+        <td class="col-before">Pozorna luka: „brakuje forka obry subagent-driven-vs-executing-plans".</td>
+        <td class="col-after">Udokumentowane w <code>generate-tasks</code> jako N/A: jeden egzekutor <code>implement</code>, sterowany polem <code>Mode</code> (orchestrated/single-file). <span class="badge b-verified">Mode zweryfikowany</span></td>
+        <td>Analog już działa; doc zapobiega przyszłej „brakującej funkcji".</td>
+      </tr>
+      <tr>
+        <td>Filtr project-memory w workerze</td>
+        <td class="col-before"><code>implementation-worker.md</code> l.35 czyta <code>project-memory.md</code> „if they exist" — <strong>bez</strong> filtra <code>Status: active</code>. Jedyny komponent pipeline bez niego. <span class="badge b-verified">zweryfikowane</span></td>
+        <td class="col-after">Dodany filtr <code>Status: active</code>, brzmienie spójne z <code>implement/SKILL.md</code>.</td>
+        <td>Realna naprawa: worker mógł traktować wpisy <code>superseded</code>/<code>archived</code> jako aktywne.</td>
+      </tr>
+      <tr>
+        <td>Label „gnhf"</td>
+        <td class="col-before">Żyje w <code>feature-discuss</code> (l. 49, 55), w archiwach Fazy 2, w plan-migracji i w onboardingu Fazy 1. <span class="badge b-verified">zweryfikowane</span></td>
+        <td class="col-after"><strong>Strip</strong> w archiwach; <strong>relabel</strong> („gnhf" → „headless"/„nieinteraktywny") w żywym <code>feature-discuss</code> — logika fallback zostaje.</td>
+        <td>gnhf nieużywany; martwy label. Logika fallback jest ważna (Codex/Pi/headless).</td>
+      </tr>
+    </tbody>
+  </table>
+  </div>
+
+  <h3>Wzorzec bloku (proza, adaptowany per skill)</h3>
+<pre><code>## Terminal state
+Stan terminalny tego skilla: &lt;co jest dostarczone&gt;.
+Następny krok w pipeline: `@&lt;next-skill&gt;` (&lt;warunek/kiedy&gt;).
+Pipeline NIE jest domknięty na tym etapie — jeśli działasz pod `/goal`,
+kontynuuj do skilla terminalnego (`@review`/`@triada-review` lub ship/merge),
+zanim uznasz cel za osiągnięty.</code></pre>
+</div>
+
+<!-- ============ ZAKRES ============ -->
+<div class="card" id="zakres">
+  <h2>4. Cztery strumienie pracy</h2>
+  <ol>
+    <li><strong>Blok terminal-state (4 skille)</strong> — dodaj/zunifikuj <code>## Terminal state</code>, zastępując luźne „Następny krok" (unifikacja, nie duplikacja). <span class="ac">AC-1..AC-4, AC-6, AC-7, AC-8, AC-11</span></li>
+    <li><strong>Execution Handoff — doc</strong> — nota w <code>generate-tasks</code> (sekcja Mode): <code>implement</code> jest jedynym egzekutorem, brak forka obry = analog nie luka. <span class="ac">AC-5</span></li>
+    <li><strong>project-memory — naprawa filtra</strong> — dodaj <code>Status: active</code> do <code>implementation-worker.md</code>; HARD-GATE promocji nietknięty. <span class="ac">AC-12, AC-13</span></li>
+    <li><strong>gnhf cleanup (2 klasy)</strong> — (a) strip w archiwach Fazy 2, (b) <em>relabel</em> w żywym <code>feature-discuss</code>, (c) notka rescope przy Fazie 4 plan-migracji. <span class="ac">AC-9, AC-9b, AC-10</span></li>
+  </ol>
+  <p style="color:var(--muted)"><strong>Poza zakresem:</strong> format maszynowy terminal-state, sama Faza 4 (do osobnego rescope'u), głębsza integracja z <code>/goal</code>, zmiany w grep-AC i w mechanizmie project-memory poza brakującym filtrem.</p>
+</div>
+
+<!-- ============ DIAGRAMY ============ -->
+<div class="card" id="diagramy">
+  <h2>5. Diagramy</h2>
+
+  <h3>5.1 Pipeline z kontraktem terminal-state a <code>/goal</code></h3>
+  <div class="mermaid">
+flowchart LR
+    G(["/goal: dowiez feature"]):::goal
+    FD["feature-discuss<br/>Terminal: spec zaakceptowany<br/>next: @generate-tasks"]:::step
+    GT["generate-tasks<br/>Terminal: tasks-doc + Mode<br/>next: @implement"]:::step
+    IM["implement<br/>Terminal: final gate PASS<br/>next: @review (+ harvest opc.)"]:::step
+    RV["review / triada-review<br/>PUNKT DOMKNIECIA<br/>fix-loop albo merge/ship"]:::terminal
+    G -.sprawdza przed stopem.-> FD
+    FD --> GT --> IM --> RV
+    RV -->|fix| IM
+    RV -->|PASS| M(["merge / ship"]):::goal
+    classDef step fill:#eaf0ff,stroke:#3b6ef5,color:#1f2430;
+    classDef terminal fill:#eafaf0,stroke:#35a06a,color:#1f2430,stroke-width:2px;
+    classDef goal fill:#fff4f4,stroke:#e06666,color:#1f2430;
+  </div>
+  <p style="color:var(--muted)">Bloki pośrednie mówią „pipeline niedomknięty" → model pod <code>/goal</code> nie zatrzymuje się przed <code>review</code>.</p>
+
+  <h3>5.2 Cztery strumienie i dotknięte pliki</h3>
+  <div class="mermaid">
+flowchart TD
+    F["Faza 3"]:::root
+    F --> S1["1. Terminal-state x4"]:::ws
+    F --> S2["2. Execution Handoff doc"]:::ws
+    F --> S3["3. Filtr project-memory"]:::ws
+    F --> S4["4. gnhf cleanup"]:::ws
+    S1 --> P1["feature-discuss / generate-tasks<br/>implement / review SKILL.md"]:::file
+    S2 --> P2["generate-tasks SKILL.md<br/>sekcja Mode"]:::file
+    S3 --> P3["agents/implementation-worker.md<br/>+Status: active"]:::file
+    S4 --> P4a["feature-discuss SKILL.md<br/>RELABEL (l.49,55)"]:::file
+    S4 --> P4b["superpowers-faza2-fuzje/*<br/>STRIP + plan-migracji notka"]:::file
+    classDef root fill:#fff4f4,stroke:#e06666,color:#1f2430;
+    classDef ws fill:#eaf0ff,stroke:#3b6ef5,color:#1f2430;
+    classDef file fill:#f0f2f6,stroke:#9aa3b2,color:#1f2430;
+  </div>
+
+  <h3>5.3 gnhf: strip vs relabel</h3>
+  <div class="mermaid">
+flowchart LR
+    A["Wystapienia gnhf"]:::root
+    A --> B["Archiwa Fazy 2<br/>(martwa proza)"]:::a
+    A --> C["feature-discuss SKILL.md<br/>(zywy, shipowany)"]:::b
+    B --> B2["STRIP<br/>usun cala wzmianke"]:::strip
+    C --> C2["RELABEL<br/>gnhf to headless<br/>logika fallback ZOSTAJE"]:::relabel
+    classDef root fill:#eaf0ff,stroke:#3b6ef5,color:#1f2430;
+    classDef a fill:#f0f2f6,stroke:#9aa3b2,color:#1f2430;
+    classDef b fill:#f0f2f6,stroke:#9aa3b2,color:#1f2430;
+    classDef strip fill:#fdeaea,stroke:#e06666,color:#1f2430;
+    classDef relabel fill:#eafaf0,stroke:#35a06a,color:#1f2430;
+  </div>
+</div>
+
+<!-- ============ UZASADNIENIE ============ -->
+<div class="card" id="uzasadnienie">
+  <h2>6. Wybrane rozwiązania i uzasadnienie</h2>
+  <h3>Proza, nie format maszynowy</h3>
+  <p>Jedyny realny konsument to <code>/goal</code> — model czyta prozę, nie parser. gnhf (który motywował format maszynowy w planie migracji) jest nieużywany. Format maszynowy (<code>next:</code> we frontmatterze) = spekulacja pod nieistniejący parser → YAGNI. Rezerwa: gdyby pojawił się headless parser, dodać wtedy pod jego faktyczny format. <span class="ac">AC-11</span></p>
+  <h3>Ujednolicenie, nie dodanie warstwy</h3>
+  <p>Handoffy już istnieją luźno; wartość jest w spójności + jawnym „pipeline niedomknięty", nie w nowej mechanice. Stąd wymóg <em>zastąpienia</em> starych linii, nie dublowania. <span class="ac">AC-7</span></p>
+  <h3>Execution Handoff jako decyzja/doc, nie kod</h3>
+  <p>Fork obry (subagent-driven vs executing-plans) zakładał dwóch egzekutorów. AbsolutPowers ma jednego: <code>implement</code>, sterowanego <code>Mode</code>. To analog, nie brakująca funkcja — więc go tylko dokumentujemy. <span class="ac">AC-5</span></p>
+  <h3>Filtr project-memory jako realna naprawa</h3>
+  <p>To nie kosmetyka: worker jako jedyny komponent pipeline czytał project-memory bez filtra i mógł użyć wpisów <code>superseded</code>/<code>archived</code> jako aktywnych podpowiedzi. Brzmienie trzymamy spójne z <code>implement/SKILL.md</code> (jedno źródło konwencji). <span class="ac">AC-12</span></p>
+</div>
+
+<!-- ============ RYZYKA ============ -->
+<div class="card" id="ryzyka">
+  <h2>7. Ryzyka i otwarte kwestie</h2>
+
+  <div class="risk risk-high">
+    <span class="lvl">wysokie</span> — <strong>AC-9 vs docs/ (grep zbyt szeroki).</strong>
+    Istniejący onboarding Fazy 1 i ten raport zawierają token „gnhf" w <code>docs/</code>, który AC-9 obejmuje.
+    Bez zawężenia grepa lub wyczyszczenia tych plików AC-9 nie przejdzie. <span class="badge b-verified">zweryfikowane</span> (patrz Q1/Q2)
+  </div>
+
+  <div class="risk risk-med">
+    <span class="lvl">średnie</span> — <strong>Duplikacja handoffu.</strong>
+    Trzeba <em>zastąpić</em> istniejące „Następny krok" (feature-discuss l.355/406, generate-tasks l.647), nie dodać obok — ryzyko dwóch sprzecznych deklaracji następnego kroku. Wymaga przejrzenia każdego pliku przed wstawieniem. <span class="ac">AC-7</span>
+  </div>
+
+  <div class="risk risk-med">
+    <span class="lvl">średnie</span> — <strong>Relabel zamieniony w strip (regresja companiona).</strong>
+    W <code>feature-discuss</code> logika fallback (brak Node, tryb nieinteraktywny) MUSI zostać — usuwamy tylko słowo „gnhf". Przypadkowy strip logiki = regresja ścieżki headless/Codex/Pi. <span class="ac">AC-9b</span>
+  </div>
+
+  <div class="risk risk-med">
+    <span class="lvl">średnie</span> — <strong>Cross-platform drift.</strong>
+    CLAUDE.md nakazuje edytować pary Claude/Codex razem (m.in. <code>generate-tasks</code>, <code>implement</code>). Plan operuje ścieżkami <code>skills/</code> i <code>agents/</code> bez prefiksu <code>claude/</code>/<code>codex/</code> — do potwierdzenia, czy zmiany terminal-state trafiają też do drzewa <code>codex/</code>. <span class="badge b-inferred">wnioskowane</span>
+  </div>
+
+  <div class="risk risk-low">
+    <span class="lvl">niskie</span> — <strong>review to gate, nie ogniwo.</strong>
+    Jego terminal-state musi opisywać domknięcie/fix-loop/merge, a nie udawać „→ następny skill". Nisko, bo jawnie zaadresowane w planie. <span class="ac">AC-6</span>
+  </div>
+
+  <div class="risk risk-low">
+    <span class="lvl">niskie</span> — <strong>Kolejność harvest vs review w implement.</strong>
+    Blok terminal-state <code>implement</code> musi objąć istniejący nudge do harvest spójnie (harvest opcjonalny przed commitem, review to gate), nie tworzyć drugiego, sprzecznego zalecenia. <span class="ac">AC-8</span>
+  </div>
+</div>
+
+<!-- ============ MAPA PLIKOW ============ -->
+<div class="card" id="pliki">
+  <h2>8. Mapa zmienianych plików</h2>
+  <div class="scroll-x">
+  <table>
+    <thead><tr><th>Plik</th><th>Rola w tej zmianie</th></tr></thead>
+    <tbody>
+      <tr><td><code>skills/feature-discuss/SKILL.md</code></td><td>Blok terminal-state (unifikacja handoffu do <code>@generate-tasks</code>) + relabel gnhf→headless (l. ~49, 55; logika zostaje).</td></tr>
+      <tr><td><code>skills/generate-tasks/SKILL.md</code></td><td>Blok terminal-state (next: <code>@implement</code>) + nota Execution Handoff/Mode.</td></tr>
+      <tr><td><code>skills/implement/SKILL.md</code></td><td>Blok terminal-state (next: <code>@review</code>, harvest opcjonalny przed commitem).</td></tr>
+      <tr><td><code>skills/review/SKILL.md</code></td><td>Blok terminal-state jako punkt domknięcia pipeline (odróżniony od pozostałych).</td></tr>
+      <tr><td><code>agents/implementation-worker.md</code></td><td>Dodanie filtra <code>Status: active</code> przy odczycie project-memory (l. ~35). Realna naprawa.</td></tr>
+      <tr><td><code>absolutpowers/feature/superpowers-faza2-fuzje/planning-*.md</code></td><td>Strip martwych wzmianek gnhf (archiwalne).</td></tr>
+      <tr><td><code>plan-migracji-hybrydowej-superpowers.md</code></td><td>Notka rescope przy Fazie 4 (gnhf nieużywany).</td></tr>
+      <tr><td><code>CLAUDE.md</code> / <code>README.md</code></td><td>Sweep opisu pipeline/terminal-state — <em>warunkowy</em> („jeśli potrzeba", brak wymuszenia AC). <span class="badge b-inferred">wnioskowane</span></td></tr>
+    </tbody>
+  </table>
+  </div>
+  <p style="color:var(--muted)">Uwaga: powyższe ścieżki pochodzą z planu. Plan zakłada strip gnhf w archiwach i plan-migracji, ale <strong>nie</strong> wymienia <code>docs/onboarding/faza1-…html</code>, który też zawiera token (patrz Q1). <span class="badge b-verified">zweryfikowane</span></p>
+</div>
+
+<!-- ============ GLOSARIUSZ ============ -->
+<div class="card" id="glosariusz">
+  <h2>9. Glosariusz</h2>
+  <ul>
+    <li><strong>terminal-state</strong> — jawna, prozą pisana deklaracja na końcu skilla: co dostarczono i jaki następny krok. Kontrakt czytany przez model, nie parser.</li>
+    <li><strong><code>/goal</code></strong> — feature Claude Code („Set a goal Claude checks before stopping"): model sprawdza przed zatrzymaniem, czy cel osiągnięty. Realny konsument bloku terminal-state.</li>
+    <li><strong>Execution Handoff</strong> — pojęcie z obry (dwa tryby egzekucji). W AbsolutPowers N/A: jeden egzekutor <code>implement</code> + pole <code>Mode</code> (orchestrated/single-file).</li>
+    <li><strong>project-memory / <code>Status: active</code></strong> — <code>project-memory.md</code> gromadzi „pułapki"; tylko wpisy <code>Status: active</code> są aktywnymi podpowiedziami (<code>superseded</code>/<code>archived</code> ignorowane).</li>
+    <li><strong>gnhf</strong> — nieużywane narzędzie z planu migracji (motywowało format maszynowy). Do usunięcia jako martwe założenie; w żywym prompcie relabel na „headless".</li>
+  </ul>
+</div>
+
+<footer>
+  Wygenerowano: 2026-07-14 · skill <code>explain</code> · źródło: <code>absolutpowers/feature/planning-faza3-integracja-pipeline.md</code> (Draft 2026-07-14, AC-1..AC-13 + AC-9b).<br/>
+  Zakres zweryfikowany bezpośrednio w repo (grep/odczyt): stan handoffów w 4 skillach, brak filtra <code>Status: active</code> w workerze, wystąpienia „gnhf", pole <code>Mode</code> w generate-tasks. Reszta oznaczona jako wnioskowana.<br/>
+  Legenda: <span class="badge b-verified">zweryfikowane</span> = sprawdzone w plikach · <span class="badge b-inferred">wnioskowane</span> = z planu/założone.
+</footer>
+
+</div>
+<script>
+  const dark = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
+  mermaid.initialize({ startOnLoad: true, theme: dark ? 'dark' : 'default' });
+</script>
+</body>
+</html>
