@@ -52,7 +52,7 @@ pi -e /path/to/absolut-ai-skills
 
 Plus komenda `/absolutpowers:triada-review` (równoległy multi-agent review).
 
-**Codex:** wpisz `$absolutpowers` i sprawdź autouzupełnianie — te same 14 workflow skille + `preboot` (jeden wspólny wierzchołek `skills/`, bez osobnej kopii). Brak komend i brak review gate'ów — nie dlatego, że Codex nie potrafi wywołać subagenta (ma `multi_agent=true` → `spawn_agent`/`wait_agent`/`close_agent`), ale dlatego, że nie ma rejestru nazwanych typów agentów (`agents/*.md`), więc `Agent(subagent_type=...)` nie ma do czego się odnieść.
+**Codex:** wpisz `$absolutpowers` i sprawdź autouzupełnianie — te same 14 workflow skille + `preboot` (jeden wspólny wierzchołek `skills/`, bez osobnej kopii). Brak komend i brak *zarejestrowanych* review gate'ów — nie dlatego, że Codex nie potrafi wywołać subagenta (ma `multi_agent=true` → `spawn_agent`/`wait_agent`/`close_agent`), ale dlatego, że nie ma rejestru nazwanych typów agentów (`agents/*.md`), więc `Agent(subagent_type=...)` nie ma do czego się odnieść. Bramki degradują dwustopniowo — dispatch generycznego subagenta z treścią docelowego `agents/{name}.md` jako promptem, albo review inline z jawną notą o braku pełnej izolacji i advisory verdictem; orchestrated `implement` wykonuje fazy sekwencyjnie inline gdy brak multi-agent. Szczegóły: `references/codex-tools.md`.
 
 **Pi:** te same 14 workflow skilli + `preboot`, ładowane natywnie. Review gate'y degradują dwustopniowo — dispatch generycznego subagenta (jeśli zainstalowany `pi-subagents`) z treścią docelowego `agents/{name}.md` jako promptem, albo review inline z jawną notą o braku pełnej izolacji. Szczegóły: `references/pi-tools.md`.
 

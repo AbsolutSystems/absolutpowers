@@ -30,7 +30,10 @@ Tasks documents can use two modes:
 - `single-file` or missing `## Mode` - legacy sequential task execution in this session
 - `orchestrated` - main tasks file delegates phase files to fresh worker subagents
 
-> Na Pi/Codex: patrz `references/pi-tools.md` (lub odpowiedni `references/{harness}-tools.md`) po mapowanie dispatchu subagentów i bramek review użytych dalej w tym skillu — na Claude działają wprost jako zarejestrowani agenci.
+> **Harness dispatch (dotyczy każdego `Agent(subagent_type=...)` niżej):**
+> - **Claude** → zarejestrowani agenci działają wprost (`implementation-worker`, `phase-review`, `review-implementation`).
+> - **Codex** → patrz `references/codex-tools.md`: brak rejestru typów agentów, więc NIE emituj literalnego `Agent(subagent_type=...)`. Dispatch generic przez `spawn_agent` z ciałem `agents/{name}.md` jako promptem, a gdy brak multi-agent — wykonaj fazy/review sekwencyjnie inline w tej sesji z **advisory verdictem** (nigdy nie pomijaj bramki po cichu).
+> - **Pi** → patrz `references/pi-tools.md` (`pi-subagents` albo review inline z jawnym disclaimerem braku izolacji).
 
 ## Path Resolution
 
@@ -240,6 +243,8 @@ Read the phase's `**Risk:**` field from the Phase Overview in the parent tasks f
 
 For the pending phase, spawn `implementation-worker`. Use the **exact** parent tasks file path (the argument) and the **exact phase file path from the Phase Overview `**File:**` field** — do not reconstruct them from a template, so epic-nested paths stay correct.
 
+> Codex: patrz `references/codex-tools.md` — dispatch generic przez `spawn_agent` z ciałem `agents/implementation-worker.md`, lub sekwencyjnie inline w tej sesji; nie literalny `Agent(subagent_type=...)`.
+
 If Risk is `high`:
 ```
 Agent(subagent_type="implementation-worker", model="opus", prompt="Implement this orchestrated phase. Parent tasks file: {parent-tasks-path}. Phase file: {phase-File-path-from-Phase-Overview}. Validate Context Contract Requires before starting. Follow the phase Write Scope, update only the phase file and implementation-context.md, run phase verification, and return PHASE_RESULT with contract check.")
@@ -300,6 +305,8 @@ Spawn `phase-review` with an explicit `model=` scaled to the size/risk of this p
 Agent(subagent_type="phase-review", model="<scaled-to-diff>", prompt="Review completed orchestrated phase. Parent tasks file: {parent-tasks-path}. Phase file: {phase-File-path-from-Phase-Overview}. Shared context: {shared-implementation-context-path}. Review package: {review-package-path}.")
 ```
 
+> Codex: patrz `references/codex-tools.md` — dispatch generic z ciałem `agents/phase-review.md`, lub review inline z advisory verdictem; nie literalny `Agent(subagent_type=...)`.
+
 If `VERDICT: PASS`:
 - append a ledger line to `progress.md` (beside the phase directory; create the file with a one-line header if it does not yet exist): `Faza N: complete (commits base7..head7, review clean)`, using the BASE recorded before dispatch (Step O2) and `git rev-parse HEAD` (short) as HEAD — commit `progress.md` alongside the rest of the phase's changes, it is a tracked artifact, not scratch
 - update the phase status in the parent main tasks file to `completed`
@@ -348,6 +355,8 @@ Run the existing final gate with an explicit `model="opus"` (the final gate is a
 ```
 Agent(subagent_type="review-implementation", model="opus", prompt="Review implementation for orchestrated tasks: {parent-tasks-path}. Read all phase files referenced from Phase Overview and the final verification phase. Review package: {review-package-path}.")
 ```
+
+> Codex: patrz `references/codex-tools.md` — dispatch generic z ciałem `agents/review-implementation.md`, lub review inline z advisory verdictem; nie literalny `Agent(subagent_type=...)`.
 
 If `VERDICT: PASS`, report completion.
 
