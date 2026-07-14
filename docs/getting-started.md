@@ -54,7 +54,11 @@ Plus komenda `/absolutpowers:triada-review` (równoległy multi-agent review).
 
 **Codex:** wpisz `$absolutpowers` i sprawdź autouzupełnianie — te same 14 workflow skille + `preboot` (jeden wspólny wierzchołek `skills/`, bez osobnej kopii). Brak komend i brak *zarejestrowanych* review gate'ów — nie dlatego, że Codex nie potrafi wywołać subagenta (ma `multi_agent=true` → `spawn_agent`/`wait_agent`/`close_agent`), ale dlatego, że nie ma rejestru nazwanych typów agentów (`agents/*.md`), więc `Agent(subagent_type=...)` nie ma do czego się odnieść. Bramki degradują dwustopniowo — dispatch generycznego subagenta z treścią docelowego `agents/{name}.md` jako promptem, albo review inline z jawną notą o braku pełnej izolacji i advisory verdictem; orchestrated `implement` wykonuje fazy sekwencyjnie inline gdy brak multi-agent. Szczegóły: `references/codex-tools.md`.
 
+**Grok:** wpisz `/` lub `/skills` i sprawdź — te same skille (często pod kwalifikowaną nazwą pluginu). Użyj `grok inspect` lub TUI (`/plugins`, `/skills`). Szczegóły degradacji i bootstrapu: `references/grok-tools.md`.
+
 **Pi:** te same 14 workflow skilli + `preboot`, ładowane natywnie. Review gate'y degradują dwustopniowo — dispatch generycznego subagenta (jeśli zainstalowany `pi-subagents`) z treścią docelowego `agents/{name}.md` jako promptem, albo review inline z jawną notą o braku pełnej izolacji. Szczegóły: `references/pi-tools.md`.
+
+**Grok Build:** te same 14 workflow skilli + `preboot`. Instalacja przez `grok plugin marketplace add` + `grok plugin install`. Grok ma natywną obsługę `SKILL.md` i silną kompatybilność z Claude (automatycznie czyta `.claude/skills/`, `CLAUDE.md`). Bramki degradują przez `spawn_subagent` + `references/grok-tools.md`. Szczegóły instalacji i weryfikacji: patrz `references/grok-tools.md` i sekcja "Grok" w README.
 
 ## Krok 1: Przygotuj projekt
 

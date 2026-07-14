@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## What This Is
 
-AbsolutPowers — a Claude Code + Codex + Pi plugin providing AI-assisted development lifecycle skills: problem intake/triage, feature discussion, task generation, implementation, review, debugging, project context management, and project constitution. Version 5.1.1. As of 5.0.0 the repo is a single host-agnostic skill tree (see Repository Layout) with thin per-harness manifests/integrations, replacing the earlier two mirrored `claude/`/`codex/` trees; it also introduces `skills/vendored/` — selected skills vendored from [obra/superpowers](https://github.com/obra/superpowers) under MIT (see `VENDORED.md`, `LICENSE-VENDORED`).
+AbsolutPowers — a Claude Code + Codex + Pi + Grok plugin providing AI-assisted development lifecycle skills: problem intake/triage, feature discussion, task generation, implementation, review, debugging, project context management, and project constitution. Version 5.1.3. As of 5.0.0 the repo is a single host-agnostic skill tree (see Repository Layout) with thin per-harness manifests/integrations, replacing the earlier two mirrored `claude/`/`codex/` trees; it also introduces `skills/vendored/` — selected skills vendored from [obra/superpowers](https://github.com/obra/superpowers) under MIT (see `VENDORED.md`, `LICENSE-VENDORED`). Grok Build is supported as a first-class harness via `.grok-plugin/` + `references/grok-tools.md`.
 
 ## Repository Layout
 
@@ -14,7 +14,7 @@ One host-agnostic skill tree serves every harness (Claude Code, Codex, Pi); thin
 - `skills/vendored/{name}/` — vendored obra/superpowers skills with MIT attribution (see `VENDORED.md`, `LICENSE-VENDORED`).
 - `agents/{name}.md`, `commands/{name}.md` — top-level, Claude-only; other harnesses ignore them.
 - `hooks/` — slim Claude SessionStart hook (`hooks.json` + `run-hook.cmd` + `session-start`) plus shared `hooks/session-context.md`.
-- `references/{harness}-tools.md` — per-harness primitive mappings, read conditionally. Adding a harness = new integration/manifest + optional reference, zero skill edits.
+- `references/{harness}-tools.md` — per-harness primitive mappings, read conditionally. Adding a harness = new integration/manifest + optional reference, zero skill edits (Grok: `.grok-plugin/plugin.json` + `references/grok-tools.md`).
 
 Manifests and marketplaces (all top-level, pointing at repo root):
 - `.claude-plugin/plugin.json` — Claude manifest; `.claude-plugin/marketplace.json` → `source: "."`.
@@ -210,6 +210,9 @@ for f in $(git ls-files 'skills/**/SKILL.md'); do head -1 "$f" | grep -q '^---$'
 # temporary node_modules symlink to a local/global install; remove it afterwards, do not commit)
 npx --package=typescript@latest -- tsc --noEmit --module esnext --moduleResolution bundler \
   --target es2022 --skipLibCheck .pi/extensions/absolutpowers.ts
+
+# Grok plugin validation (if grok CLI available in the environment)
+grok plugin validate .   # validates .grok-plugin/plugin.json when present
 ```
 
 ## Cross-Harness Editing Rules
@@ -245,9 +248,11 @@ integration, not a rewrite. To add harness `{h}`:
 
 **Realized examples of this exact pattern:** Codex (`.codex-plugin/plugin.json` +
 `references/codex-tools.md`, which documents the `spawn_agent` dispatch path, the two-tier
-review-gate degradation, and the sequential/inline orchestrated fallback) and Pi
+review-gate degradation, and the sequential/inline orchestrated fallback), Pi
 (`.pi/extensions/absolutpowers.ts` + `references/pi-tools.md`, which documents the `pi-subagents`
-dispatch path and the two-tier review-gate degradation).
+dispatch path and the two-tier review-gate degradation), and Grok
+(`.grok-plugin/plugin.json` + `references/grok-tools.md`, which documents `spawn_subagent` +
+`subagent_type: "general-purpose"`, two-tier gate degradation, and bootstrap via AGENTS.md/CLAUDE.md + hooks).
 
 ## PreBoot Skill
 
@@ -255,9 +260,10 @@ One shared `preboot` skill (not per-module, one copy in `skills/preboot/`, serve
 
 ## Versioning
 
-SemVer across both manifests (must match):
+SemVer across manifests (must match):
 - `.claude-plugin/plugin.json` → `"version"`
 - `.codex-plugin/plugin.json` → `"version"`
+- `.grok-plugin/plugin.json` → `"version"` (Grok)
 
 Major = breaking structure changes. Minor = new skill/agent/feature. Patch = prompt fixes/bugfixes.
 

@@ -637,7 +637,7 @@ Fix any gap found here before running Review Gate — cheaper to catch now than 
 
 ## Review Gate — Automatyczna weryfikacja tasków
 
-> **Harness dispatch (dotyczy każdego `Agent(subagent_type=...)` niżej):** Claude → zarejestrowani agenci działają wprost; **Codex → `references/codex-tools.md`** (brak rejestru typów — dispatch generic przez `spawn_agent` z ciałem `agents/{name}.md`, albo review inline z advisory verdictem; nie literalny `Agent(subagent_type=...)`); Pi → `references/pi-tools.md`.
+> **Harness dispatch (dotyczy każdego `Agent(subagent_type=...)` niżej):** Claude → zarejestrowani agenci działają wprost; **Codex → `references/codex-tools.md`** (brak rejestru typów — dispatch generic przez `spawn_agent` z ciałem `agents/{name}.md`, albo review inline z advisory verdictem; nie literalny `Agent(subagent_type=...)`); Pi → `references/pi-tools.md`; **Grok → `references/grok-tools.md`** (użyj `spawn_subagent` z `subagent_type: "general-purpose"` i treścią `agents/{name}.md` jako instrukcjami, albo inline z jawnym disclaimerem; nigdy literalny `Agent(...)`).
 
 Po zapisaniu tasks doc, uruchom subagenta `review-tasks` żeby zweryfikować jakość planu implementacji. Dla `orchestrated` podaj mu main tasks file i poinformuj, że ma przeczytać wszystkie referenced phase files oraz `implementation-context.md`:
 

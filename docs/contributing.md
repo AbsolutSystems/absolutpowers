@@ -20,13 +20,17 @@ absolut-ai-skills/
 │   └── triada-review.md
 │
 ├── references/                      # mapowania per-harness, czytane warunkowo
-│   └── pi-tools.md                  # np. dispatch subagentów, degradacja review gate'ów na Pi
+│   ├── codex-tools.md
+│   ├── pi-tools.md                  # np. dispatch subagentów, degradacja review gate'ów na Pi
+│   └── grok-tools.md                # Grok: spawn_subagent + degradacja gate'ów
 │
 ├── hooks/                           # slim hook Claude (SessionStart)
 │   ├── hooks.json
 │   ├── run-hook.cmd
 │   ├── session-start
 │   └── session-context.md           # wspólna treść bootstrap — czyta ją też integracja Pi
+│
+├── .grok-plugin/plugin.json         # Grok manifest (first-class harness)
 │
 ├── .pi/extensions/absolutpowers.ts  # integracja Pi (rejestruje skills/, wstrzykuje session-context.md)
 │
@@ -228,6 +232,7 @@ Wersja w manifestach platform — wszystkie deklarowane wersje muszą być zgodn
 ```
 .claude-plugin/plugin.json    → "version"
 .codex-plugin/plugin.json     → "version"
+.grok-plugin/plugin.json      → "version"
 ```
 
 Konwencja SemVer:

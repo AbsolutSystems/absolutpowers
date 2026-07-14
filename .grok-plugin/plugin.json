@@ -1,0 +1,44 @@
+{
+  "name": "absolutpowers",
+  "version": "5.1.3",
+  "description": "AI-assisted development lifecycle skills for planning, implementation, review, debugging, human onboarding reports, and shared project context. Works with Grok Build (first-class), Claude Code, Codex, and Pi.",
+  "author": {
+    "name": "Absolut Systems",
+    "url": "https://github.com/AbsolutSystems/absolutpowers"
+  },
+  "homepage": "https://github.com/AbsolutSystems/absolutpowers",
+  "repository": "https://github.com/AbsolutSystems/absolutpowers",
+  "license": "MIT",
+  "keywords": [
+    "planning",
+    "implementation",
+    "review",
+    "debugging",
+    "explain",
+    "onboarding",
+    "claude",
+    "codex",
+    "pi",
+    "grok",
+    "grok-build"
+  ],
+  "skills": "./skills/",
+  "interface": {
+    "displayName": "AbsolutPowers",
+    "shortDescription": "Plan, implement, review, debug, explain, and maintain shared AI context",
+    "longDescription": "A shared development workflow plugin. Covers feature discussion, task generation, implementation, review, debugging, human-readable onboarding reports, and synchronized CLAUDE.md / AGENTS.md project context. First-class support for Grok Build, Claude Code, Codex, and Pi via a single host-agnostic skill tree.",
+    "developerName": "Absolut Systems",
+    "category": "Coding",
+    "capabilities": [
+      "Interactive",
+      "Write"
+    ],
+    "websiteURL": "https://github.com/AbsolutSystems/absolutpowers",
+    "privacyPolicyURL": "https://github.com/AbsolutSystems/absolutpowers",
+    "termsOfServiceURL": "https://github.com/AbsolutSystems/absolutpowers",
+    "defaultPrompt": [
+      "Use absolutpowers skills (feature-discuss, generate-tasks, implement, review, ship, debug, etc.) to discuss, plan, implement, review, explain, and keep project context in sync."
+    ],
+    "brandColor": "#1F4B99"
+  }
+}

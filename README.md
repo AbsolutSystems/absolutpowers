@@ -1,10 +1,10 @@
 # AbsolutPowers
 
-AI-assisted development lifecycle — from feature design through implementation to code review. Works with **Claude Code**, **Codex**, and **Pi**.
+AI-assisted development lifecycle — from feature design through implementation to code review. Works with **Claude Code**, **Codex**, **Pi**, and **Grok Build** (first-class via `.grok-plugin/`).
 
 Instead of ad-hoc prompting, AbsolutPowers gives your AI agent a structured workflow. Each skill owns one phase. Skills chain into a pipeline with automated quality gates (Claude Code) that catch problems before they cascade.
 
-As of **5.0.0** the repo is one host-agnostic skill tree under `skills/` — not mirrored per-harness trees — plus a thin manifest/integration per harness (Claude, Codex, Pi) and a small set of skills vendored under MIT from [obra/superpowers](https://github.com/obra/superpowers) in `skills/vendored/`. See [Repo Structure](#repo-structure-this-repository) and [Attribution](#attribution).
+As of **5.0.0** the repo is one host-agnostic skill tree under `skills/` — not mirrored per-harness trees — plus a thin manifest/integration per harness (Claude, Codex, Pi, Grok) and a small set of skills vendored under MIT from [obra/superpowers](https://github.com/obra/superpowers) in `skills/vendored/`. See [Repo Structure](#repo-structure-this-repository) and [Attribution](#attribution).
 
 ## Quick Start
 
@@ -34,6 +34,21 @@ pi -e /path/to/absolut-ai-skills
 ```
 
 `.pi/extensions/absolutpowers.ts` registers `skills/` with Pi and re-injects `hooks/session-context.md` at `session_start` and after `session_compact` — the same shared bootstrap content the Claude hook reads, never duplicated. Pi has native skill support, so no compatibility `Skill` tool is required; subagent dispatch (`pi-subagents`) is an optional companion package — see `references/pi-tools.md` for what degrades without it.
+
+**Grok Build**
+
+```bash
+grok plugin marketplace add AbsolutSystems/absolutpowers
+grok plugin install absolutpowers --trust
+```
+
+Or for local development:
+
+```bash
+grok plugin install /path/to/absolut-ai-skills --trust
+```
+
+Grok discovers `skills/` via `.grok-plugin/plugin.json`. Skills appear as `/feature-discuss`, `/generate-tasks` etc. (qualified names if needed). Grok reads `AGENTS.md` / `CLAUDE.md` for bootstrap; review gates degrade via `spawn_subagent` + `references/grok-tools.md`. See `references/grok-tools.md`.
 
 ### 2. Bootstrap project context (once)
 
@@ -402,18 +417,18 @@ Most agents are subagents that skills spawn automatically — you don't invoke t
 
 Every harness shares the exact same `skills/{name}/SKILL.md` — 14 workflow skills + `preboot`, plus `skills/vendored/` (not user-facing pipeline skills). What differs is the thin per-harness layer on top:
 
-| Feature | Claude Code | Codex | Pi |
-|---|---|---|---|
-| Skills | 14 workflow + 1 PreBoot (shared tree) | same shared tree | same shared tree |
-| Registered agent types | 9 (`agents/*.md`: review gates + phase worker + triada trio) | none — no plugin-level agent-type registry | none — no plugin-level agent-type registry |
-| Subagent dispatch primitive | `Agent(subagent_type=...)` against a registered type | available (`multi_agent=true` → `spawn_agent`/`wait_agent`/`close_agent`), but nothing registered to dispatch *to* for gates | available via optional `pi-subagents` package |
-| Slash commands | `triada-review` | not available | not available |
-| Multi-agent review | `triada-review` (3 parallel registered agents + synthesis) | not available (no registered tech-lead/security/UI agent types) | not available (same reason) |
-| Review gates | automatic after each step + `phase-review` | degrades: dispatch a generic subagent fed `agents/{name}.md`, or review inline (non-isolation disclaimer + advisory verdict) — see `references/codex-tools.md` | degrades: dispatch a generic subagent fed `agents/{name}.md`, or review inline (non-isolation disclaimer) — see `references/pi-tools.md` |
-| Orchestrated implementation | worker subagent per phase | sequential phase files in one session | sequential phase files in one session (or dispatched via `pi-subagents` if installed) |
-| Skill invocation | `/absolutpowers:skill-name` | `$absolutpowers skill-name` | native Pi skill invocation / `read` the `SKILL.md` |
-| Session bootstrap | `hooks/hooks.json` `SessionStart` hook reads `hooks/session-context.md` | reads `AGENTS.md` (symlink to `CLAUDE.md`) | `.pi/extensions/absolutpowers.ts` reads `hooks/session-context.md` at `session_start`/`session_compact` |
-| AI context | `CLAUDE.md` (source) | `AGENTS.md` (symlink to `CLAUDE.md`, not a generated mirror) | `CLAUDE.md` (via the extension's injected context) |
+| Feature | Claude Code | Codex | Pi | Grok Build |
+|---|---|---|---|---|
+| Skills | 14 workflow + 1 PreBoot (shared tree) | same shared tree | same shared tree | same shared tree |
+| Registered agent types | 9 (`agents/*.md`: review gates + phase worker + triada trio) | none — no plugin-level agent-type registry | none — no plugin-level agent-type registry | none (uses `spawn_subagent` + `subagent_type` + personas) |
+| Subagent dispatch primitive | `Agent(subagent_type=...)` against a registered type | available (`multi_agent=true` → `spawn_agent`/`wait_agent`/`close_agent`), but nothing registered to dispatch *to* for gates | available via optional `pi-subagents` package | `spawn_subagent` (with `subagent_type: "general-purpose"` etc.) |
+| Slash commands | `triada-review` | not available | not available | not available (use skills directly) |
+| Multi-agent review | `triada-review` (3 parallel registered agents + synthesis) | not available (no registered tech-lead/security/UI agent types) | not available (same reason) | not available (manual parallel `spawn_subagent` possible) |
+| Review gates | automatic after each step + `phase-review` | degrades: dispatch a generic subagent fed `agents/{name}.md`, or review inline (non-isolation disclaimer + advisory verdict) — see `references/codex-tools.md` | degrades: dispatch a generic subagent fed `agents/{name}.md`, or review inline (non-isolation disclaimer) — see `references/pi-tools.md` | degrades: `spawn_subagent` (general-purpose) with `agents/{name}.md` body, or inline advisory — see `references/grok-tools.md` |
+| Orchestrated implementation | worker subagent per phase | sequential phase files in one session | sequential phase files in one session (or dispatched via `pi-subagents` if installed) | sequential or via `spawn_subagent` per phase (see grok-tools) |
+| Skill invocation | `/absolutpowers:skill-name` | `$absolutpowers skill-name` | native Pi skill invocation / `read` the `SKILL.md` | `/feature-discuss`, `/generate-tasks` etc. (plugin-qualified if needed) |
+| Session bootstrap | `hooks/hooks.json` `SessionStart` hook reads `hooks/session-context.md` | reads `AGENTS.md` (symlink to `CLAUDE.md`) | `.pi/extensions/absolutpowers.ts` reads `hooks/session-context.md` at `session_start`/`session_compact` | reads `AGENTS.md` / `CLAUDE.md`; hooks via `.grok/hooks/` or compat; session-context via reference |
+| AI context | `CLAUDE.md` (source) | `AGENTS.md` (symlink to `CLAUDE.md`, not a generated mirror) | `CLAUDE.md` (via the extension's injected context) | `AGENTS.md` / `CLAUDE.md` (primary) |
 
 ## Project Structure (in your repo)
 
@@ -452,8 +467,8 @@ absolutpowers/memory-candidates/
 ## Repo Structure (this repository)
 
 Since 5.0.0 there is **one** host-agnostic skill tree — no `claude/`/`codex/` mirrors, no
-sync scripts, no drift-detection script. Each harness gets a thin manifest/integration on
-top of the same `skills/` (the obra/superpowers pattern):
+sync scripts, no drift-detection script. Each harness (Claude, Codex, Pi, Grok) gets a thin
+manifest/integration on top of the same `skills/` (the obra/superpowers pattern):
 
 ```
 absolut-ai-skills/
@@ -483,6 +498,7 @@ absolut-ai-skills/
 ├── .claude-plugin/marketplace.json    # Claude marketplace → source: "."
 ├── .codex-plugin/plugin.json          # Codex manifest (root)
 ├── .agents/plugins/marketplace.json   # Codex marketplace → source.path: "."
+├── .grok-plugin/plugin.json           # Grok manifest (root) — first-class support
 ├── AGENTS.md                          # symlink → CLAUDE.md (Codex bootstrap)
 ├── VENDORED.md                        # vendoring log: source paths, pinned SHA, local modifications
 ├── LICENSE-VENDORED                   # MIT license text for vendored obra/superpowers content
@@ -504,12 +520,17 @@ for the vendoring rationale.
 
 # Pi — re-run with the checkout loaded, or reinstall the package if published
 pi -e /path/to/absolut-ai-skills
+
+# Grok Build
+grok plugin update absolutpowers
+# or for local checkout
+grok plugin install /path/to/absolut-ai-skills --trust
 ```
 
 ## Changelog
 
-Versioning is SemVer, kept in sync across both manifests
-(`.claude-plugin/plugin.json` + `.codex-plugin/plugin.json`, both at repo root since 5.0.0).
+Versioning is SemVer, kept in sync across all manifests
+(`.claude-plugin/plugin.json`, `.codex-plugin/plugin.json`, and `.grok-plugin/plugin.json`).
 
 ### 5.1.3 — fix: duplicate hooks manifest reference
 - **SessionStart hook load failure fixed (config bug).** `.claude-plugin/plugin.json` declared `"hooks": "./hooks/hooks.json"`, but Claude Code auto-loads the standard `hooks/hooks.json` — pointing the manifest at that same file triggered `Duplicate hooks file detected` on every session start, aborting hook load. `manifest.hooks` is only for *additional* hook files, so the key is removed; the standard hook still loads automatically. Codex manifest was already clean (no `hooks` key)

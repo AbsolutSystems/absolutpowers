@@ -34,6 +34,7 @@ Tasks documents can use two modes:
 > - **Claude** → zarejestrowani agenci działają wprost (`implementation-worker`, `phase-review`, `review-implementation`).
 > - **Codex** → patrz `references/codex-tools.md`: brak rejestru typów agentów, więc NIE emituj literalnego `Agent(subagent_type=...)`. Dispatch generic przez `spawn_agent` z ciałem `agents/{name}.md` jako promptem, a gdy brak multi-agent — wykonaj fazy/review sekwencyjnie inline w tej sesji z **advisory verdictem** (nigdy nie pomijaj bramki po cichu).
 > - **Pi** → patrz `references/pi-tools.md` (`pi-subagents` albo review inline z jawnym disclaimerem braku izolacji).
+> - **Grok** → patrz `references/grok-tools.md` (użyj `spawn_subagent` z `subagent_type: "general-purpose"` + ciało `agents/{name}.md` jako prompt; albo inline advisory; nigdy literalny `Agent(...)`).
 
 ## Path Resolution
 
@@ -244,6 +245,7 @@ Read the phase's `**Risk:**` field from the Phase Overview in the parent tasks f
 For the pending phase, spawn `implementation-worker`. Use the **exact** parent tasks file path (the argument) and the **exact phase file path from the Phase Overview `**File:**` field** — do not reconstruct them from a template, so epic-nested paths stay correct.
 
 > Codex: patrz `references/codex-tools.md` — dispatch generic przez `spawn_agent` z ciałem `agents/implementation-worker.md`, lub sekwencyjnie inline w tej sesji; nie literalny `Agent(subagent_type=...)`.
+> Grok: patrz `references/grok-tools.md` — `spawn_subagent` (general-purpose) + ciało `agents/implementation-worker.md`, lub inline; nie literalny `Agent(...)`.
 
 If Risk is `high`:
 ```
@@ -306,6 +308,7 @@ Agent(subagent_type="phase-review", model="<scaled-to-diff>", prompt="Review com
 ```
 
 > Codex: patrz `references/codex-tools.md` — dispatch generic z ciałem `agents/phase-review.md`, lub review inline z advisory verdictem; nie literalny `Agent(subagent_type=...)`.
+> Grok: patrz `references/grok-tools.md` — `spawn_subagent` + ciało `agents/phase-review.md`, lub inline advisory; nie literalny `Agent(...)`.
 
 If `VERDICT: PASS`:
 - append a ledger line to `progress.md` (beside the phase directory; create the file with a one-line header if it does not yet exist): `Faza N: complete (commits base7..head7, review clean)`, using the BASE recorded before dispatch (Step O2) and `git rev-parse HEAD` (short) as HEAD — commit `progress.md` alongside the rest of the phase's changes, it is a tracked artifact, not scratch
@@ -357,6 +360,7 @@ Agent(subagent_type="review-implementation", model="opus", prompt="Review implem
 ```
 
 > Codex: patrz `references/codex-tools.md` — dispatch generic z ciałem `agents/review-implementation.md`, lub review inline z advisory verdictem; nie literalny `Agent(subagent_type=...)`.
+> Grok: patrz `references/grok-tools.md` — `spawn_subagent` + ciało `agents/review-implementation.md`, lub inline advisory; nie literalny `Agent(...)`.
 
 If `VERDICT: PASS`, report completion.
 
