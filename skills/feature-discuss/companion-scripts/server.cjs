@@ -183,13 +183,13 @@ h1 { color: #333; } p { color: #666; } code { background: #f0f0f0; padding: 0.1e
 <p>This page needs the full URL your coding agent gave you, including the
 <code>?key=&hellip;</code> part. Copy the complete URL and open it again.</p></body></html>`;
 
-function bootstrapPage(key) {
+function bootstrapPage(key, nonce) {
   const jsonKey = JSON.stringify(String(key));
   return `<!DOCTYPE html>
 <html>
 <head><meta charset="utf-8"><title>Opening Brainstorm Companion</title></head>
 <body>
-<script>
+<script nonce="${nonce}">
 try { sessionStorage.setItem('brainstorm-session-key', ${jsonKey}); } catch (e) {}
 location.replace('/');
 </script>
@@ -197,9 +197,47 @@ location.replace('/');
 </html>`;
 }
 
+// The active-content contract: screens are STATIC HTML. The only executable
+// script the browser is allowed to run is the server-injected helper, gated by
+// a per-response CSP nonce (see securityHeaders below). Any script/handler in a
+// screen the assistant generated is a generator bug — reject it loudly rather
+// than render it in the authenticated origin.
+const ACTIVE_CONTENT_PATTERNS = [
+  { name: '<script> tag', re: /<script[\s\S>]/i },
+  { name: 'inline event handler (on...=)', re: /<[^>]*\son[a-z]+\s*=/i },
+  { name: 'javascript: URI', re: /javascript\s*:/i },
+  { name: 'remote src/href resource', re: /(?:src|href|action)\s*=\s*["']?\s*(?:https?:)?\/\//i },
+  { name: '<link> / <base> / <meta http-equiv>', re: /<(?:link|base|meta[^>]*http-equiv)\b/i }
+];
+
+// Return the name of the first active-content pattern found, or null if clean.
+// Runs ONLY on assistant-generated screen HTML — never on the trusted frame
+// template or the helper injection.
+function findActiveContent(html) {
+  for (const p of ACTIVE_CONTENT_PATTERNS) {
+    if (p.re.test(html)) return p.name;
+  }
+  return null;
+}
+
+// A trusted, script-free fragment shown in place of a rejected screen. Wrapped
+// in the frame by the caller (which supplies branding), so it carries no
+// branding placeholder of its own.
+function activeContentBlockedFragment(reason) {
+  return `<h2>Screen blocked</h2>
+<p>The screen the coding agent pushed contains active content (${escapeHtmlText(reason)})
+and was refused. Companion screens must be static HTML — no scripts, inline event
+handlers, <code>javascript:</code> URIs, or remote resources. Ask the agent to
+regenerate the screen as static markup.</p>`;
+}
+
 const frameTemplate = fs.readFileSync(path.join(__dirname, 'frame-template.html'), 'utf-8');
 const helperScript = fs.readFileSync(path.join(__dirname, 'helper.js'), 'utf-8');
-const helperInjection = '<script>\n' + helperScript + '\n</script>';
+// The helper is the ONLY executable script served. It carries the per-response
+// CSP nonce so it runs while screen-authored scripts (which have no nonce) do not.
+function helperInjection(nonce) {
+  return '<script nonce="' + nonce + '">\n' + helperScript + '\n</script>';
+}
 
 // ========== Helper Functions ==========
 
@@ -351,6 +389,27 @@ function queryKey(url) {
   return new URLSearchParams(url.slice(q + 1)).get('key');
 }
 
+// A per-response nonce for the one script we serve (the helper). base64 per the
+// CSP spec. New value every response so it can't be replayed or guessed.
+function generateNonce() {
+  return crypto.randomBytes(16).toString('base64');
+}
+
+// CSP for HTML documents that carry the helper. default-src 'none' blocks
+// everything by default; only same-origin XHR/WebSocket (connect-src 'self'),
+// inline styles (the frame template), same-origin + data: images, and the single
+// nonce'd helper script are permitted. Screen-authored <script> has no nonce, so
+// the browser refuses to run it even if the reject filter is ever bypassed —
+// defense in depth alongside findActiveContent().
+function documentCsp(nonce) {
+  return "default-src 'none'; " +
+    "style-src 'unsafe-inline'; " +
+    "img-src 'self' data:; " +
+    "connect-src 'self'; " +
+    "frame-ancestors 'none'; " +
+    "script-src 'nonce-" + nonce + "'";
+}
+
 function securityHeaders(headers = {}) {
   return {
     'Referrer-Policy': 'no-referrer',
@@ -360,6 +419,15 @@ function securityHeaders(headers = {}) {
     'Cross-Origin-Resource-Policy': 'same-origin',
     ...headers
   };
+}
+
+// Security headers for an HTML document response: same base set, but with the
+// full nonce-based CSP replacing the frame-ancestors-only policy.
+function documentSecurityHeaders(nonce, headers = {}) {
+  return securityHeaders({
+    'Content-Security-Policy': documentCsp(nonce),
+    ...headers
+  });
 }
 
 function isAllowedWebSocketOrigin(req) {
@@ -389,21 +457,36 @@ function handleRequest(req, res) {
   const pathname = pathnameOf(req.url);
   const keyFromQuery = queryKey(req.url);
   if (req.method === 'GET' && pathname === '/' && keyFromQuery && timingSafeEqualStr(keyFromQuery, TOKEN)) {
-    res.writeHead(200, securityHeaders({ 'Content-Type': 'text/html; charset=utf-8' }));
-    res.end(bootstrapPage(keyFromQuery));
+    const nonce = generateNonce();
+    res.writeHead(200, documentSecurityHeaders(nonce, { 'Content-Type': 'text/html; charset=utf-8' }));
+    res.end(bootstrapPage(keyFromQuery, nonce));
   } else if (req.method === 'GET' && pathname === '/') {
+    const nonce = generateNonce();
     const screenFile = getNewestScreen();
-    let html = screenFile
-      ? (raw => isFullDocument(raw) ? raw : wrapInFrame(raw))(fs.readFileSync(screenFile, 'utf-8'))
-      : waitingPage();
-
-    if (html.includes('</body>')) {
-      html = html.replace('</body>', helperInjection + '\n</body>');
+    let html;
+    if (screenFile) {
+      const raw = fs.readFileSync(screenFile, 'utf-8');
+      // Enforce the static-render contract on assistant-generated screens only.
+      // The frame template, waiting page, and helper are trusted and skip this.
+      const active = findActiveContent(raw);
+      if (active) {
+        console.error(JSON.stringify({ type: 'screen-blocked', file: screenFile, reason: active }));
+        html = wrapInFrame(activeContentBlockedFragment(active));
+      } else {
+        html = isFullDocument(raw) ? raw : wrapInFrame(raw);
+      }
     } else {
-      html += helperInjection;
+      html = waitingPage();
     }
 
-    res.writeHead(200, securityHeaders({ 'Content-Type': 'text/html; charset=utf-8' }));
+    const injection = helperInjection(nonce);
+    if (html.includes('</body>')) {
+      html = html.replace('</body>', injection + '\n</body>');
+    } else {
+      html += injection;
+    }
+
+    res.writeHead(200, documentSecurityHeaders(nonce, { 'Content-Type': 'text/html; charset=utf-8' }));
     res.end(html);
   } else if (req.method === 'GET' && pathname.startsWith('/files/')) {
     const fileName = path.basename(pathname.slice(7));

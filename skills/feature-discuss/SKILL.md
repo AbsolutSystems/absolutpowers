@@ -382,7 +382,7 @@ Znalezione problemy **napraw inline**, edytując zapisany dokument bezpośrednio
 
 > Dotyczy: standardowych feature'ów oraz **phase doców w Trybie B**. NIE dotyczy: micro-changes, `planning-main.md`, ani stubów faz.
 >
-> Na Pi/Codex: patrz `references/pi-tools.md` (lub odpowiedni `references/{harness}-tools.md`) po mapowanie dispatchu subagentów/bramek poniżej — na Claude działa wprost.
+> **Harness dispatch (dotyczy każdego `Agent(subagent_type=...)` niżej):** Claude → zarejestrowani agenci działają wprost; **Codex → `references/codex-tools.md`** (brak rejestru typów — dispatch generic przez `spawn_agent` z ciałem `agents/{name}.md`, albo review inline z advisory verdictem; nie literalny `Agent(subagent_type=...)`); Pi → `references/pi-tools.md`.
 
 Po zapisaniu planning doc uruchom subagenta `qa-enrichment`:
 

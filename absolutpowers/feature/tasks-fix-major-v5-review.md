@@ -41,7 +41,7 @@ single-file
 ## Implementation Tasks
 
 ### Task 1: `references/codex-tools.md` — ścieżka degradacji Codex
-**Status:** pending
+**Status:** completed
 **Traces to:** none (naprawa [HIGH], review report bez AC)
 
 **Create:**
@@ -62,10 +62,10 @@ Utworzyć plik mapowania per-harness dla Codex, równoległy do `references/pi-t
 - wzmiankuje `spawn_agent` i sekwencyjny/inline fallback; zakazuje `Agent(subagent_type=...)`
 
 **Implementation decisions / remarks:**
-- [do uzupełnienia po zadaniu]
+- Utworzono `references/codex-tools.md` równolegle do `pi-tools.md`: tabela akcja→prymityw, sekcja Subagents (`multi_agent`/`spawn_agent`/`wait_agent`/`close_agent`), "Review gates on Codex" (dwustopniowa degradacja), "Orchestrated dispatch on Codex" (odtworzenie sekwencyjnego fallbacku v3.13.0 `codex/skills/implement`). Jawny zakaz `Agent(subagent_type=...)` w nagłówku i na końcu.
 
 ### Task 2: Branch Claude/Codex/Pi w 3 skillach pipeline
-**Status:** pending
+**Status:** completed
 **Traces to:** none (naprawa [HIGH])
 
 **Modify:**
@@ -88,10 +88,10 @@ Zastąpić w każdym z 3 skilli obecną notę „Na Pi/Codex: patrz `references/
 - Ścieżka Claude nietknięta (zarejestrowani agenci nadal opisani)
 
 **Implementation decisions / remarks:**
-- [do uzupełnienia po zadaniu]
+- W 3 skillach zastąpiono notę Pi-only jawnym rozgałęzieniem Claude/Codex/Pi (Codex → `references/codex-tools.md`). W `implement` nota nagłówkowa "dotyczy każdego `Agent(subagent_type=...)` niżej" + 3 krótkie przypomnienia Codex przy dispatchu worker/phase-review/review-implementation (Step O2/O4/O6). Ścieżka Claude nietknięta (8 literalnych `subagent_type=` nadal obecnych).
 
 ### Task 3: Companion CSP + odrzucanie aktywnej treści (server.cjs)
-**Status:** pending
+**Status:** completed
 **Traces to:** none (naprawa [MED])
 
 **Modify:**
@@ -112,10 +112,16 @@ Domknąć kontrakt „statyczny render, nigdy nie wykonuje kodu z requestu". Obe
 - ekran z wstrzykniętym `<script>` → odrzucony (albo skrypt nieobecny w odpowiedzi)
 
 **Implementation decisions / remarks:**
-- [do uzupełnienia po zadaniu]
+- Dodano `documentCsp(nonce)` + `documentSecurityHeaders(nonce)`: `default-src 'none'; style-src 'unsafe-inline'; img-src 'self' data:; connect-src 'self'; frame-ancestors 'none'; script-src 'nonce-{losowy}'`. Nonce per-response (`crypto.randomBytes(16).base64`).
+- **Deviation od literalnego wymogu:** `img-src 'self' data:` zamiast `img-src data:` — ekrany companionu legalnie ładują same-origin `/files/*.png` (mockupy kart); `data:`-only zepsułoby je bez zysku (remote i tak blokowane przez brak `http(s):`). Reszta CSP wg specyfikacji review.
+- `helperInjection` const → funkcja `helperInjection(nonce)`; helper to jedyny skrypt z noncem. `bootstrapPage(key)` → `bootstrapPage(key, nonce)` (jego inline script też nonce'owany).
+- **Reject (nie sanitize):** `findActiveContent()` + `ACTIVE_CONTENT_PATTERNS` na surowej treści ekranu (nigdy na zaufanym frame/helperze) — wykrywa `<script`, inline `on*=`, `javascript:`, remote `src/href/action`, `<link>/<base>/<meta http-equiv>`. Trafienie → log `screen-blocked` na stderr + statyczny `activeContentBlockedFragment` w ramce zamiast ekranu. Reject bo ekran generuje asystent → aktywna treść = bug generatora.
+- Defense-in-depth: nawet gdyby reject ominięto, screen-script nie ma nonce → CSP go nie wykona.
+- Zabezpieczenia nietknięte: token/timingSafeEqual, WS Origin, traversal guard, kody 403/404.
+- Zweryfikowane runtime: unauth 403, auth 200 + CSP `default-src 'none'`+`script-src 'nonce-`, clean screen ma `nonce=`, malicious `<script>alert(1)</script>` → strona "Screen blocked", zero wycieku `alert(1)`.
 
 ### Task 4: `--host` guard + wpis VENDORED.md
-**Status:** pending
+**Status:** completed
 **Traces to:** none (naprawa [MED] + hygiene)
 
 **Modify:**
@@ -134,10 +140,11 @@ Bind poza loopbackiem (`--host 0.0.0.0`) zwiększa powierzchnię ataku. Dodać o
 - `VENDORED.md` wzmiankuje CSP hardening + `--host` warning w sekcji modyfikacji companionu
 
 **Implementation decisions / remarks:**
-- [do uzupełnienia po zadaniu]
+- `start-server.sh`: po rozwiązaniu URL_HOST — warunek `BIND_HOST` ≠ `127.0.0.1`/`localhost` → `echo WARNING ... >&2`, kontynuuje (nie blokuje). Domyślka loopback cicha.
+- `VENDORED.md`: wpis (a) CSP hardening + reject, (b) `--host` warning dopisany do celi companionu, spójnie z notą o telemetrii.
 
 ### Task 5: Smoke-test companionu (lekki, bez frameworka)
-**Status:** pending
+**Status:** completed
 **Traces to:** none (naprawa [LOW])
 
 **Create:**
@@ -157,10 +164,12 @@ Repo nie ma frameworka testowego; dodać samodzielny skrypt smoke pokrywający k
 - uruchomienie skryptu na czystym repo → wszystkie checki PASS (po Task 3)
 
 **Implementation decisions / remarks:**
-- [do uzupełnienia po zadaniu]
+- `smoke-test.sh`: start server losowy port loopback + fixed token (env), 4 wymagane checki (unauth→403, auth→200, traversal→404, CSP `default-src 'none'`+`script-src 'nonce-`) + bonus reject aktywnej treści. PASS/FAIL per check, exit ≠0 przy dowolnym FAIL. Trap cleanup zabija serwer + `wait` (bez szumu job-control).
+- Zakres świadomie HTTP-only; WS Origin / bootstrap-after-compact / lifecycle jako manualny TODO w nagłówku skryptu.
+- Uruchomienie na czystym repo: 5/5 PASS, exit 0.
 
 ### Task 6: Final Verification
-**Status:** pending
+**Status:** completed
 **Traces to:** none (weryfikacja całości)
 
 **Create:**
@@ -185,9 +194,19 @@ Uruchomić weryfikację zintegrowanej zmiany. Repo bez buildu — grep/struktura
 - Wszystkie powyższe zwracają oczekiwane wartości (0 rozbieżności)
 
 **Implementation decisions / remarks:**
-- Komendy wykonane: [uzupełnić]
-- Wyniki: [uzupełnić]
-- Pominięte: [uzupełnić lub `none`]
+- Komendy wykonane:
+  - `test -f references/codex-tools.md` + sekcje "Orchestrated dispatch on Codex"/"Review gates on Codex"/`spawn_agent` → OK
+  - `grep -l references/codex-tools.md` w 3 skillach → 3 trafienia
+  - `implement` zakaz literalnego `Agent(subagent_type=)` na Codex + kierowanie do codex-tools → obecne
+  - `node --check server.cjs` → OK
+  - `start-server.sh` warning bind poza loopback → obecny; `bash -n` OK
+  - `VENDORED.md` odnotowuje CSP hardening + `--host` warning
+  - `bash -n smoke-test.sh` OK; pełne uruchomienie → 5/5 PASS (unauth 403, auth 200, traversal 404, CSP `default-src 'none'`+`script-src 'nonce-`, reject aktywnej treści)
+  - JSON manifestów walid, hook emituje JSON, frontmatter skilli OK, `git diff --check` czysty
+- Wyniki: 0 rozbieżności. Wersja 5.1.1 (bump patch przy commicie — poza scope implementacji).
+- Housekeeping: CLAUDE.md zaktualizowany (2 miejsca) — codex-tools.md już istnieje (nie "yet"), realized example Codex opisany. AGENTS.md = symlink → CLAUDE.md, auto-sync. ADR: brak (deviation img-src ujęty w remarks Task 3). Memory: brak trwałej lekcji.
+- Review gate #1 REJECTED (5× COMPLETENESS, jeden root cause): README.md + docs/ nadal głosiły przed-fixowe "Codex bez gate'ów / brak codex-tools.md", sprzeczne z Task 1/2 (reguła CLAUDE.md "Cross-Harness Editing Rules" wymaga aktualizacji README.md+docs/ przy zmianie pipeline behavior). Naprawione 5 miejsc: README l.106 (registered gates + oba references), l.412 (tabela Codex degraduje), l.474 (drzewo repo dodaje codex-tools.md), docs/review-gates.md l.45 (Codex degradacja dwustopniowa + link), docs/getting-started.md l.55 (Codex degradacja + link). Grep stale phrases → 0.
+- Pominięte: none
 
 **Example:**
 ```bash

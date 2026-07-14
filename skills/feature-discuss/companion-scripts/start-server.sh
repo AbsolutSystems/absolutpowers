@@ -71,6 +71,14 @@ if [[ -z "$URL_HOST" ]]; then
   fi
 fi
 
+# Binding beyond loopback widens the attack surface: the companion serves local
+# screen HTML and is guarded only by the per-session token (no other auth). Warn
+# loudly but do NOT block — 0.0.0.0 is a documented, deliberate choice for
+# containers. Loopback default stays silent.
+if [[ "$BIND_HOST" != "127.0.0.1" && "$BIND_HOST" != "localhost" ]]; then
+  echo "WARNING: binding beyond loopback ($BIND_HOST): the companion serves local screens and has no auth beyond the per-session token. Use only in a trusted environment/container." >&2
+fi
+
 if [[ -n "$IDLE_TIMEOUT_MINUTES" ]]; then
   if ! [[ "$IDLE_TIMEOUT_MINUTES" =~ ^[0-9]+$ ]] || [[ "$IDLE_TIMEOUT_MINUTES" -lt 1 ]]; then
     echo "{\"error\": \"--idle-timeout-minutes must be a positive integer\"}"

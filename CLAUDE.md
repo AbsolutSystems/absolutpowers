@@ -133,7 +133,7 @@ Pipeline wiring:
 
 Subagents auto-verify each pipeline step. PASS or REJECTED with issues. Up to 3 fix iterations, then asks user.
 
-**Precise Codex/Pi statement (do not simplify to "no subagent support"):** Codex and Pi lack **registered agent type definitions** — there is no mechanism to load `agents/*.md` as an installable subagent identity the way Claude Code plugins do, so `Agent(subagent_type="review-tasks", ...)` calls have nothing to resolve to. That is *not* the same as lacking subagent dispatch: Codex exposes `multi_agent=true` → `spawn_agent`/`wait_agent`/`close_agent` primitives, and Pi has the optional `pi-subagents` package. So the *execution pattern* (dispatch a subagent, hand it a prompt, wait, read its verdict) is portable across harnesses — only the *registry* (named, reusable agent types) is Claude-only. Practical effect: review gates as AbsolutPowers implements them (named `agents/*.md` types) are Claude-only, but a harness can still run the same review inline or via a generic dispatched subagent fed the `agents/{name}.md` body as its prompt. See `references/pi-tools.md` ("Review gates on Pi") for the worked-out degradation path; an equivalent `references/codex-tools.md` can be added following the same pattern (see "Adding a New Harness" below).
+**Precise Codex/Pi statement (do not simplify to "no subagent support"):** Codex and Pi lack **registered agent type definitions** — there is no mechanism to load `agents/*.md` as an installable subagent identity the way Claude Code plugins do, so `Agent(subagent_type="review-tasks", ...)` calls have nothing to resolve to. That is *not* the same as lacking subagent dispatch: Codex exposes `multi_agent=true` → `spawn_agent`/`wait_agent`/`close_agent` primitives, and Pi has the optional `pi-subagents` package. So the *execution pattern* (dispatch a subagent, hand it a prompt, wait, read its verdict) is portable across harnesses — only the *registry* (named, reusable agent types) is Claude-only. Practical effect: review gates as AbsolutPowers implements them (named `agents/*.md` types) are Claude-only, but a harness can still run the same review inline or via a generic dispatched subagent fed the `agents/{name}.md` body as its prompt. See `references/pi-tools.md` ("Review gates on Pi") and the parallel `references/codex-tools.md` ("Review gates on Codex" / "Orchestrated dispatch on Codex") for the worked-out degradation paths (see "Adding a New Harness" below).
 
 ### Orchestrated Implementation (Claude only)
 
@@ -243,8 +243,9 @@ integration, not a rewrite. To add harness `{h}`:
    session bootstrap) reads `hooks/session-context.md` directly from its own extension — the same
    file `hooks/session-start` reads, never duplicated inline.
 
-**Realized examples of this exact pattern:** Codex (`.codex-plugin/plugin.json`, no
-`references/codex-tools.md` yet — not needed so far, gates simply don't run) and Pi
+**Realized examples of this exact pattern:** Codex (`.codex-plugin/plugin.json` +
+`references/codex-tools.md`, which documents the `spawn_agent` dispatch path, the two-tier
+review-gate degradation, and the sequential/inline orchestrated fallback) and Pi
 (`.pi/extensions/absolutpowers.ts` + `references/pi-tools.md`, which documents the `pi-subagents`
 dispatch path and the two-tier review-gate degradation).
 

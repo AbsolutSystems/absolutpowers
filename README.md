@@ -103,7 +103,7 @@ After a skill produces output, a subagent reviews it:
 
 **Convergence contract:** on resubmit the skill passes the previous verdict + the fixes it applied, so the gate first accounts for each prior issue (`FIXED` / `NOT-FIXED`) and only then reports genuinely new findings (marked `[NEW]`). The verdict follows solely from `NOT-FIXED` blockers and `[NEW]` blockers — you reach PASS by clearing the reported list, not by chasing a fresh top-list each round.
 
-Codex and Pi run without gates — not because dispatch is unavailable (Codex has `spawn_agent`/`wait_agent`/`close_agent`, Pi has the optional `pi-subagents` package) but because AbsolutPowers' review gates are **registered Claude Code agent types** (`agents/*.md`), and neither harness has an equivalent registry to resolve them against. See `references/pi-tools.md` for how Pi degrades a review gate (dispatch a generic subagent fed the target `agents/{name}.md` as its prompt, or review inline with an explicit non-isolation disclaimer).
+Codex and Pi run without the *registered* gates — not because dispatch is unavailable (Codex has `spawn_agent`/`wait_agent`/`close_agent`, Pi has the optional `pi-subagents` package) but because AbsolutPowers' review gates are **registered Claude Code agent types** (`agents/*.md`), and neither harness has an equivalent registry to resolve them against. Both degrade rather than skip: see `references/codex-tools.md` and `references/pi-tools.md` for how each degrades a review gate (dispatch a generic subagent fed the target `agents/{name}.md` as its prompt, or review inline with an explicit non-isolation disclaimer and an advisory verdict).
 
 ### Orchestrated implementation (Claude Code only)
 
@@ -409,7 +409,7 @@ Every harness shares the exact same `skills/{name}/SKILL.md` — 14 workflow ski
 | Subagent dispatch primitive | `Agent(subagent_type=...)` against a registered type | available (`multi_agent=true` → `spawn_agent`/`wait_agent`/`close_agent`), but nothing registered to dispatch *to* for gates | available via optional `pi-subagents` package |
 | Slash commands | `triada-review` | not available | not available |
 | Multi-agent review | `triada-review` (3 parallel registered agents + synthesis) | not available (no registered tech-lead/security/UI agent types) | not available (same reason) |
-| Review gates | automatic after each step + `phase-review` | not available — see `references/pi-tools.md`-style degradation (none written yet for Codex) | degrades: dispatch a generic subagent fed `agents/{name}.md`, or review inline (non-isolation disclaimer) — see `references/pi-tools.md` |
+| Review gates | automatic after each step + `phase-review` | degrades: dispatch a generic subagent fed `agents/{name}.md`, or review inline (non-isolation disclaimer + advisory verdict) — see `references/codex-tools.md` | degrades: dispatch a generic subagent fed `agents/{name}.md`, or review inline (non-isolation disclaimer) — see `references/pi-tools.md` |
 | Orchestrated implementation | worker subagent per phase | sequential phase files in one session | sequential phase files in one session (or dispatched via `pi-subagents` if installed) |
 | Skill invocation | `/absolutpowers:skill-name` | `$absolutpowers skill-name` | native Pi skill invocation / `read` the `SKILL.md` |
 | Session bootstrap | `hooks/hooks.json` `SessionStart` hook reads `hooks/session-context.md` | reads `AGENTS.md` (symlink to `CLAUDE.md`) | `.pi/extensions/absolutpowers.ts` reads `hooks/session-context.md` at `session_start`/`session_compact` |
@@ -471,6 +471,7 @@ absolut-ai-skills/
 ├── agents/                            # 9 subagent definitions — Claude-only, top-level
 ├── commands/                          # triada-review slash command — Claude-only, top-level
 ├── references/                        # per-harness primitive mappings, read conditionally
+│   ├── codex-tools.md                 # Codex tool mapping + review-gate + orchestrated degradation
 │   └── pi-tools.md                    # Pi tool mapping + review-gate degradation path
 ├── hooks/                             # slim Claude SessionStart hook
 │   ├── hooks.json
@@ -509,6 +510,11 @@ pi -e /path/to/absolut-ai-skills
 
 Versioning is SemVer, kept in sync across both manifests
 (`.claude-plugin/plugin.json` + `.codex-plugin/plugin.json`, both at repo root since 5.0.0).
+
+### 5.1.2 — Codex fallback path + companion CSP hardening (review major-v5)
+- **Codex degradation path restored (HIGH).** New `references/codex-tools.md` mirrors `references/pi-tools.md`: `spawn_agent`/`wait_agent`/`close_agent` dispatch, a two-tier "Review gates on Codex" degradation, and an "Orchestrated dispatch on Codex" sequential/inline fallback (reproducing the pre-5.0 `codex/skills/implement` behavior). The three pipeline skills (`implement`, `generate-tasks`, `feature-discuss`) now branch explicitly Claude → registered agents / Codex → `references/codex-tools.md` / Pi → `references/pi-tools.md`, and `implement` bans the literal `Agent(subagent_type=...)` on Codex at each orchestrated dispatch. Claude path untouched
+- **Visual companion static-render contract closed (MED).** `server.cjs` now sets a restrictive CSP (`default-src 'none'` + per-response `script-src 'nonce-…'`) on every HTML response — the injected helper and bootstrap script are the only nonce'd scripts — and rejects assistant-generated screens carrying active content (`<script>`, inline `on*=`, `javascript:`, remote `src/href`, `<link>/<base>/<meta http-equiv>`) with a static "Screen blocked" page instead of rendering them verbatim. `start-server.sh` warns (non-blocking) on a non-loopback bind. Existing token/`timingSafeEqual`/WS-Origin/traversal guards untouched
+- **Regression smoke test (LOW).** New `skills/feature-discuss/companion-scripts/smoke-test.sh` (no framework, `node`+`curl` only): unauth→403, auth→200, traversal→404, CSP header, active-content reject. Companion modifications logged in `VENDORED.md`
 
 ### 5.1.1 — `ship` terminal-state + spójne framowanie closeout (review 5.x)
 - **`ship` gets a `## Terminal state` block** — it was the only pipeline-adjacent skill without one. Declares ship as the **mechanical closeout after `review`** (local commit + artifact archiving, then push/merge = the human's move), explicitly **not a gate/chain link**. Resolves the review finding that ship's role was framed two incompatible ways across docs
