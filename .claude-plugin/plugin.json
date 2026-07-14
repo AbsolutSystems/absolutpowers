@@ -1,10 +1,9 @@
 {
   "name": "absolutpowers",
-  "version": "5.1.2",
+  "version": "5.1.3",
   "description": "AbsolutPowers skills for AI-assisted development lifecycle — from feature design through implementation to code review.",
   "author": {
     "name": "Absolut Systems",
     "url": "https://github.com/AbsolutSystems/absolutpowers"
-  },
-  "hooks": "./hooks/hooks.json"
+  }
 }
