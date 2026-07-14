@@ -1,0 +1,367 @@
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Onboarding — try-learn-skill jako codebase-scan + usunięcie harvest</title>
+<script src="https://cdn.jsdelivr.net/npm/mermaid/dist/mermaid.min.js"></script>
+<style>
+  :root {
+    --bg: #f7f8fa;
+    --card: #ffffff;
+    --text: #1f2430;
+    --muted: #5c6472;
+    --border: #e2e6ec;
+    --accent: #3b6ef5;
+    --accent-soft: #eaf0ff;
+    --before-bg: #eef2f7;
+    --before-border: #b9c4d4;
+    --after-bg: #eafaf0;
+    --after-border: #9ad9b4;
+    --verified-bg: #e8f6ec;
+    --verified-border: #4caf72;
+    --inferred-bg: #fff5e6;
+    --inferred-border: #e0a53b;
+    --q-bg: #fff4f4;
+    --q-border: #e06666;
+    --risk-high-bg: #fdeaea; --risk-high-border: #e06666;
+    --risk-med-bg: #fff6e6; --risk-med-border: #e0a53b;
+    --risk-low-bg: #eef6ec; --risk-low-border: #6fb86f;
+    --code-bg: #f0f2f6;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #14171d;
+      --card: #1c2029;
+      --text: #e4e8f0;
+      --muted: #9aa3b2;
+      --border: #2c313c;
+      --accent: #7aa2ff;
+      --accent-soft: #23304f;
+      --before-bg: #232833;
+      --before-border: #3a4657;
+      --after-bg: #1d2e26;
+      --after-border: #35624a;
+      --verified-bg: #17301f;
+      --verified-border: #3c8c5c;
+      --inferred-bg: #33280f;
+      --inferred-border: #b3862e;
+      --q-bg: #331d1d;
+      --q-border: #b35050;
+      --risk-high-bg: #331d1d; --risk-high-border: #b35050;
+      --risk-med-bg: #33280f; --risk-med-border: #b3862e;
+      --risk-low-bg: #1a2a1a; --risk-low-border: #4c7a4c;
+      --code-bg: #262b35;
+    }
+  }
+  * { box-sizing: border-box; }
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    line-height: 1.6;
+    margin: 0;
+    padding: 2rem 1rem 5rem;
+  }
+  .wrap { max-width: 900px; margin: 0 auto; }
+  h1 { font-size: 1.8rem; line-height: 1.25; margin: 0 0 .3rem; }
+  h2 { font-size: 1.3rem; margin: 2.2rem 0 .8rem; padding-top: .5rem; border-top: 1px solid var(--border); }
+  h3 { font-size: 1.05rem; margin: 1.4rem 0 .5rem; }
+  .subtitle { color: var(--muted); margin: 0 0 1.5rem; }
+  .card {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 1.2rem 1.4rem;
+    margin: 1rem 0;
+  }
+  .toc { font-size: .95rem; }
+  .toc ol { margin: .3rem 0 0; padding-left: 1.3rem; }
+  .toc a { color: var(--accent); text-decoration: none; }
+  .toc a:hover { text-decoration: underline; }
+  code { background: var(--code-bg); padding: .12em .4em; border-radius: 5px; font-size: .88em; font-family: "SF Mono", Menlo, Consolas, monospace; }
+  pre { background: var(--code-bg); padding: .9rem 1rem; border-radius: 8px; overflow-x: auto; font-size: .82rem; }
+  pre code { background: none; padding: 0; }
+  table { border-collapse: collapse; width: 100%; font-size: .9rem; margin: .5rem 0; }
+  .scroll-x { overflow-x: auto; }
+  th, td { text-align: left; padding: .6rem .7rem; border: 1px solid var(--border); vertical-align: top; }
+  th { background: var(--accent-soft); font-weight: 600; }
+  tbody tr:nth-child(even) td { background: rgba(128,128,128,.05); }
+  td.before { background: var(--before-bg); border-color: var(--before-border); }
+  td.after { background: var(--after-bg); border-color: var(--after-border); }
+  th.before { background: var(--before-bg); }
+  th.after { background: var(--after-bg); }
+  .badge { display: inline-block; font-size: .72rem; font-weight: 600; padding: .1em .55em; border-radius: 999px; vertical-align: middle; margin-right: .35em; }
+  .badge.v { background: var(--verified-bg); color: var(--verified-border); border: 1px solid var(--verified-border); }
+  .badge.i { background: var(--inferred-bg); color: var(--inferred-border); border: 1px solid var(--inferred-border); }
+  .q-box { background: var(--q-bg); border: 1px solid var(--q-border); border-left: 5px solid var(--q-border); border-radius: 8px; padding: 1rem 1.3rem; }
+  .q-box ol { margin: .4rem 0 0; padding-left: 1.2rem; }
+  .q-box li { margin-bottom: .7rem; }
+  .risk { border-radius: 8px; padding: .7rem 1rem; margin: .6rem 0; border: 1px solid; border-left-width: 5px; }
+  .risk.high { background: var(--risk-high-bg); border-color: var(--risk-high-border); }
+  .risk.med { background: var(--risk-med-bg); border-color: var(--risk-med-border); }
+  .risk.low { background: var(--risk-low-bg); border-color: var(--risk-low-border); }
+  .risk .lvl { font-weight: 700; text-transform: uppercase; font-size: .72rem; letter-spacing: .04em; }
+  .mermaid { background: var(--card); border-radius: 8px; padding: 1rem; text-align: center; }
+  .diagram-pair { display: grid; grid-template-columns: 1fr; gap: 1rem; }
+  ul.tight li, ol.tight li { margin-bottom: .35rem; }
+  footer { margin-top: 3rem; padding-top: 1rem; border-top: 1px solid var(--border); color: var(--muted); font-size: .85rem; }
+  .legend span { margin-right: 1.2rem; white-space: nowrap; }
+  .file-role { color: var(--muted); }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <h1>try-learn-skill jako codebase-scan + usunięcie harvest</h1>
+  <p class="subtitle">Onboarding dla człowieka &middot; plan feature'a &middot; 2026-07-14 &middot; status planu: Draft</p>
+
+  <div class="card toc">
+    <strong>Spis treści</strong>
+    <ol>
+      <li><a href="#tldr">TL;DR</a></li>
+      <li><a href="#pytania">Pytania i decyzje dla człowieka</a></li>
+      <li><a href="#zmiana">Co się zmienia (tabela przed → po)</a></li>
+      <li><a href="#diagramy">Diagramy architektury</a></li>
+      <li><a href="#decyzje">Wybrane rozwiązania i uzasadnienie</a></li>
+      <li><a href="#ryzyka">Ryzyka i otwarte kwestie</a></li>
+      <li><a href="#pliki">Mapa zmienianych plików</a></li>
+      <li><a href="#glosariusz">Glosariusz</a></li>
+    </ol>
+  </div>
+
+  <h2 id="tldr">1. TL;DR</h2>
+  <div class="card">
+    <p>Plan odwraca źródło sygnału uczenia się skilla <code>try-learn-skill</code>: zamiast destylować procedurę z artefaktów <em>jednego</em> zakończonego feature'a (planning + tasks + git diff, generalizacja z n=1), skill ma <strong>skanować cały codebase</strong> i wyciągać procedury powtarzalne — kwalifikuje się wzorzec występujący w kodzie <strong>≥3 razy</strong> (z dowodem <code>file:line</code>), a użytkownik zatwierdza kandydatów zbiorczo (batch approval).</p>
+    <p>Przy okazji znika mechanika ledgera kandydatów i „promocji przy drugim wystąpieniu" (niepotrzebna, gdy skan widzi wszystkie wystąpienia naraz) oraz <strong>cały skill <code>harvest</code></strong> — jego jedyna unikalna funkcja (archiwizacja artefaktów feature'a) przenosi się do skilla <code>ship</code>. Pipeline traci nudge do harvestu na rzecz nudge'a do <code>ship</code>.</p>
+    <p><span class="badge v">weryfikacja</span> To zmiana wyłącznie w plikach promptów (<code>SKILL.md</code>) i dokumentacji — brak runtime'u i build systemu, więc każde AC jest sprawdzalne grepem/strukturalnie. Zweryfikowałem bezpośrednio, że stan wyjściowy zgadza się z opisem planu (patrz tabela poniżej).</p>
+  </div>
+
+  <h2 id="pytania">2. Pytania i decyzje dla człowieka</h2>
+  <div class="q-box">
+    <p><strong>4 kwestie do rozstrzygnięcia przed implementacją.</strong> Dwie pierwsze są w planie oznaczone jako „Pytania otwarte" z wstępną odpowiedzią — warto je potwierdzić.</p>
+    <ol>
+      <li><strong>Próg N=3 — stały czy parametryzowany?</strong> Plan proponuje stałą domyślną 3 z możliwością podania innej wartości w argumencie (np. <code>--min=N</code>). AC-2 wymaga jawnie liczby <strong>3</strong> jako domyślnej. Decyzja: zostawiamy stałą 3 + wzmianka o override, czy pełny flag?</li>
+      <li><strong>Migracja istniejących learned-skilli / <code>_candidates.md</code></strong> w target-projektach — plan stawia to poza scope. Czy na pewno? Projekty, które już uzbierały wpisy w starym formacie, zostaną z osieroconym <code>_candidates.md</code>, którego nowy skill nie czyta.</li>
+      <li><span class="badge i">wnioskowane</span> <strong>Sposób przenoszenia plików w archiwizacji (<code>git mv</code> vs <code>mv</code>)</strong> — plan mówi „rozważ zgodnie z tym jak harvest przenosił pliki", ale nie rozstrzyga. To wpływa na rozszerzenie <code>allowed-tools</code> w <code>ship</code>: <code>git mv</code> mieści się w istniejącym <code>Bash(git:*)</code>, ale <code>mv</code> wymagałoby dodania <code>Bash(mv:*)</code>. Warto ustalić jedną drogę.</li>
+      <li><strong>Zakres domyślnego skanu przy dużym repo.</strong> Plan zakłada „domyślnie cały codebase" + opcjonalny scope-arg jako hamulec kosztu. Czy przy naprawdę dużym repo domyślny pełny skan jest akceptowalny, czy skill ma raczej wymuszać zawężenie? (ryzyko kosztu, patrz sekcja Ryzyka)</li>
+    </ol>
+  </div>
+
+  <h2 id="zmiana">3. Co się zmienia — tabela przed → po</h2>
+  <p>Zmiana ma charakter refaktoru/wymiany mechaniki, więc porównanie w tabeli. Kolumna „Przed" opisuje stan zweryfikowany w repo, „Po" — stan docelowy z planu.</p>
+  <div class="card scroll-x">
+    <table>
+      <thead>
+        <tr>
+          <th>Aspekt</th>
+          <th class="before">Przed <span class="badge v">zweryfikowane</span></th>
+          <th class="after">Po (plan)</th>
+          <th>Dlaczego</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>Źródło sygnału <code>try-learn-skill</code></td>
+          <td class="before">Artefakty jednego feature'a: planning + tasks + <code>git diff</code></td>
+          <td class="after">Skan całego codebase (opcjonalny scope-arg zawężający)</td>
+          <td>Powtarzalność w kodzie to twardy dowód reużycia; diff to n=1</td>
+        </tr>
+        <tr>
+          <td>Kryterium ekstrakcji</td>
+          <td class="before">Osąd modelu „nieoczywista procedura" z jednego diffa</td>
+          <td class="after">Liczbowy próg ≥3 wystąpień + dowód <code>file:line</code> per wystąpienie</td>
+          <td>Zabija jednorazowce; sygnał weryfikowalny</td>
+        </tr>
+        <tr>
+          <td>Mechanika promocji</td>
+          <td class="before">Ledger <code>_candidates.md</code>; learned-skill dopiero przy 2. wystąpieniu klasy (od 3.12.0)</td>
+          <td class="after">Brak ledgera; skan widzi wszystkie wystąpienia w jednym przebiegu</td>
+          <td>Ledger istniał tylko po to, by łapać 2. wystąpienie między sesjami</td>
+        </tr>
+        <tr>
+          <td>Zatwierdzanie zapisu</td>
+          <td class="before">Human gate per pojedynczy skill</td>
+          <td class="after">Batch approval — lista kandydatów naraz, user zaznacza, zapis tylko zaznaczonych</td>
+          <td>Szybsze przy bootstrapie wielu skilli; ta sama kontrola człowieka</td>
+        </tr>
+        <tr>
+          <td>Sposób uruchomienia</td>
+          <td class="before">M.in. odpalany przez <code>harvest</code> po implementacji</td>
+          <td class="after">Wyłącznie ad-hoc <code>/absolutpowers:try-learn-skill [scope]</code>, gdy user uzna</td>
+          <td>harvest znika; uczenie świadome, nie automatyczne w pipeline</td>
+        </tr>
+        <tr>
+          <td>Skill <code>harvest</code></td>
+          <td class="before">Istnieje: <code>skills/harvest/SKILL.md</code> (orkiestrator try-learn → document-feature → document-module → archiwizacja)</td>
+          <td class="after">Usunięty całkowicie (cały katalog)</td>
+          <td>Pusta skorupa — sub-skille są standalone, try-learn wyprowadzony</td>
+        </tr>
+        <tr>
+          <td>Archiwizacja artefaktów feature'a</td>
+          <td class="before">KROK 4 w <code>harvest</code> (planning/tasks → <code>archives/{slug}/</code> + <code>summary.md</code>)</td>
+          <td class="after">Przeniesiona do <code>skills/ship/SKILL.md</code> jako ostatni krok closeout</td>
+          <td><code>ship</code> to naturalny domknięcie feature'a; jeden closeout-command</td>
+        </tr>
+        <tr>
+          <td><code>allowed-tools</code> w <code>ship</code></td>
+          <td class="before"><code>Read, Glob, Grep, Bash(git:*), Bash(gh auth:*), Bash(gh pr:*)</code> — brak zapisu/mkdir</td>
+          <td class="after">+ <code>Bash(mkdir:*)</code> + <code>Write(**/absolutpowers/archives/**/*.md)</code> (ew. <code>Bash(mv:*)</code>)</td>
+          <td>Bez tego krok archiwizacji nie ma uprawnień pod tool-gatingiem Claude'a</td>
+        </tr>
+        <tr>
+          <td>Założenie <code>ship</code> o archiwum</td>
+          <td class="before">ship zakłada „harvest już zarchiwizował"</td>
+          <td class="after">Założenie usunięte/odwrócone — ship sam archiwizuje na końcu</td>
+          <td>Nikt już nie archiwizuje przed ship; inaczej szukałby nieistniejącego archiwum</td>
+        </tr>
+        <tr>
+          <td>Nudge w <code>implement</code></td>
+          <td class="before">Best-effort nudge → <code>harvest</code></td>
+          <td class="after">Nudge → <code>ship</code> (closeout przed commitem)</td>
+          <td>Zero regresji uczenia; docs standalone, learning ad-hoc</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <h3>Granica vs <code>update-ai-context</code> (wymagana sekcja w nowym skillu)</h3>
+  <div class="card">
+    <p>Plan podkreśla, że nowy <code>try-learn-skill</code> musi jawnie odgraniczyć się od <code>update-ai-context</code>, bo oba skanują codebase:</p>
+    <ul class="tight">
+      <li><strong><code>update-ai-context</code> → pasywna dokumentacja:</strong> <code>patterns.md</code> / <code>rules.md</code> / <code>CLAUDE.md</code> — „tak wygląda ten projekt", czytane biernie jako tło dla AI.</li>
+      <li><strong><code>try-learn-skill</code> → aktywne, wywoływalne procedury:</strong> „tak SIĘ ROBI powtarzalną procedurę X" — learned-skille, które agent odpala. Inny cel, inny artefakt.</li>
+    </ul>
+  </div>
+
+  <h2 id="diagramy">4. Diagramy architektury</h2>
+
+  <h3>4.1 Uczenie się: przed → po</h3>
+  <div class="diagram-pair">
+    <div>
+      <p style="margin:.2rem 0; color:var(--muted)"><strong>PRZED</strong> — sygnał z jednego feature'a, ledger, harvest jako orkiestrator</p>
+      <div class="mermaid">
+flowchart TD
+    IMP["implement (koniec)"] --> HARV["harvest (orkiestrator)"]
+    HARV --> TLS["try-learn-skill"]
+    HARV --> DF["document-feature"]
+    HARV --> DM["document-module"]
+    HARV --> ARCH["archiwizacja KROK 4"]
+    TLS --> DIFF["wejscie: planning + tasks + git diff (n=1)"]
+    DIFF --> LEDG["_candidates.md (ledger)"]
+    LEDG -->|"2. wystapienie"| SAVE["learned/ SKILL.md"]
+      </div>
+    </div>
+    <div>
+      <p style="margin:.2rem 0; color:var(--muted)"><strong>PO</strong> — skan codebase, próg ≥3, batch approval, harvest usunięty</p>
+      <div class="mermaid">
+flowchart TD
+    IMP["implement (koniec)"] --> SHIP["ship (closeout)"]
+    SHIP --> ARCH["archiwizacja artefaktow"]
+    USER["uzytkownik ad-hoc"] --> TLS["try-learn-skill"]
+    TLS --> SCAN["wejscie: skan codebase (scope-arg)"]
+    SCAN --> THR{"wzorzec >= 3 wystapien? dowod file:line"}
+    THR -->|"tak"| CAND["lista kandydatow (batch)"]
+    THR -->|"nie"| STOP["brak kandydatow, koniec bez zapisu"]
+    CAND -->|"user zaznacza + akceptuje"| SAVE["learned/ SKILL.md"]
+      </div>
+    </div>
+  </div>
+
+  <h3>4.2 Przepływ nowego skanu <code>try-learn-skill</code> (sekwencja)</h3>
+  <div class="mermaid">
+sequenceDiagram
+    actor U as Uzytkownik
+    participant T as try-learn-skill
+    participant C as Codebase
+    participant L as .claude/skills/learned/
+    U->>T: /absolutpowers:try-learn-skill [scope]
+    T->>C: skan wzorcow proceduralnych
+    C-->>T: wystapienia z file:line
+    T->>T: filtruj: >= 3 wystapien, realna proceduralnosc
+    alt sa kandydaci
+        T-->>U: lista (nazwa + procedura + dowod)
+        U->>T: zaznacza ktore zapisac + akceptuje
+        T->>L: zapis WYLACZNIE zaznaczonych
+    else brak kandydatow
+        T-->>U: raport braku, koniec bez zapisu
+    end
+  </div>
+
+  <h2 id="decyzje">5. Wybrane rozwiązania i uzasadnienie</h2>
+  <div class="card">
+    <ul class="tight">
+      <li><strong>Codebase-scan zamiast feature-artefaktu.</strong> Powtarzalność w całym kodzie jest twardym, weryfikowalnym sygnałem reużywalności; pojedynczy diff to zgadywanie z n=1. Zmiana źródła rozwiązuje problem u korzenia zamiast łagodzić go ledgerem.</li>
+      <li><strong>Usunięcie ledgera po zmianie źródła.</strong> Ledger istniał tylko po to, by łapać „2. wystąpienie" między izolowanymi sesjami feature'ów. Skan widzi wszystkie wystąpienia naraz, więc mechanizm staje się zbędny — nie jest to utrata funkcji, tylko usunięcie protezy.</li>
+      <li><strong>Usunięcie <code>harvest</code> = mniej maszynerii.</strong> Wrapper bez wartości: <code>document-feature</code> i <code>document-module</code> są już samodzielnymi commandami, a try-learn wychodzi na zewnątrz. Jedyna unikalna funkcja (archiwizacja) dostaje naturalny dom w <code>ship</code>. Odrzucono osobny mikro-command <code>archive-feature</code> (kolejny command do pamiętania) oraz zostawienie harvestu jako orkiestratora (pusta skorupa).</li>
+      <li><strong>Batch approval zamiast gate-per-skill.</strong> „Procedura" jest z natury fuzzy — próg ≥N zawęża maszynowo, człowiek tnie ostatecznie. Batch jest szybszy przy bootstrapie wielu skilli naraz i daje tę samą kontrolę co gate per skill.</li>
+    </ul>
+    <p><strong>Odrzucone alternatywy (z planu):</strong> zostawić try-learn na artefaktach i tylko podkręcić próg (nie adresuje korzenia — n=1 zostaje n=1); zostawić harvest jako orkiestrator; archiwizacja jako osobny command; human gate per-skill jako domyślny (wolne przy bootstrapie).</p>
+  </div>
+
+  <h2 id="ryzyka">6. Ryzyka i otwarte kwestie</h2>
+
+  <div class="risk high">
+    <span class="lvl">Wysokie</span> — <strong>Osierocona archiwizacja.</strong> Jeśli przeniesienie logiki KROK 4 do <code>ship</code> jest niepełne (skrót zamiast pełnej logiki + gate + hard boundary), artefakty feature'ów przestają być sprzątane, a stary punkt ich sprzątania (harvest) już nie istnieje. Task musi przenieść PEŁNĄ logikę, nie jej streszczenie.
+  </div>
+  <div class="risk high">
+    <span class="lvl">Wysokie</span> — <strong>Uprawnienia <code>ship</code> pod tool-gatingiem Claude'a.</strong> <span class="badge v">zweryfikowane</span> Obecny <code>allowed-tools</code> to <code>Read, Glob, Grep, Bash(git:*), Bash(gh auth:*), Bash(gh pr:*)</code> — brak <code>Write</code> i <code>mkdir</code>. Bez rozszerzenia frontmattera krok archiwizacji cicho nie zadziała (brak uprawnień do utworzenia katalogu i zapisu <code>summary.md</code>).
+  </div>
+  <div class="risk med">
+    <span class="lvl">Średnie</span> — <strong>Założenie „harvest już zarchiwizował" w <code>ship</code>.</strong> Trzeba je usunąć/odwrócić, inaczej ship będzie szukał archiwum, którego nikt już nie tworzy przed nim (AC-9). Wymaga reconcile sekcji odczytu artefaktów.
+  </div>
+  <div class="risk med">
+    <span class="lvl">Średnie</span> — <strong>„Procedura" jest fuzzy — szum / false-positive.</strong> Skan może produkować wzorce bez realnej proceduralności (sama duplikacja kodu ≠ procedura). Próg ≥N + batch + wymóg dowodu <code>file:line</code> to filtry; skill musi jawnie odrzucać nie-procedury i przy braku kandydatów kończyć bez zapisu (AC-8).
+  </div>
+  <div class="risk med">
+    <span class="lvl">Średnie</span> — <strong>Kolizja z granicą <code>update-ai-context</code>.</strong> Bez jawnej sekcji demarkacji feature odtworzy niejasność „dwa narzędzia skanujące codebase". Sekcja granicy jest wymagana (AC-7), nie opcjonalna.
+  </div>
+  <div class="risk low">
+    <span class="lvl">Niskie</span> — <strong>Koszt skanu dużego repo.</strong> Opcjonalny scope-arg + próg ograniczają koszt; skill powinien pozwolić zawęzić zakres (patrz pytanie #4).
+  </div>
+  <div class="risk low">
+    <span class="lvl">Niskie</span> — <strong>Rewizjonizm w archiwaliach/docs.</strong> Grep czyszczący odwołania do harvest musi celować TYLKO w żywe prompty (<code>skills/</code>, <code>agents/</code>, <code>CLAUDE.md</code>, <code>README.md</code>). Archiwalne dokumenty (<code>absolutpowers/archives/</code>, <code>docs/onboarding/*.html</code>, changelog w README) są POZA grepem — ich edycja byłaby rewizjonizmem (AC-10).
+  </div>
+
+  <h2 id="pliki">7. Mapa zmienianych plików</h2>
+  <div class="card">
+    <table class="scroll-x">
+      <thead><tr><th>Plik</th><th>Akcja</th><th>Rola w zmianie</th></tr></thead>
+      <tbody>
+        <tr><td><code>skills/try-learn-skill/SKILL.md</code></td><td>Rewrite</td><td>Nowe body: codebase-scan, próg ≥3, batch approval, sekcja granicy vs update-ai-context; usunięcie ledgera, promocji, czytania planning/tasks/diff; frontmatter bez „harvest".</td></tr>
+        <tr><td><code>skills/harvest/SKILL.md</code> (+ katalog)</td><td>Usunięcie</td><td><span class="badge v">istnieje dziś</span> Cały skill do skasowania (AC-4).</td></tr>
+        <tr><td><code>skills/ship/SKILL.md</code></td><td>Edycja</td><td>Wchłonięcie logiki archiwizacji (KROK 4) + reconcile założenia „harvest zarchiwizował" + rozszerzenie <code>allowed-tools</code> (mkdir, Write archives, ew. mv). Hard boundary: tylko artefakty bieżącego feature'a; gate przed <code>mv</code>.</td></tr>
+        <tr><td><code>skills/implement/SKILL.md</code></td><td>Edycja</td><td>Nudge harvest → nudge ship (closeout).</td></tr>
+        <tr><td><code>skills/document-feature/SKILL.md</code></td><td>Edycja</td><td>Usunięcie wzmianki „odpalany przez harvest" (zostaje standalone).</td></tr>
+        <tr><td><code>CLAUDE.md</code></td><td>Edycja</td><td>Usunięcie sekcji „Harvest Phase (closeout)", aktualizacja opisu pipeline + Repository Layout (jeśli wspomina harvest).</td></tr>
+        <tr><td><code>README.md</code></td><td>Edycja</td><td>Usunięcie harvest z pipeline/Skills Reference, opis nowego try-learn + archiwizacji w ship, changelog.</td></tr>
+        <tr><td><code>AGENTS.md</code></td><td>Auto</td><td class="file-role">Symlink do CLAUDE.md — aktualizuje się samoczynnie.</td></tr>
+      </tbody>
+    </table>
+    <p class="file-role"><strong>Poza scope:</strong> nowy wrapper w <code>commands/</code> dla try-learn (skill już wywoływalny); zmiany w update-ai-context/document-* poza usunięciem odwołań do harvest; detekcja procedury przez ML/AST; migracja istniejących learned-skilli / <code>_candidates.md</code> w target-projektach.</p>
+  </div>
+
+  <h2 id="glosariusz">8. Glosariusz</h2>
+  <div class="card">
+    <ul class="tight">
+      <li><strong>learned-skill</strong> — wygenerowany, wywoływalny <code>SKILL.md</code> zapisany w target-projekcie pod <code>.claude/skills/learned/{name}/</code>, kodujący powtarzalną procedurę tego projektu.</li>
+      <li><strong>candidate-ledger (<code>_candidates.md</code>)</strong> — dotychczasowy plik-notatnik gromadzący obserwacje kandydatów na skille między sesjami; usuwany w tym feature.</li>
+      <li><strong>batch approval</strong> — jednoprzebiegowe zatwierdzanie: skan pokazuje całą listę kandydatów naraz, użytkownik zaznacza które zapisać, zapis obejmuje wyłącznie zaznaczone.</li>
+      <li><strong>harvest phase</strong> — dotychczasowy „closeout" po implement: orkiestrator uruchamiający try-learn → document-feature → document-module → archiwizacja. Usuwany w całości.</li>
+      <li><strong>tool-gating / <code>allowed-tools</code></strong> — mechanizm Claude Code, w którym skill deklaruje we frontmatterze dozwolone narzędzia; niezadeklarowane narzędzie jest zablokowane w runtime.</li>
+    </ul>
+  </div>
+
+  <footer>
+    <p><span class="badge v">weryfikacja</span> Zweryfikowano bezpośrednio w repo: istnienie <code>skills/harvest/SKILL.md</code>, aktualne <code>allowed-tools</code> skilla <code>ship</code>, feature-artefaktowy tryb + ledger w obecnym <code>try-learn-skill</code>.</p>
+    <p><strong>Legenda:</strong>
+      <span class="legend"><span class="badge v">zweryfikowane</span> sprawdzone w kodzie/planie</span>
+      <span class="legend"><span class="badge i">wnioskowane</span> założenie/interpretacja</span>
+    </p>
+    <p>Źródło: <code>absolutpowers/feature/planning-learned-skills-codebase-scan.md</code> (status: Draft, 2026-07-14). Wygenerowano: 2026-07-14. Branch: <code>feat/superpowers-vendoring</code>. Skill: <code>explain</code>.</p>
+  </footer>
+
+</div>
+<script>mermaid.initialize({startOnLoad:true, theme: (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) ? 'dark' : 'default'});</script>
+</body>
+</html>
