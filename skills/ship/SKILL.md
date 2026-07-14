@@ -2,15 +2,15 @@
 name: ship
 description: >
   Domknięcie feature'a: generuje conventional-commit message i opis PR
-  z artefaktów pipeline'u (planning + tasks + AC + diff), za zgodą wykonuje
-  lokalny commit. NIE pushuje, NIE tworzy PR bez wyraźnego polecenia,
-  NIE zmienia kodu. Naturalny krok po review/harvest.
+  z artefaktów pipeline'u (planning + tasks + AC + diff), za zgodą archiwizuje
+  artefakty feature'a i wykonuje lokalny commit. NIE pushuje, NIE tworzy PR bez
+  wyraźnego polecenia, NIE zmienia kodu. Naturalny krok po review.
   TRIGGER when: "ship", "commit tego feature'a", "przygotuj commit",
   "napisz commit message", "opis PR", "przygotuj PR", "domknij feature",
-  po zakończonym harvest, gotowe do commita zmiany feature'a.
+  gotowe do commita zmiany feature'a.
   NIE wyzwalaj na: eksport tasków do issue trackera (usunięte celowo w 3.10.0)
   ani na review kodu (to `review`).
-allowed-tools: Read, Glob, Grep, Bash(git:*), Bash(gh auth:*), Bash(gh pr:*)
+allowed-tools: Read, Glob, Grep, Bash(git:*), Bash(gh auth:*), Bash(gh pr:*), Bash(mkdir:*), Bash(mv:*), Write(**/absolutpowers/archives/**/*.md)
 argument-hint: "[ścieżka do tasks-*.md; puste = autodetekcja z brancha]"
 ---
 
@@ -39,8 +39,8 @@ $ARGUMENTS
 ## KROK 1: Ustal feature i wczytaj artefakty
 
 **Slug:** z `$ARGUMENTS`, a gdy puste — autodetekcja: dopasuj nazwę bieżącego
-brancha do slugów w `absolutpowers/feature/` i `absolutpowers/archives/`
-(harvest mógł już przenieść artefakty). Przy wielu kandydatach — zapytaj,
+brancha do slugów w `absolutpowers/feature/` (a także `absolutpowers/archives/`
+na wypadek wcześniejszego, ręcznego archiwum). Przy wielu kandydatach — zapytaj,
 nie zgaduj. Przy zerze kandydatów — pracuj na samym diffie i powiedz to wprost
 (commit będzie uboższy o intent).
 
@@ -48,7 +48,6 @@ nie zgaduj. Przy zerze kandydatów — pracuj na samym diffie i powiedz to wpros
 - `planning-{slug}.md` — intent, wybrane rozwiązanie, odrzucone alternatywy
 - `tasks-{slug}.md` + phase files — zakres, `Traces to:`, decyzje implementacyjne
 - sekcja `## Acceptance Criteria` — lista AC-N
-- `archives/{slug}/summary.md` — jeśli harvest już zarchiwizował
 - diff: `git diff <base>...HEAD` + `git status --short`
   (base auto-detect: `git rev-parse --verify main 2>/dev/null && echo main || echo master`)
 
@@ -61,7 +60,8 @@ wchodzi do commita. Jeśli diff zawiera zmiany wykraczające poza zakres tasków
 - `git status` — jeśli brak jakichkolwiek zmian (staged + unstaged + untracked)
   → zaraportuj "nic do commitowania" i zakończ.
 - Zbuduj proponowaną listę plików do `git add` (unstaged/untracked należące do
-  feature'a, w tym przeniesienia z harvestu i `archives/{slug}/summary.md`).
+  feature'a, w tym przeniesienia artefaktów z własnego kroku archiwizacji ship
+  — KROK 4.5 — i `archives/{slug}/summary.md`).
   **Niczego nie stage'uj przed akceptacją w KROKU 5.**
 - Jeśli na branchu są już commity feature'a — zaznacz, że to commit domykający
   (nie squashuj, nie przepisuj historii; `rebase`/`squash` to decyzja usera
@@ -119,21 +119,75 @@ AC: {AC-1..AC-N pokryte | brak sekcji AC}
 Sekcje bez materiału pomiń w całości — nie zostawiaj pustych nagłówków ani
 placeholderów.
 
+## KROK 4.5: Archiwizacja artefaktów feature'a (za zgodą)
+
+Ship jest teraz jedynym miejscem archiwizacji artefaktów procesu — po domknięciu
+feature'a `planning-*.md`/`tasks-*.md` przestają być potrzebne w aktywnym
+`feature/` (zalegając, zaśmiecają katalog i mylą kolejne sesje). Przenieś je do
+archiwum ze streszczeniem. Przeniesienie wchodzi do commita domykającego (KROK 6),
+więc jest widoczne w `git diff` jako naturalna powierzchnia review.
+
+**Warunki wstępne (przy niespełnieniu POMIŃ ten krok z komunikatem):**
+- wszystkie taski/fazy w `tasks-{slug}.md` (i phase files, jeśli orchestrated) mają `Status: completed`,
+- dla epica: przenoś cały folder `feature/{epic-slug}/` TYLKO gdy wszystkie fazy epica ukończone; inaczej pomiń (epic w toku),
+- gdy brak artefaktów feature'a (praca z samego diffa) → pomiń, nie ma czego archiwizować.
+
+**Procedura (przygotowanie — sam `mv` w KROKU 6, po akceptacji):**
+1. Zbuduj listę do przeniesienia: `planning-{slug}.md`, `tasks-{slug}.md`,
+   katalog `tasks-{slug}/` (jeśli istnieje). Cel: `absolutpowers/archives/{slug}/`.
+2. Wygeneruj treść `absolutpowers/archives/{slug}/summary.md` — „pamięć na
+   przyszłość" dla kogoś, kto za pół roku zapyta „co i dlaczego tu zrobiliśmy":
+
+   ```markdown
+   # {Feature} — streszczenie (zarchiwizowano YYYY-MM-DD)
+
+   ## Co zbudowano
+   [2-4 zdania: efekt, nie proces]
+
+   ## Dlaczego (intent)
+   [z planning doca — problem i cel biznesowy]
+
+   ## Kluczowe decyzje i odrzucone alternatywy
+   [z planning doca — decyzja → dlaczego; alternatywa → dlaczego NIE; linki do ADR]
+
+   ## Acceptance Criteria
+   [lista AC-N z jednozdaniowym statusem pokrycia]
+
+   ## Gdzie jest trwała wiedza
+   - docs modułów / architektura / learned-skille / ADR: [ścieżki, jeśli istnieją]
+   ```
+3. **Ostrzeżenie ADR:** jeśli planning doc zawiera istotne decyzje
+   architektoniczne, a nie ma odpowiadającego ADR w `docs/adr/` — powiedz to
+   wprost przed przeniesieniem (streszczenie utrwala esencję, ale ADR to właściwe
+   miejsce na decyzje wiążące przyszłość).
+
+**Hard boundary:** archiwizacja przenosi i streszcza WYŁĄCZNIE artefakty tego
+feature'a (`planning-{slug}.md`, `tasks-{slug}.md`, katalog fazowy). NIE dotyka
+`reviews/`, `problem/`, `constitution.md`, `rules.md`, `patterns.md` ani cudzych
+feature'ów.
+
 ## KROK 5: Human gate
 
 Pokaż razem: (a) listę plików do `git add`, (b) pełny commit message,
-(c) pełny opis PR. **CZEKAJ NA AKCEPTACJĘ.** User może skorygować każdy element
-przed wykonaniem.
+(c) pełny opis PR, (d) **archiwizację** — listę plików do przeniesienia do
+`archives/{slug}/` + pełne streszczenie `summary.md` (albo notę, że archiwizację
+pominięto i dlaczego). **CZEKAJ NA AKCEPTACJĘ.** User może skorygować każdy
+element — w tym zrezygnować z samej archiwizacji, zachowując resztę. Brak ścieżki
+cichej archiwizacji: żaden `mv`/`git mv` nie wykonuje się przed tą akceptacją.
 
 ## KROK 6: Wykonanie (po akceptacji)
 
-1. `git add` — dokładnie uzgodniona lista, nigdy `git add -A` na ślepo.
-2. `git commit` z zaakceptowanym message.
-3. Opis PR wypisz w bloku do skopiowania. `gh pr create` TYLKO na wyraźne
+1. **Archiwizacja (jeśli zaakceptowana w KROKU 5):** `mkdir -p absolutpowers/archives/{slug}`
+   → `git mv` każdego artefaktu (fallback na zwykłe `mv` dla plików untracked)
+   → zapisz `summary.md`. Wykonaj PRZED `git add`, żeby przeniesienia weszły do
+   tego samego commita domykającego.
+2. `git add` — dokładnie uzgodniona lista (z przeniesieniami i `summary.md`), nigdy `git add -A` na ślepo.
+3. `git commit` z zaakceptowanym message.
+4. Opis PR wypisz w bloku do skopiowania. `gh pr create` TYLKO na wyraźne
    polecenie: najpierw `gh auth status`; przy braku autoryzacji STOP z czytelnym
    komunikatem, bez częściowych działań.
-4. Zakończ podsumowaniem: hash commita, co w nim jest, przypomnienie że push
-   należy do użytkownika.
+5. Zakończ podsumowaniem: hash commita, co w nim jest (w tym co zarchiwizowano),
+   przypomnienie że push należy do użytkownika.
 
 ---
 

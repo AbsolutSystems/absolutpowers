@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## What This Is
 
-AbsolutPowers — a Claude Code + Codex + Pi plugin providing AI-assisted development lifecycle skills: problem intake/triage, feature discussion, task generation, implementation, review, debugging, project context management, and project constitution. Version 5.0.1. As of 5.0.0 the repo is a single host-agnostic skill tree (see Repository Layout) with thin per-harness manifests/integrations, replacing the earlier two mirrored `claude/`/`codex/` trees; it also introduces `skills/vendored/` — selected skills vendored from [obra/superpowers](https://github.com/obra/superpowers) under MIT (see `VENDORED.md`, `LICENSE-VENDORED`).
+AbsolutPowers — a Claude Code + Codex + Pi plugin providing AI-assisted development lifecycle skills: problem intake/triage, feature discussion, task generation, implementation, review, debugging, project context management, and project constitution. Version 5.1.0. As of 5.0.0 the repo is a single host-agnostic skill tree (see Repository Layout) with thin per-harness manifests/integrations, replacing the earlier two mirrored `claude/`/`codex/` trees; it also introduces `skills/vendored/` — selected skills vendored from [obra/superpowers](https://github.com/obra/superpowers) under MIT (see `VENDORED.md`, `LICENSE-VENDORED`).
 
 ## Repository Layout
 
@@ -101,9 +101,15 @@ tasks-{slug}.md (orchestrator index)
   └─ review-implementation (final gate)
 ```
 
-### Harvest Phase (closeout)
+### Closeout and on-demand knowledge capture
 
-After `implement`, before commit, an optional **harvest phase** gathers durable knowledge from the finished feature. `implement` prints one best-effort nudge toward `harvest`, a thin orchestrator that runs `try-learn-skill` (reusable procedure → `.claude/skills/learned/`), then `document-feature` (per-module prose docs → `docs/modules/`), then `document-module` (module architecture + C4 → `docs/modules/{slug}-architecture.md` + `docs/architecture/`, **only for touched modules whose architecture changed**), each keeping its own gate. `document-feature` is distinct from `document-module` (code-scan of one module → architecture + C4 diagrams, on-demand, `docs/modules/{slug}-architecture.md` + `docs/architecture/{slug}.html`), `update-ai-context` (code-scan → broad `CLAUDE.md`), and `explain` (ephemeral HTML).
+There is no orchestrated closeout wrapper — closeout and knowledge capture are separate, on-demand skills the user runs when useful. `implement` prints one best-effort nudge toward `ship` (the closeout: commit message + PR description from artifacts, and — with approval — archiving the feature's `planning-*.md`/`tasks-*.md` into `absolutpowers/archives/{slug}/` with a `summary.md`, folded into the closing commit).
+
+Knowledge-capture skills, each standalone and ad-hoc:
+- `try-learn-skill` — **scans the whole codebase** for repeated (≥3 occurrences, `file:line` evidence), non-obvious procedures and proposes them as invocable project learned-skills → `.claude/skills/learned/` (batch approval, human gate). Its signal is codebase-wide repetition, NOT a single feature's artifacts. Boundary vs `update-ai-context`: the latter produces **passive documentation** (`patterns.md`/`rules.md`/`CLAUDE.md`, read as background), try-learn produces **active invocable procedures**.
+- `document-feature` — per-module prose docs from a finished feature → `docs/modules/`.
+- `document-module` — module architecture + C4 (code-scan of one module) → `docs/modules/{slug}-architecture.md` + `docs/architecture/{slug}.html`.
+- `update-ai-context` (code-scan → broad `CLAUDE.md`/`patterns.md`/`rules.md`) and `explain` (ephemeral HTML) round out the doc skills.
 
 ### Constitution Skill
 

@@ -50,17 +50,18 @@ Creates `CLAUDE.md`, `AGENTS.md`, `absolutpowers/patterns.md`, `absolutpowers/ru
 /absolutpowers:generate-tasks @absolutpowers/feature/planning-push-notifications.md  # HOW → tasks
 /absolutpowers:implement @absolutpowers/feature/tasks-push-notifications.md  # BUILD+TEST
 /absolutpowers:review                                                        # AUDIT
-/absolutpowers:harvest @absolutpowers/feature/tasks-push-notifications.md     # CAPTURE (optional, pre-commit)
-/absolutpowers:ship @absolutpowers/feature/tasks-push-notifications.md        # CLOSE (commit + PR text from artifacts)
+/absolutpowers:ship @absolutpowers/feature/tasks-push-notifications.md        # CLOSE (commit + PR text + archive artifacts)
 ```
+
+Knowledge capture (`try-learn-skill`, `document-feature`, `document-module`) is separate and on-demand — run it when useful, it is not a pipeline step.
 
 Each step writes a file that feeds the next. Review gates between steps (Claude Code) catch issues automatically.
 
 ## The Pipeline
 
 ```
-feature-discuss ──→ generate-tasks ──→ implement ──→ review ──→ harvest ──→ ship
-     WHAT?              HOW?          BUILD+TEST     AUDIT      CAPTURE     CLOSE
+feature-discuss ──→ generate-tasks ──→ implement ──→ review ──→ ship
+     WHAT?              HOW?          BUILD+TEST     AUDIT      CLOSE
        │                  │               │
        ▼                  ▼               ▼
   review-plan        review-tasks   review-implementation
@@ -153,8 +154,7 @@ claude -p "/goal <same condition>" --output-format stream-json --verbose
 | `generate-tasks` | Planning doc → sequential tasks or orchestrated phase plan | `planning-*.md` → `tasks-{slug}.md` (+ phase dir) | all |
 | `implement` | Executes tasks per `Test-first:` marker, marks `completed` in-place | `tasks-*.md` → code + tests | all |
 | `review` | 4-phase code-quality audit (semantic / edge / rules / GC) | branch → `reviews/YYYY-MM-DD-{branch}.md` | all |
-| `harvest` | Closeout: try-learn-skill → document-feature → document-module → archive artifacts | `tasks-*.md` → learned skill + module docs + `archives/{slug}/` | all |
-| `ship` | Commit message + PR description from artifacts, local commit (gated) | `tasks-*.md` + diff → conventional commit + PR text | all |
+| `ship` | Commit message + PR description from artifacts, archives feature artifacts, local commit (gated) | `tasks-*.md` + diff → conventional commit + PR text + `archives/{slug}/` | all |
 | `debug` | Root-cause first, then size the fix (inline vs hand-off) | bug desc → fix or `planning-fix-{slug}.md` | all |
 | `problem-discuss` | Triage fuzzy multi-item client report: split, classify, route | report → `problem/problem-{slug}.md` | all |
 | `analyze` | Cross-artifact audit: AC→task→code matrix, 6 divergence classes | slug → `reviews/analyze-{slug}.md` | all |
@@ -162,7 +162,7 @@ claude -p "/goal <same condition>" --output-format stream-json --verbose
 | `constitution` | Author/ratify project principles (pryncypia) | topic → `constitution.md` | all |
 | `update-ai-context` | Bootstrap/refresh `CLAUDE.md`, `AGENTS.md`, `patterns.md`, `rules.md` | path → context files | all |
 | `explain` | Standalone HTML onboarding report for a plan or diff | path/diff → `docs/onboarding/*.html` | all |
-| `try-learn-skill` | Log procedure candidate to ledger; promote to learned skill on 2nd occurrence (human-gated) | `tasks-*.md` → `_candidates.md` / `.claude/skills/learned/` | all |
+| `try-learn-skill` | Scan whole codebase for repeated (≥3×, `file:line`) non-obvious procedures → invocable project learned-skills (batch approval, human-gated) | codebase → `.claude/skills/learned/` | all |
 | `document-feature` | Per-module prose docs from planning + diff (intelligent merge) | `tasks-*.md` → `docs/modules/{module}.md` | all |
 | `document-module` | Architecture docs from a code scan + C4 diagrams | module → `docs/modules/{slug}-architecture.md` + HTML | all |
 | `preboot` | Doc router / guardrail for the PreBoot.io library ecosystem | PreBoot usage → reads `./preboot-docs/` | all |
@@ -239,35 +239,29 @@ Full 4-phase code review of current-branch changes. Always runs all phases.
 
 ---
 
-### `/absolutpowers:harvest`
+### `/absolutpowers:try-learn-skill`
 
-Thin pre-commit closeout orchestrator. Runs three sub-skills, each keeping its own gate:
+Ad-hoc, on-demand knowledge capture — **not a pipeline step**. Scans the whole codebase (optional path narrows the scope; optional threshold, default N=3) for **repeated, non-obvious procedures** and proposes them as invocable project learned-skills. Its signal is codebase-wide repetition, not a single feature's artifacts — which is what keeps it from producing one-off skills.
 
-```
-harvest
-  ├─ try-learn-skill   → _candidates.md / .claude/skills/learned/{name}/  (procedure ledger → skill, human gate)
-  ├─ document-feature  → docs/modules/{module}.md              (per-module prose, mapping-confirm gate)
-  ├─ document-module   → docs/modules/{slug}-architecture.md   (architecture + C4, only if architecture changed)
-  │                      + docs/architecture/{slug}.html
-  └─ archive           → absolutpowers/archives/{slug}/        (move planning/tasks + summary.md, gated, always last)
-```
+Two hard gates before anything is proposed: **repetition** (a procedural pattern must occur ≥N times with concrete `file:line` evidence) and **non-obviousness** (≥2 steps survive noun-substitution — knowledge the agent wouldn't have on its own). Survivors are shown as a **batch** of candidates; you tick which to keep, and only those are written to `.claude/skills/learned/{name}/SKILL.md` (human gate, no silent writes). Nothing meeting the bar → it reports that and writes nothing.
 
-`document-module` runs only for touched modules whose architecture changed (new file / new public symbol / new cross-module import) — cosmetic edits are skipped to avoid noisy diagram churn. **Archiving** runs last (earlier steps still read the artifacts): once every task is `completed` it moves `planning-{slug}.md`/`tasks-{slug}.md` into `archives/{slug}/` with a `summary.md` (what/why/decisions/AC/where the durable knowledge lives), keeping the active `feature/` clean — gated, skipped for in-progress features. A sub-skill the project opted out of is skipped, not an error. Reminds you to review the result in `git diff`, then nudges once toward `ship`.
+Boundary vs `update-ai-context`: that skill produces **passive documentation** (`patterns.md`/`rules.md`/`CLAUDE.md`, read as background — "what this project is like"); `try-learn-skill` produces **active, invocable procedures** ("how to do repeated task X the way this project does it").
 
-- **When:** end of `implement`, before commit (`implement` prints one best-effort nudge toward it)
-- **In → Out:** path to a `tasks-*.md` / `planning-*.md` → learned skill + module docs + archived artifacts
+- **When:** whenever you want to mine the project for reusable procedures — deliberately, not tied to a feature
+- **In → Out:** codebase (optional scope) → selected `.claude/skills/learned/{name}/SKILL.md`
 
 ```bash
-/absolutpowers:harvest @absolutpowers/feature/tasks-push-notifications.md
+/absolutpowers:try-learn-skill                 # scan whole codebase
+/absolutpowers:try-learn-skill src/payments/   # narrow the scan
 ```
 
 ---
 
 ### `/absolutpowers:ship`
 
-Feature closeout — turns the pipeline artifacts (planning = intent, tasks = scope, AC = verification, diff = truth) into a **conventional-commit message and a PR description** so you don't hand-write them or reverse-engineer them from the diff. With approval it makes the **local commit**. Autodetects the feature slug from the branch across `feature/` and `archives/` (harvest may already have moved the artifacts).
+Feature closeout — turns the pipeline artifacts (planning = intent, tasks = scope, AC = verification, diff = truth) into a **conventional-commit message and a PR description** so you don't hand-write them or reverse-engineer them from the diff. With approval it **archives the feature's artifacts** (`planning-*.md`/`tasks-*.md` → `absolutpowers/archives/{slug}/` + a `summary.md`, folded into the closing commit) and makes the **local commit**. Autodetects the feature slug from the branch across `feature/` and `archives/`.
 
-- **When:** after `review`/`harvest`, changes ready to commit
+- **When:** after `review`, changes ready to commit
 - **In → Out:** path to a `tasks-*.md` (or branch autodetect) + `git diff` → commit message + PR text, optional local commit
 - **Hard boundary:** never changes code or task statuses, never pushes, never opens a PR on its own (`gh pr create` only on explicit request, after `gh auth status`), never creates issues. Nothing is staged or committed before the human gate.
 
@@ -290,8 +284,8 @@ Start from where you are, not from the skill list.
 | A fuzzy, multi-item client report | `problem-discuss` | Triage: split, classify, route per item |
 | A branch ready to merge | `review` (solo) / `triada-review` (multi-agent) | Code-quality audit |
 | Doubt: "is the feature consistent / any scope creep?" | `analyze` | AC→task→code traceability audit |
-| A finished feature, pre-commit | `harvest` | Captures knowledge: learned skill + docs, archives artifacts |
-| Changes ready to commit | `ship` | Commit message + PR text from artifacts, local commit (gated) |
+| Changes ready to commit (feature closeout) | `ship` | Commit message + PR text from artifacts, archives artifacts, local commit (gated) |
+| Want reusable procedures mined from the project | `try-learn-skill` | Codebase scan → invocable project learned-skills (ad-hoc) |
 | A change/plan to explain to a human | `explain` | Standalone HTML report |
 | The need to set project principles | `constitution` | Ratifies `constitution.md` (opt-in) |
 
@@ -350,14 +344,14 @@ Two files, two purposes:
 
 ### Learned skills vs `patterns.md`
 
-Learned skills are project-local callable procedures extracted by `try-learn-skill` into `.claude/skills/learned/learned-{name}/`. The bar is deliberately high: most features produce **no** skill — a first sighting of a non-obvious, reusable procedure is logged to `_candidates.md`, and a full skill is written only when the same procedure class recurs (promotion) or strong static reuse evidence justifies a fast-track. They differ from `patterns.md`:
+Learned skills are project-local callable procedures extracted by `try-learn-skill` into `.claude/skills/learned/learned-{name}/`. The bar is deliberately high: `try-learn-skill` **scans the whole codebase** (ad-hoc, not per-feature) and a procedure qualifies only when it recurs **≥3 times with `file:line` evidence** AND encodes **≥2 non-obvious steps** (surviving noun-substitution) — codebase-wide repetition is the reuse proof, in one pass. Survivors are proposed as a batch; only user-approved ones are written (human gate). They differ from `patterns.md`:
 
 | | Learned skill | `patterns.md` |
 |---|---|---|
 | Captures | A **procedure** (steps/tools/decisions) | **Code structure** (recurring conventions) |
 | Form | Callable `SKILL.md` with narrow `TRIGGER when:` | Descriptive reference, read by generate-tasks / implement |
-| Lifecycle | Ledger candidate (1st sighting) → promote on 2nd → NEW/UPDATE, `confidence: candidate → established`, `occurrences` | Re-scanned by `update-ai-context` |
-| Source | One finished feature + git diff | Whole-codebase scan (pattern used 3+ times) |
+| Lifecycle | Codebase scan → candidates meeting ≥3 occurrences + ≥2 non-obvious steps → batch approval → written on user tick | Re-scanned by `update-ai-context` |
+| Source | Whole-codebase scan (procedure recurs ≥3×, `file:line` evidence) | Whole-codebase scan (structural convention used 3+ times) |
 
 "How the code is shaped" → `patterns.md`. "How to carry out a class of task" → learned skill.
 
@@ -406,11 +400,11 @@ Most agents are subagents that skills spawn automatically — you don't invoke t
 
 ## Platform Differences
 
-Every harness shares the exact same `skills/{name}/SKILL.md` — 15 workflow skills + `preboot`, plus `skills/vendored/` (not user-facing pipeline skills). What differs is the thin per-harness layer on top:
+Every harness shares the exact same `skills/{name}/SKILL.md` — 14 workflow skills + `preboot`, plus `skills/vendored/` (not user-facing pipeline skills). What differs is the thin per-harness layer on top:
 
 | Feature | Claude Code | Codex | Pi |
 |---|---|---|---|
-| Skills | 15 workflow + 1 PreBoot (shared tree) | same shared tree | same shared tree |
+| Skills | 14 workflow + 1 PreBoot (shared tree) | same shared tree | same shared tree |
 | Registered agent types | 9 (`agents/*.md`: review gates + phase worker + triada trio) | none — no plugin-level agent-type registry | none — no plugin-level agent-type registry |
 | Subagent dispatch primitive | `Agent(subagent_type=...)` against a registered type | available (`multi_agent=true` → `spawn_agent`/`wait_agent`/`close_agent`), but nothing registered to dispatch *to* for gates | available via optional `pi-subagents` package |
 | Slash commands | `triada-review` | not available | not available |
@@ -437,7 +431,7 @@ your-project/
 │   ├── reviews/
 │   │   ├── YYYY-MM-DD-{branch}.md      # Code review reports
 │   │   └── analyze-{slug}.md           # Cross-artifact audit reports
-│   ├── archives/{slug}/                # Archived planning/tasks + summary.md (from harvest)
+│   ├── archives/{slug}/                # Archived planning/tasks + summary.md (from ship)
 │   ├── memory-candidates/              # Proposed durable lessons (approval queue)
 │   ├── problem/problem-{slug}.md       # Problem triage reports
 │   ├── project-memory.md               # Approved operational memory
@@ -464,7 +458,7 @@ top of the same `skills/` (the obra/superpowers pattern):
 ```
 absolut-ai-skills/
 ├── skills/                            # single source of truth, one body per harness
-│   ├── {name}/SKILL.md                # 15 workflow skills + preboot (host-agnostic body;
+│   ├── {name}/SKILL.md                # 14 workflow skills + preboot (host-agnostic body;
 │   │                                  # Claude-only frontmatter/gate sections are inert elsewhere)
 │   └── vendored/                      # skills vendored from obra/superpowers (MIT) — see VENDORED.md
 │       ├── using-git-worktrees/
@@ -515,6 +509,12 @@ pi -e /path/to/absolut-ai-skills
 
 Versioning is SemVer, kept in sync across both manifests
 (`.claude-plugin/plugin.json` + `.codex-plugin/plugin.json`, both at repo root since 5.0.0).
+
+### 5.1.0 — `try-learn-skill` → codebase-scan; `harvest` removed, archiving folded into `ship`
+- **`try-learn-skill` reworked from feature-artifact to codebase scan.** It no longer learns from a single finished feature's `planning`+`tasks`+`diff` (n=1 → one-off skills). It now **scans the whole codebase** (optional scope arg; threshold N, default 3) for repeated, non-obvious procedures — a pattern qualifies only with **≥N occurrences carrying `file:line` evidence** AND **≥2 non-obvious steps surviving noun-substitution**. Survivors are presented as a **batch**; only user-ticked candidates are written to `.claude/skills/learned/` (human gate preserved). The candidate ledger (`_candidates.md`), the "promote on 2nd occurrence" mechanism, and fast-track are gone — the scan supplies repetition evidence in one pass. A new explicit **boundary vs `update-ai-context`** (passive docs vs active invocable procedures) is written into the skill
+- **`harvest` skill removed entirely.** It was a thin orchestrator over skills that are all standalone; `document-feature`/`document-module` stay callable on their own, `try-learn-skill` is now the ad-hoc codebase scan above
+- **Artifact archiving moved into `ship`.** `ship` now (with approval) archives the feature's `planning-*.md`/`tasks-*.md` into `absolutpowers/archives/{slug}/` with a `summary.md`, folded into the closing commit — with the same hard boundary (only the current feature's artifacts) and human gate the harvest step had. `ship`'s `allowed-tools` extended (`mkdir`, `mv`, `Write(archives)`); its old "harvest may have archived already" assumption is gone
+- **Rewiring:** `implement`'s closeout nudge points to `ship` (not harvest); `document-feature` trigger no longer says "run by harvest"; README pipeline diagram / Quick Start / skills table / Situation table / repo tree and `CLAUDE.md` no longer present harvest as a pipeline step (historical changelog entries left intact)
 
 ### 5.0.1 — feature-discuss: pytania o zakres z rekomendacją, nie jak menu
 - **Scope-question framing fix** in `feature-discuss`: a CO-axis question now splits into two kinds. **Pure preference** (audience, business priority, timeline — no basis in code) → ask neutrally. **Scope with a technical basis** (you have an architecture/security/leverage/YAGNI argument for what should be in or out) → still the user's decision, but you ask **with your recommendation attached** ("I recommend without X because … — confirm the boundary, or override?"), never as a neutral menu. Fixes the failure mode where the architect held a strong scope opinion but posed the question as an equal-options menu, hiding the recommendation. The "don't present options as equal when you have a recommendation" rule now covers scope options, not just technical ones

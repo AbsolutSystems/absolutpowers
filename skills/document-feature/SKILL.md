@@ -6,8 +6,8 @@ description: >
   target-projekcie. Wykrywa dotknięte moduły, potwierdza mapowanie plik→moduł
   (twardy gate), robi inteligentny merge w istniejące docs i stempluje świeżość.
   TRIGGER when: "udokumentuj moduł", "document the module", "document the feature",
-  "zaktualizuj docs modułu", "harvest docs", po zakończonej implementacji,
-  odpalany przez harvest.
+  "zaktualizuj docs modułu", "docs modułu z feature'a", po zakończonej
+  implementacji, odpalany ad-hoc.
 allowed-tools: Read, Glob, Grep, Bash(git:*), Write(**/docs/modules/**/*.md)
 argument-hint: "[ścieżka do tasks-*.md lub planning-*.md feature'a]"
 ---

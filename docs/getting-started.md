@@ -40,20 +40,21 @@ pi -e /path/to/absolut-ai-skills
 
 ### Weryfikacja instalacji
 
-**Claude Code:** wpisz `/absolutpowers:` i sprawdź autouzupełnianie — zobaczysz 15 workflow skilli + `preboot`:
+**Claude Code:** wpisz `/absolutpowers:` i sprawdź autouzupełnianie — zobaczysz 14 workflow skilli + `preboot`:
 
 | Pipeline | Triage / debug | Wiedza / docs | Kontekst / setup |
 |---|---|---|---|
-| feature-discuss | problem-discuss | harvest | update-ai-context |
-| generate-tasks | debug | try-learn-skill | constitution |
-| implement | analyze | document-feature | preboot |
-| review | | document-module | explain |
+| feature-discuss | problem-discuss | try-learn-skill | update-ai-context |
+| generate-tasks | debug | document-feature | constitution |
+| implement | analyze | document-module | preboot |
+| review | | explain | |
+| ship | | | |
 
 Plus komenda `/absolutpowers:triada-review` (równoległy multi-agent review).
 
-**Codex:** wpisz `$absolutpowers` i sprawdź autouzupełnianie — te same 15 workflow skille + `preboot` (jeden wspólny wierzchołek `skills/`, bez osobnej kopii). Brak komend i brak review gate'ów — nie dlatego, że Codex nie potrafi wywołać subagenta (ma `multi_agent=true` → `spawn_agent`/`wait_agent`/`close_agent`), ale dlatego, że nie ma rejestru nazwanych typów agentów (`agents/*.md`), więc `Agent(subagent_type=...)` nie ma do czego się odnieść.
+**Codex:** wpisz `$absolutpowers` i sprawdź autouzupełnianie — te same 14 workflow skille + `preboot` (jeden wspólny wierzchołek `skills/`, bez osobnej kopii). Brak komend i brak review gate'ów — nie dlatego, że Codex nie potrafi wywołać subagenta (ma `multi_agent=true` → `spawn_agent`/`wait_agent`/`close_agent`), ale dlatego, że nie ma rejestru nazwanych typów agentów (`agents/*.md`), więc `Agent(subagent_type=...)` nie ma do czego się odnieść.
 
-**Pi:** te same 15 workflow skilli + `preboot`, ładowane natywnie. Review gate'y degradują dwustopniowo — dispatch generycznego subagenta (jeśli zainstalowany `pi-subagents`) z treścią docelowego `agents/{name}.md` jako promptem, albo review inline z jawną notą o braku pełnej izolacji. Szczegóły: `references/pi-tools.md`.
+**Pi:** te same 14 workflow skilli + `preboot`, ładowane natywnie. Review gate'y degradują dwustopniowo — dispatch generycznego subagenta (jeśli zainstalowany `pi-subagents`) z treścią docelowego `agents/{name}.md` jako promptem, albo review inline z jawną notą o braku pełnej izolacji. Szczegóły: `references/pi-tools.md`.
 
 ## Krok 1: Przygotuj projekt
 

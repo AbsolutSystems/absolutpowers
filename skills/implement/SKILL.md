@@ -621,14 +621,15 @@ AC Fulfillment:
 - AC-3: NOT VERIFIED (untested) — token `AC-3` absent from test sources
 ```
 
-### Optional: faza harvest (best-effort)
+### Optional: closeout (best-effort)
 
 After reporting completion, optionally suggest one line to the user:
 
-> Przed commitem rozważ fazę harvest:
-> `/absolutpowers:harvest @absolutpowers/feature/tasks-{slug}.md`
-> — uruchomi try-learn-skill (reużywalna procedura) i document-feature
-> (docs modułu), każde z własnym gate; wynik przejrzyj w git diff przed commitem.
+> Po `@review` domknij feature przez ship:
+> `/absolutpowers:ship @absolutpowers/feature/tasks-{slug}.md`
+> — wygeneruje commit message + opis PR z artefaktów, za zgodą zarchiwizuje
+> artefakty feature'a i wykona lokalny commit; wynik przejrzyj w git diff.
+> (Dokumentację modułu — jeśli potrzebna — odpal osobno: `/absolutpowers:document-feature`.)
 
 To czysto opcjonalne. Pominięcie nie jest błędem — nie blokuje ani nie cofa
 completion. Nie odpalaj go automatycznie; tylko zaproponuj.
@@ -639,7 +640,7 @@ completion. Nie odpalaj go automatycznie; tylko zaproponuj.
 
 Stan terminalny tego skilla: wszystkie taski zaimplementowane i zweryfikowane, final verification wykonana, a końcowa bramka `review-implementation` zwróciła PASS (albo świadomy override). Kod jest napisany — ale jeszcze nie zrewidowany jako całość ani nie zmergowany.
 
-Następny krok w pipeline: `@review` (solo, pełne 4 fazy) lub `@triada-review` (multi-agent, większe PR) — to bramka jakości na kodzie. **Opcjonalnie PRZED review** możesz uruchomić fazę harvest (patrz nudge wyżej: `@harvest` → try-learn-skill + document-feature) do zebrania trwałej wiedzy przed commitem; harvest jest opcjonalny i best-effort, `review` jest właściwą bramką łańcucha. Kolejność: harvest (opcjonalnie) → review → merge/ship.
+Następny krok w pipeline: `@review` (solo, pełne 4 fazy) lub `@triada-review` (multi-agent, większe PR) — to bramka jakości na kodzie. Po czystym review domknij feature przez `@ship` (commit + opis PR + archiwizacja artefaktów — patrz nudge wyżej). Kolejność: review → ship (commit/archiwizacja) → merge. Dokumentację modułu i ekstrakcję reużywalnych procedur odpalasz osobno, ad-hoc (`@document-feature`, `@try-learn-skill`), nie jako obowiązkowy etap.
 
 Pipeline NIE jest domknięty na tym etapie — final gate PASS oznacza „kod zaimplementowany i zweryfikowany wewnętrznie", nie „feature dowieziony i zmergowany". Jeśli działasz pod `/goal` (np. „dowieź feature X"), NIE uznawaj celu za osiągnięty po tym skillu: kontynuuj do skilla terminalnego (`@review`/`@triada-review`, a po PASS — merge/ship), zanim uznasz cel za osiągnięty.
 

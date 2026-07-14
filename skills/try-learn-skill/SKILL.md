@@ -1,250 +1,173 @@
 ---
 name: try-learn-skill
 description: >
-  Ocenia, czy z artefaktów zakończonego feature'a (planning + tasks + git diff)
-  da się wyciągnąć reużywalną, NIEOCZYWISTĄ procedurę. Domyślnie NIE tworzy
-  skilla — dopisuje obserwację do ledgera kandydatów
-  (`.claude/skills/learned/_candidates.md`). Pełny learned-skill powstaje
-  dopiero przy DRUGIM wystąpieniu tej samej klasy procedury (promocja z ledgera)
-  albo przy silnym statycznym dowodzie reużycia (fast-track). Pomija kolizje ze
-  statycznymi skillami i czeka na akceptację przed zapisem SKILL.md.
-  TRIGGER when: po zakończonej implementacji, "utrwal procedurę",
-  "naucz się z tej pracy", "wyciągnij skill", "extract skill",
-  "learn from this work", odpalany przez harvest.
+  Skanuje CAŁY codebase projektu docelowego w poszukiwaniu powtarzalnych,
+  NIEOCZYWISTYCH procedur (wzorzec występuje ≥3 razy w kodzie, z dowodem
+  `file:line`) i proponuje je jako reużywalne learned-skille specyficzne dla
+  tego projektu. Prezentuje listę kandydatów naraz (batch), zapisuje WYŁĄCZNIE
+  zaznaczone przez użytkownika do `.claude/skills/learned/{name}/SKILL.md`.
+  Pomija kolizje ze statycznymi skillami. Odpalany ad-hoc, świadomie.
+  TRIGGER when: "przeskanuj projekt pod skille", "wyciągnij reużywalne procedury",
+  "zbuduj learned-skille z codebase", "try-learn-skill", "extract project skills",
+  "jakie powtarzalne procedury ma ten projekt".
 allowed-tools: Read, Glob, Grep, Bash(git:*), Write(**/.claude/skills/learned/**/*.md)
-argument-hint: "[ścieżka do tasks-*.md lub planning-*.md feature'a]"
+argument-hint: "[opcjonalnie: ścieżka zawężająca skan (domyślnie cały codebase); opcjonalnie próg N (domyślnie 3)]"
 ---
 
-# Try Learn Skill — Ledger kandydatów i promocja do learned-skilla
+# Try Learn Skill — Skan codebase → reużywalne learned-skille projektu
 
 Jesteś inżynierem-mentorem o WYSOKIM progu wybredności. Twoim zadaniem jest
-przyjrzeć się artefaktom ZAKOŃCZONEGO feature'a i ocenić, czy zawierają
-procedurę wartą utrwalenia.
+przeskanować **cały codebase projektu docelowego** i znaleźć **powtarzalne,
+nieoczywiste procedury**, które warto utrwalić jako wywoływalne learned-skille
+specyficzne dla tego projektu.
 
-**ODWRÓCONA DOMYŚLNA: dla zdecydowanej większości feature'ów poprawny wynik
-tego skilla to BRAK nowego learned-skilla.** Typowy feature to solidna, ale
-oczywista robota — agent wykona ją następnym razem równie dobrze bez skilla.
-Learned-skill jest wyjątkiem, nie normą. "Nic do utrwalenia" albo "jedna
-linijka w ledgerze" to sukces tego skilla, nie porażka. Nie szukaj procedury
-na siłę — szukaj powodu, żeby jej NIE zapisywać, i zapisuj tylko gdy go nie
-znajdziesz.
+**Źródło sygnału to POWTARZALNOŚĆ W KODZIE, nie pojedynczy feature.** Skill nie
+patrzy na artefakty jednego zadania (planning/tasks/diff) — patrzy na to, co w
+projekcie robi się WIELOKROTNIE w ten sam sposób. Wzorzec, który występuje raz,
+to nie procedura projektu — to jednorazowa robota. Dopiero **≥3 wystąpienia**
+(próg domyślny, patrz niżej) tego samego proceduralnego wzorca, z konkretnym
+dowodem `file:line`, są sygnałem, że warto zakodować "tak SIĘ ROBI X w tym
+projekcie".
 
-**To NIE jest implementacja.** Nie piszesz kodu produktu. Zapisujesz co
-najwyżej: (a) wpis w ledgerze `_candidates.md` (niskie ryzyko, bez gate),
-(b) plik `SKILL.md` w `.claude/skills/learned/` — TYLKO po akceptacji
-użytkownika.
+**ODWRÓCONA DOMYŚLNA: dla większości skanów poprawny wynik to KRÓTKA lista
+albo BRAK kandydatów.** Nie szukaj procedury na siłę — szukaj powodu, żeby jej
+NIE zapisywać, i proponuj tylko te, które przejdą i próg powtarzalności, i test
+nieoczywistości. "Nic nie spełnia progu" to poprawny, uczciwy wynik.
+
+**To NIE jest implementacja.** Nie piszesz kodu produktu. Zapisujesz co najwyżej
+pliki `SKILL.md` w `.claude/skills/learned/` — i to WYŁĄCZNIE te, które
+użytkownik zaznaczy w batch approval (patrz KROK 5).
 
 ## Wejście
 
-Argument `$ARGUMENTS` = ścieżka do artefaktu feature'a (zwykle `tasks-{slug}.md`
-lub `planning-{slug}.md`).
+Argument `$ARGUMENTS` (oba opcjonalne):
+- **ścieżka** zawężająca skan (np. `src/payments/`) — domyślnie **cały codebase** projektu.
+- **próg N** — minimalna liczba wystąpień wzorca, domyślnie **3**. Możesz podać inną (np. `--min=4`), ale domyślną jest 3.
 
 $ARGUMENTS
 
+## Granica vs `update-ai-context` (przeczytaj, zanim zaczniesz)
+
+Oba skille skanują codebase — ale mają **różny cel i różny artefakt**. Nie
+powielaj tu roboty `update-ai-context`:
+
+- **`update-ai-context` → pasywna DOKUMENTACJA.** Produkuje `patterns.md`,
+  `rules.md`, `CLAUDE.md` — opis "tak wygląda ten projekt" (wzorce, konwencje,
+  reguły), czytany **biernie jako tło** przez agenta. Odpowiada na pytanie
+  *"jaki jest ten projekt?"*.
+- **`try-learn-skill` → aktywne, WYWOŁYWALNE procedury.** Produkuje learned-skille
+  w `.claude/skills/learned/` — "tak SIĘ ROBI powtarzalną procedurę X w tym
+  projekcie", które agent **odpala** jako narzędzie. Odpowiada na pytanie
+  *"jak wykonać powtarzalne zadanie klasy X tak, jak robi się to tutaj?"*.
+
+Jeśli wykryty wzorzec to opis stanu/konwencji (pasywne tło) → to należy do
+`update-ai-context`, NIE tutaj. Tutaj kwalifikuje się tylko **proceduralna
+sekwencja kroków**, którą da się odpalić.
+
 ---
 
-## KROK 1: Wczytaj artefakty feature'a (PROCES + EFEKT)
+## KROK 1: Skan codebase — znajdź powtarzalne wzorce proceduralne
 
-Z podanej ścieżki wyprowadź `{slug}` i katalog feature'a. Wczytaj co istnieje
-(obsłuż brak każdego z osobna — **nie zatrzymuj się** gdy część plików nie
-istnieje, pracuj na tym co masz):
+Przeskanuj codebase (w zakresie z argumentu, domyślnie cały) szukając
+**proceduralnych wzorców** — sekwencji kroków/struktury, która powtarza się w
+wielu miejscach kodu. Użyj Glob/Grep do wykrycia rodzin plików robiących to samo
+strukturalnie, np.:
+- rodziny plików o tej samej roli (kontrolery, repozytoria, migracje, handlery,
+  serializery, komendy, testy integracyjne o tym samym kształcie),
+- powtarzalne sekwencje wywołań/adnotacji/konfiguracji,
+- konwencjonalne "przepisy" na dodanie nowego elementu danej klasy.
 
-**Proces (jak feature był robiony):**
-- `tasks-{slug}.md` — taski / orchestrator index
-- phase files w `tasks-{slug}/` (jeśli orchestrated): `NN-*.md`, `implementation-context.md`
-- `planning-{slug}.md` (lub epic: `{epic-slug}/planning-phase-N-*.md` + `planning-main.md`)
+Zbierz kandydatów-wzorce. Dla KAŻDEGO zbierz **konkretne wystąpienia z dowodem
+`file:line`** — to jest twarda waluta tego skilla, nie ogólnik.
 
-**Efekt (co faktycznie powstało) — weryfikacja procesu:**
-```bash
-git diff <base>...HEAD        # base = main/master (auto-detect)
-git diff --cached
-git diff
-```
-Auto-detect base: `git rev-parse --verify main 2>/dev/null && echo main || echo master`.
-Git diff służy do potwierdzenia, że wykryta procedura odpowiada realnym zmianom
-— nie zgaduj procedury z samego planu, jeśli diff mówi co innego.
+## KROK 2: Próg powtarzalności (twarda bramka #1)
 
-Jeśli BRAK kluczowych artefaktów (np. nie ma ani tasks, ani planning, ani diffa)
-→ zaraportuj "za mało materiału do ekstrakcji" i zakończ BEZ zapisu.
+Dla każdego wzorca policz wystąpienia z dowodem `file:line`:
+- **≥ N wystąpień** (N domyślnie **3**) → przechodzi próg, kontynuuj do KROKU 3.
+- **< N** → odrzuć jako kandydata na skill (to jeszcze nie procedura projektu,
+  za mało dowodu powtarzalności).
 
-## KROK 2: Wyodrębnij kandydata na procedurę
+**Dowód liczony rygorystycznie, nie z surowych trafień grepa.** Trafienie
+prymitywu (`<Dialog` w 15 plikach) samo w sobie NIE jest wystąpieniem procedury.
+Wystąpienie = miejsce, dla którego potrafisz powiedzieć: *"tu wykonano procedurę
+klasy X — te same kroki, ta sama struktura"*. Każde wystąpienie ma konkretny
+`file:line`.
 
-Wyodrębnij z artefaktów **sekwencję kroków, narzędzi i decyzji**, która byłaby
-powtarzalna na innym zadaniu tego samego typu (np. "migracja pola w encji pod
-SecureRepository", "mirror skilla Claude→Codex", "podpięcie nowego typu
-dokumentu do pipeline'u FOP").
+## KROK 3: Test nieoczywistości (twarda bramka #2)
 
-Nazwij **klasę zadań** jednym zdaniem. Konkretne nazwy plików/pól tego
-feature'a to przykłady, nie istota — istotą jest to, co przetrwa podmianę
-rzeczowników.
+Powtarzalność to za mało — powtarzalna procedura może być oczywista (agent zrobi
+ją sam). Learned-skill musi kodować wiedzę, której agent NIE ma z siebie.
 
-Jeśli w artefaktach nie widać żadnej spójnej procedury (feature był zbiorem
-niepowiązanych zmian) → zaraportuj **"nic do utrwalenia"** z jednym zdaniem
-uzasadnienia i przejdź od razu do KROKU 8 (GC ledgera), potem zakończ BEZ zapisu.
+**3A. Wypisz kroki procedury**, oznacz każdy `OCZYWISTY` / `NIEOCZYWISTY`:
+- `OCZYWISTY` — senior/agent wykonałby sam ("utwórz serwis", "dodaj test").
+- `NIEOCZYWISTY` — koduje coś nienaturalnego: wymuszoną kolejność ("X PRZED Y,
+  bo inaczej Z"), pułapkę stacka/projektu, decyzję którą model bez tej wiedzy
+  podjąłby źle, warunek brzegowy odkryty bólem.
 
-## KROK 3: TEST NIEOCZYWISTOŚCI (twarda bramka)
+**3B. Podmień rzeczowniki:** wykreśl nazwy plików/pól/encji konkretnych
+wystąpień. Kroki, które po podmianie tracą sens, to część wystąpień, nie
+procedury.
 
-Generalizowalność to za mało — procedura maksymalnie generalizowalna może być
-bezwartościowa, jeśli jest oczywista. Learned-skill musi kodować wiedzę, której
-agent NIE ma sam z siebie. Wykonaj test w trzech ruchach:
+**3C. Bramka:** policz kroki `NIEOCZYWISTE`, które przetrwały podmianę:
+- **≥2** → jest esencja skilla. Kontynuuj (KROK 4).
+- **<2** → to nie materiał na skill (choćby powtarzalne i ogólne). Odrzuć.
 
-**3A. Wypisz kroki procedury i oznacz każdy:**
-- `OCZYWISTY` — senior developer / agent wykonałby ten krok sam, bez
-  podpowiedzi (np. "utwórz serwis", "dodaj test", "zaktualizuj import").
-- `NIEOCZYWISTY` — krok koduje coś nienaturalnego: kolejność wymuszoną
-  nieoczywistym powodem ("X PRZED Y, bo inaczej Z"), pułapkę specyficzną dla
-  stacka/projektu, decyzję, którą model bez tej wiedzy podjąłby źle, warunek
-  brzegowy odkryty bólem.
-
-**3B. Podmień rzeczowniki:** wykreśl w myślach wszystkie nazwy plików, pól,
-encji i modułów tego feature'a. Kroki, które po podmianie tracą sens, są
-częścią tego feature'a, nie procedury.
-
-**3C. Bramka:** policz kroki `NIEOCZYWISTE`, które przetrwały podmianę
-rzeczowników.
-- **≥2 nieoczywiste elementy** → jest esencja skilla. Kontynuuj (KROK 4).
-- **<2** → to NIE jest materiał na skill, niezależnie od generalizowalności.
-  Jeśli wśród odrzuconych jest pojedyncza pułapka/gotcha związana z konkretnym
-  modułem → **przekieruj ją do `document-feature`** (sekcja "na co uważać" w
-  docs modułu) — tam jest jej trwałe miejsce. Zaraportuj wynik testu userowi,
-  wykonaj KROK 8 (GC) i zakończ BEZ zapisu skilla ani wpisu w ledgerze.
-
-### Antyprzykłady kalibracyjne (co NIE przechodzi, a co przechodzi)
-
+### Antyprzykłady kalibracyjne
 - ❌ **"Dodanie endpointu CRUD: model → serwis → kontroler → testy"** —
-  maksymalnie generalizowalne, zero nieoczywistości. Agent zrobi to sam. SKIP.
-- ❌ **"Fix buga z null-check w `InvoiceMapper.mapLine()`"** — nieoczywiste
-  być może, ale po podmianie rzeczowników nic nie zostaje; to wiedza o jednym
-  miejscu. Gotcha → `document-feature`. SKIP jako skill.
-- ❌ **"Jak zaimplementowaliśmy eksport CSV faktur"** — log rozwiązania
-  jednego feature'a przebrany za procedurę. Opisuje siebie, nie klasę. SKIP.
-- ✅ **"Migracja pola w encji pod `SecureRepository`: najpierw migracja danych
-  z wyłączonym listenerem X, potem zmiana modelu, na końcu reindeks — w tej
-  kolejności, bo SecureData szyfruje kolumnę przy starcie"** — klasa zadań
-  (każda migracja pola w tym stacku) + ≥2 nieoczywiste, wymuszone kroki.
-  Materiał na skill.
+  powtarzalne, ale zero nieoczywistości. Agent zrobi sam. SKIP.
+- ❌ **"Wszystkie repozytoria rozszerzają BaseRepo"** — to konwencja/stan
+  (pasywne tło) → `update-ai-context`, nie skill.
+- ✅ **"Migracja pola pod `SecureRepository`: najpierw migracja danych z
+  wyłączonym listenerem, potem zmiana modelu, na końcu reindeks — w tej
+  kolejności, bo SecureData szyfruje kolumnę przy starcie"** — powtarza się w
+  kilku migracjach (≥3 `file:line`) + ≥2 nieoczywiste wymuszone kroki. Materiał.
 
-## KROK 4: Ledger kandydatów — dopasowanie
+## KROK 4: Collision-check i NEW vs UPDATE
 
-Wczytaj ledger:
-```
-Read: .claude/skills/learned/_candidates.md
-```
-Brak pliku = pusty ledger (normalna sytuacja, nie błąd).
+Dla każdego wzorca, który przeszedł oba progi:
 
-Porównaj wykrytą klasę procedury z wpisami ledgera (sekcje `## {class-slug}`) —
-porównanie semantyczne po polach `klasa` i `sygnały`, nie po identyczności słów.
-
-- **Dopasowanie istnieje** → to DRUGIE (lub kolejne) wystąpienie tej klasy →
-  ścieżka **PROMOCJA** (KROK 5).
-- **Brak dopasowania** → ścieżka **LEDGER / FAST-TRACK** (KROK 6).
-
-## KROK 5: Ścieżka PROMOCJA (n ≥ 2) — pełna ekstrakcja z dwóch wystąpień
-
-Masz teraz ≥2 realne wystąpienia tej samej klasy: wpis z ledgera (poprzedni
-feature) i bieżący feature. To jest właściwy moment na ekstrakcję, bo abstrakcję
-budujesz **empirycznie, przez porównanie**, a nie przez zgadywanie z n=1:
-
-1. **Część wspólna obu wystąpień = istota procedury** (kroki, kolejność,
-   pułapki, które powtórzyły się w obu).
-2. **Różnice = parametry/przykłady** — trafiają do skilla jako placeholdery
-   lub sekcja przykładów, nie jako kroki.
-3. Elementy obecne tylko w jednym wystąpieniu traktuj podejrzliwie — domyślnie
-   to przypadek tego feature'a, nie klasa.
-
-Następnie:
 - **Collision-check vs skille STATYCZNE** (feature-discuss, generate-tasks,
-  implement, review, triada-review, debug, update-ai-context, explain,
-  preboot…) → pokrycie zakresu = **SKIP**: zaraportuj "to już robi skill X",
-  oznacz wpis w ledgerze `status: collision-skip` i zakończ BEZ zapisu.
+  implement, review, triada-review, debug, problem-discuss, update-ai-context,
+  document-feature, document-module, explain, ship, constitution, analyze,
+  preboot…): jeśli statyczny skill już pokrywa ten zakres → **SKIP**, zaraportuj
+  "to już robi skill X", nie proponuj.
 - **Porównanie z istniejącymi learned-skillami**
-  (`Glob: .claude/skills/learned/**/SKILL.md`): podobny istnieje → ścieżka
-  **UPDATE** (merge/refine, `occurrences` +1, przy 2. spotkaniu
-  `confidence: candidate → established`, odśwież `last-updated`). Brak →
-  **NEW** z `occurrences` = liczba wystąpień z ledgera + 1, `confidence:
-  established` (bo n≥2 to już dowód).
+  (`Glob: .claude/skills/learned/**/SKILL.md`): podobny istnieje → kandydat
+  **UPDATE** (merge/refine, `occurrences` = liczba znalezionych wystąpień,
+  odśwież `last-updated`). Brak → kandydat **NEW**.
 
-Przejdź do KROKU 7 (human gate).
+Zbuduj z ocalałych wzorców **listę kandydatów** do batch approval.
 
-## KROK 6: Ścieżka LEDGER / FAST-TRACK (n = 1)
+## KROK 5: Batch approval — jeden przebieg, człowiek zaznacza
 
-### 6A: Fast-track — silny statyczny dowód reużycia (wyjątek)
+Jeśli po KROKACH 2–4 **nie został żaden kandydat** → zaraportuj wprost "skan nie
+znalazł wzorca spełniającego próg ≥N wystąpień i test nieoczywistości" (z krótkim
+uzasadnieniem, np. co odpadło i dlaczego) i **zakończ BEZ zapisu jakiegokolwiek
+pliku**. To poprawny wynik, nie porażka.
 
-Zanim dopiszesz do ledgera, sprawdź, czy repo daje MOCNY dowód, że klasa
-wystąpi ponownie. Zbuduj 2–3 zapytania Grep/Glob z sygnałów procedury i znajdź
-inne instancje klasy zadań, **poza plikami z diffa tego feature'a**.
-
-**Ciężar dowodu jest odwrócony i kandydatów nie wolno liczyć z surowych trafień
-grepa.** Trafienie prymitywu (np. `<Dialog` w 15 plikach) NIE jest kandydatem.
-Kandydat = miejsce, dla którego potrafisz sformułować zdanie: *"gdyby ktoś
-robił [klasa zadań] w pliku X, ta procedura miałaby zastosowanie, bo Y"*.
-Każdego kandydata uzasadnij osobno, jednym zdaniem.
-
-- **≥3 uzasadnionych kandydatów** → dopuszczalna ekstrakcja przy n=1: przejdź
-  przez collision-check i NEW/UPDATE jak w KROKU 5 (z `confidence: candidate`,
-  `occurrences: 1`), potem KROK 7. W human gate POKAŻ listę kandydatów wraz
-  z uzasadnieniami — user osądza konkret, nie deklarację.
-- **<3** → brak fast-tracku. Przejdź do 6B.
-
-### 6B: Wpis do ledgera (domyślna ścieżka przy n=1)
-
-Dopisz wpis do `.claude/skills/learned/_candidates.md` (utwórz plik z nagłówkiem,
-jeśli nie istnieje):
-
-```markdown
-# Ledger kandydatów na learned-skille
-<!-- Obserwacje n=1. Promocja do SKILL.md następuje przy DRUGIM wystąpieniu
-     klasy (try-learn-skill, KROK 5). Wpisy nieaktywne czyści GC (KROK 8). -->
-
-## {class-slug}
-- klasa: [jedno zdanie — klasa zadań, nie ten feature]
-- sygnały: [2–4 krótkie sygnały rozpoznawcze klasy — do przyszłego dopasowania]
-- nieoczywiste: [wypunktowana esencja z KROKU 3 — to jądro przyszłego skilla]
-- wystąpienia: {slug} (YYYY-MM-DD)
-- status: candidate
+Jeśli są kandydaci — pokaż **CAŁĄ listę naraz** (batch), po jednym bloku na
+kandydata:
+```
+[ ] {n}. learned-{kebab}  (NEW|UPDATE)
+    Klasa: [jedno zdanie — klasa zadań]
+    Nieoczywiste: [esencja z KROKU 3]
+    Dowód (≥N wystąpień): file:line, file:line, file:line
+    TRIGGER when: [wąski trigger]
 ```
 
-Zapis wpisu do ledgera NIE wymaga gate (niskie ryzyko: jedna sekcja tekstu,
-łatwo usuwalna, GC pilnuje) — ale **pokaż użytkownikowi dodany wpis** w
-raporcie końcowym. Po dopisaniu wykonaj KROK 8 i zakończ. **Nie twórz SKILL.md.**
+**CZEKAJ NA WYBÓR UŻYTKOWNIKA.** Użytkownik zaznacza, które pozycje zapisać
+(np. "1, 3", "wszystkie", "żadne"). **Zapisujesz WYŁĄCZNIE zaznaczone** — human
+gate PRZED każdym zapisem jest twardy, nie ma ścieżki cichego zapisu. Użytkownik
+może skorygować treść/trigger kandydata przed zapisem.
 
-Wyjątek: user może świadomie nadpisać ("wiem, że n=1, ale ta procedura wróci —
-zapisz skill") → potraktuj jak fast-track z akceptacją, `confidence: candidate`.
-
-## KROK 7: Propose — human gate (dotyczy WYŁĄCZNIE zapisu SKILL.md)
-
-Pokaż użytkownikowi PEŁNĄ proponowaną treść `SKILL.md` (dla NEW) albo diff/opis
-zmian (dla UPDATE). Zaznacz: NEW / UPDATE, gdzie trafi plik, jaki będzie `name`
-i `TRIGGER when:`, oraz **dowód**: dla PROMOCJI — oba wystąpienia (sluga +
-data z ledgera i bieżący) z częścią wspólną; dla FAST-TRACKU — listę
-uzasadnionych kandydatów z repo.
-
-**CZEKAJ NA AKCEPTACJĘ.** Nie zapisuj SKILL.md przed wyraźnym "ok / zapisz /
-tak" (wzorzec propose → gate z `feature-discuss` i `update-ai-context`).
-Użytkownik może skorygować treść/trigger przed zapisem.
-
-Po akceptacji:
+Dla każdego zaznaczonego:
 ```
 {target-project}/.claude/skills/learned/{name}/SKILL.md
 ```
 - Utwórz katalog jeśli nie istnieje.
-- `name` z prefiksem `learned-` (namespace), kebab-case: `learned-{descriptive-kebab}`.
-- **Write celuje w `.claude/` TARGET projektu** (gdzie odpalono skill), NIE w
-  repo AbsolutPowers.
-- Przy PROMOCJI zaktualizuj wpis w ledgerze: dopisz wystąpienie, ustaw
-  `status: promoted:learned-{name}`.
-
-## KROK 8: GC ledgera (każde uruchomienie, na końcu)
-
-Przejrzyj wpisy `status: candidate` w ledgerze:
-- wpis z jednym wystąpieniem **starszym niż 90 dni** LUB takim, po którym w
-  ledgerze przybyło **≥10 nowszych wpisów** bez drugiego wystąpienia tej klasy
-  → zaproponuj usunięcie (lista zbiorcza, jedna decyzja usera dla całej listy).
-- Nie usuwaj bez zgody. Wpisy `promoted:*` i `collision-skip` zostawiaj —
-  to audit trail dopasowań.
-
-To bramka przeciwko degeneracji ledgera w ten sam szum, którym wcześniej
-zarastał katalog `learned/`.
+- `name` z prefiksem `learned-`, kebab-case: `learned-{descriptive-kebab}`.
+- **Write celuje w `.claude/` TARGET projektu** (gdzie odpalono skill), NIE w repo AbsolutPowers.
+- Wygeneruj treść wg szablonu niżej.
 
 ---
 
@@ -264,11 +187,11 @@ argument-hint: "[opcjonalnie]"
 
 <!-- learned-meta
 origin: learned
-source-feature: {slug pierwszego wystąpienia}, {slug drugiego wystąpienia}
+source: codebase-scan
 created: YYYY-MM-DD
 last-updated: YYYY-MM-DD
-confidence: candidate|established
-occurrences: N
+occurrences: N (liczba znalezionych wystąpień w kodzie)
+evidence: file:line, file:line, file:line
 -->
 
 # [Tytuł procedury]
@@ -283,48 +206,41 @@ occurrences: N
 ## Pułapki / uwagi
 - [Nieoczywiste elementy z KROKU 3 — to jest jądro wartości skilla]
 
-## Przykłady wystąpień
-- {slug}: [czym różniło się to wystąpienie — parametry klasy]
+## Wystąpienia w kodzie (dowód)
+- `file:line` — [czym różni się to wystąpienie / parametry klasy]
 ```
 
 ### Reguła: blok metadanych w CIELE, nie we frontmatter
-
-`learned-meta` MUSI być komentarzem HTML w **ciele** pliku (zaraz po frontmatter),
-NIE polem YAML frontmatter. Powód: unik ryzyka, że loader Claude Code odrzuci
-nieznane pola frontmatter. Pola: `origin`, `source-feature`, `created`,
-`last-updated`, `confidence` (`candidate|established`), `occurrences` (N).
+`learned-meta` MUSI być komentarzem HTML w **ciele** pliku (zaraz po
+frontmatter), NIE polem YAML frontmatter — unik ryzyka, że loader Claude Code
+odrzuci nieznane pola. Pola: `origin`, `source: codebase-scan`, `created`,
+`last-updated`, `occurrences` (N), `evidence` (lista `file:line`).
 
 ### Reguła: WĄSKI `TRIGGER when:`
+Egzekwuj precyzyjny, wąski trigger w `description`. Learned-skill ładuje się
+przez auto-detekcję — zbyt szeroki trigger powoduje retrieval-collision. Trigger
+celuje w konkretną klasę zadań, nie ogólne słowa.
 
-Egzekwuj precyzyjny, wąski trigger w generowanym `description`. Learned-skill
-ładuje się przez auto-detekcję Claude Code — zbyt szeroki trigger powoduje
-retrieval-collision z innymi skillami (statycznymi i learned). Trigger ma celować
-w konkretną klasę zadań, nie w ogólne słowa.
-
-### Uwaga parity (Codex)
-
-Mirror tego skilla w `codex/` generuje learned-skille BEZ pól `allowed-tools` i
-`argument-hint` we frontmatter (Codex ich nie obsługuje). Reszta szablonu (w tym
-blok `learned-meta` w ciele) jest identyczna. Ledger `_candidates.md` jest
-WSPÓLNY dla obu platform.
+### Uwaga parity (Codex/Pi)
+Na Codex/Pi generuj learned-skille BEZ pól `allowed-tools`/`argument-hint` we
+frontmatter (nieobsługiwane) — reszta szablonu (w tym `learned-meta` w ciele)
+identyczna.
 
 ---
 
 ## Zasady
 
-- **Odwrócona domyślna**: brak skilla to oczekiwany wynik większości wywołań.
-  Szukaj powodu, żeby NIE zapisywać.
-- **Nieoczywistość > generalizowalność**: procedura bez ≥2 nieoczywistych
-  elementów (KROK 3) nie jest skillem, choćby była maksymalnie ogólna.
-- **Reguła drugiego wystąpienia**: przy n=1 domyślnie powstaje TYLKO wpis w
-  ledgerze. SKILL.md powstaje przy n≥2 (PROMOCJA) albo przy ≥3 uzasadnionych
-  kandydatach z repo (FAST-TRACK).
-- **Kandydat ≠ trafienie grepa**: każdy kandydat fast-tracku wymaga osobnego
-  jednozdaniowego uzasadnienia.
-- **SKIP > duplikat**: kolizja ze statycznym skillem → pomiń, nie utrwalaj.
-- **Human gate na SKILL.md, nie na ledger**: wpis do `_candidates.md` bez gate
-  (raportowany), zapis SKILL.md wyłącznie po akceptacji.
-- **GC pilnuje ledgera**: martwe wpisy (90 dni / 10 nowszych wpisów bez
-  drugiego wystąpienia) proponowane do usunięcia przy każdym uruchomieniu.
-- **Gotchas jednego modułu → `document-feature`**, nie learned-skill.
+- **Powtarzalność jest źródłem, nie feature.** Sygnał to ≥N wystąpień w kodzie z
+  dowodem `file:line` — nie pojedynczy diff. To wprost zabija jednorazowce.
+- **Dwie twarde bramki:** próg powtarzalności (≥N, KROK 2) ORAZ nieoczywistość
+  (≥2 elementy po podmianie rzeczowników, KROK 3). Obie muszą przejść.
+- **Kandydat ≠ trafienie grepa:** każde wystąpienie ma konkretny `file:line` i
+  jest realnym wykonaniem procedury, nie trafieniem prymitywu.
+- **Granica vs update-ai-context:** pasywna dokumentacja (stan/konwencje) → tam;
+  aktywna wywoływalna procedura → tutaj. Nie powielaj.
+- **SKIP > duplikat:** kolizja ze statycznym skillem → pomiń.
+- **Batch approval, human gate twardy:** zapisujesz WYŁĄCZNIE pozycje zaznaczone
+  przez użytkownika; brak ścieżki cichego zapisu SKILL.md.
+- **Brak kandydatów = poprawny wynik:** gdy nic nie przejdzie progów, raportuj i
+  kończ bez zapisu — nie forsuj ekstrakcji.
 - **Write tylko do `.claude/skills/learned/`** target-projektu.
