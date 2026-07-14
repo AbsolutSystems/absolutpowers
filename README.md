@@ -516,6 +516,9 @@ pi -e /path/to/absolut-ai-skills
 Versioning is SemVer, kept in sync across both manifests
 (`.claude-plugin/plugin.json` + `.codex-plugin/plugin.json`, both at repo root since 5.0.0).
 
+### 5.0.1 — feature-discuss: pytania o zakres z rekomendacją, nie jak menu
+- **Scope-question framing fix** in `feature-discuss`: a CO-axis question now splits into two kinds. **Pure preference** (audience, business priority, timeline — no basis in code) → ask neutrally. **Scope with a technical basis** (you have an architecture/security/leverage/YAGNI argument for what should be in or out) → still the user's decision, but you ask **with your recommendation attached** ("I recommend without X because … — confirm the boundary, or override?"), never as a neutral menu. Fixes the failure mode where the architect held a strong scope opinion but posed the question as an equal-options menu, hiding the recommendation. The "don't present options as equal when you have a recommendation" rule now covers scope options, not just technical ones
+
 ### 5.0.0 — Migracja hybrydowa Superpowers (single-tree + vendoring + fuzje + terminal-state)
 
 Jeden breaking release domykający całą migrację hybrydową obry/superpowers, dostarczoną w trzech fazach implementacyjnych (żadna nie była osobnym release'em — numery pośrednie były checkpointami rozwojowymi, tu skonsolidowane).

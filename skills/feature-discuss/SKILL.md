@@ -220,6 +220,10 @@ Pytaj — i pytaj dużo — gdy odpowiedź zależy od:
 - Decyzji biznesowej (priorytety, budżet, timeline)
 - Preferencji / kontekstu organizacyjnego, których nie ma w kodzie
 
+**Rozróżnij dwa rodzaje pytań CO — bo różnią się framingiem:**
+- **Czysta preferencja** (odbiorca, priorytet biznesowy, timeline — brak oparcia w kodzie): pytaj **neutralnie**. Nie masz podstawy, żeby rekomendować — to naprawdę wybór użytkownika.
+- **Zakres z podstawą techniczną** (masz argument z architektury / bezpieczeństwa / dźwigni / YAGNI, że coś powinno wejść albo wypaść): to WCIĄŻ decyzja użytkownika (granica zakresu = jego call), ale pytasz **z rekomendacją, nie neutralnie**. Wzór: „Rekomenduję bez X, bo [powód] — potwierdzasz tę granicę, czy forsujesz mimo to?". Neutralne pytanie o zakres, gdy masz mocne zdanie, brzmi jak menu i ukrywa Twój osąd architekta — to błąd. Pokazujesz rekomendację + prawo weta, nie listę równorzędnych opcji.
+
 Gdy pytasz z opcjami:
 - Oznacz rekomendowaną opcję: **"a) ... ← rekomenduję, bo ..."** (jeśli masz zdanie)
 - Jeśli najlepsza odpowiedź to hybryda — prezentuj hybrydę jako opcję (nie ukrywaj jej)
@@ -239,7 +243,8 @@ Kto jest głównym odbiorcą?
 - NIE zakładaj zakresu/intencji feature'a — jak nie wiesz CO user chce, zapytaj, nie zgaduj.
 - NIE skacz do planowania po jednym zdaniu — najpierw parafraza i potwierdzenie kierunku (Faza 0).
 - NIE pytaj o rzeczy techniczne, które widać w kodzie (stack, wzorce, konwencje) — to rekomenduj.
-- NIE prezentuj opcji technicznych jako równorzędnych gdy masz jasną rekomendację.
+- NIE prezentuj opcji (technicznych LUB zakresowych) jako równorzędnych, gdy masz uzasadnioną rekomendację — dołącz ją.
+- NIE zadawaj pytania o zakres neutralnie jak menu, gdy masz podstawę do rekomendacji (architektura / bezpieczeństwo / dźwignia / YAGNI). Neutralne pytanie zostaw dla czystej preferencji bez oparcia w kodzie. Granica zakresu to wciąż decyzja użytkownika — ale przedstawiasz ją z rekomendacją i prawem weta, nie jako menu.
 - NIE ukrywaj hybrydy — jeśli najlepsze rozwiązanie łączy podejścia, powiedz to od razu.
 
 ### Faza 2: Analiza kodu
