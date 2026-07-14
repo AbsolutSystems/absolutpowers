@@ -38,25 +38,82 @@ $ARGUMENTS
 
 **Rekoncyliacja z micro-change (Faza 5):** ścieżka micro-change NIE jest wyjątkiem od tej bramki — jest lekką ścieżką POD nią. Akceptacja opisu CO+GDZIE zmienić SPEŁNIA gate (to wciąż design, tylko mały) — micro-change omija ciężki planning-doc, nie obchodzi wymogu akceptacji.
 
-## Visual Companion — wizualne wspomaganie dyskusji
+## Visual Companion — wizualne wspomaganie dyskusji (teraz wpięty)
 
-Companion to **opcjonalny mechanizm przekrojowy** — dostępny z poziomu każdej fazy zadającej pytania user-facing (Faza 1, Faza 3, Faza 4), nie osobny etap procesu. Assety już są w repo (`skills/feature-discuss/companion-scripts/` + `skills/feature-discuss/visual-companion.md`) — ta sekcja opisuje TYLKO kiedy i jak z nich korzystać; mechanikę serwera, pętlę ekran→feedback i format HTML/klas CSS znajdziesz w `skills/feature-discuss/visual-companion.md` (guide donora, EN) — **odwołuj się do niego, nie kopiuj jego treści tutaj**.
+Companion to **opcjonalny mechanizm przekrojowy** — dostępny z poziomu każdej fazy zadającej pytania user-facing (Faza 1, Faza 3, Faza 4). Umożliwia pokazywanie mockupów, diagramów, side-by-side porównań bezpośrednio w przeglądarce użytkownika z interaktywnym wyborem opcji.
 
-**Oferta just-in-time, nie z góry.** Nie proponuj companion na starcie sesji ani hurtowo dla całej rozmowy. Zaproponuj go WŁASNĄ, osobną wiadomością dopiero w momencie, gdy KONKRETNE pytanie zyska na pokazaniu — np. "To pytanie o layout dobrze zobaczyć wizualnie — chcesz, żebym otworzył podgląd w przeglądarce, czy wolisz opisowo w terminalu?"
+**Kiedy uruchamiać i używać (sztywne reguły):**
+- **Tylko za wyraźną zgodą** — nigdy nie uruchamiaj na starcie ani bez "tak, uruchom companion" / "pokaż wizualnie".
+- **Per-pytanie, nie per-sesja**: pytanie "jaki kreator chcesz?" → terminal. "Który z tych layoutów wygląda lepiej?" → companion.
+- Wizualne treści: UI mockupy, layouty, architektura (diagramy), porównania, przepływy.
+- Tekstowe: zakres, user stories, tradeoffy konceptualne, decyzje biznesowe, API design.
 
-**Decyzja per-pytanie, nie per-sesja.** Dla każdego pytania z osobna oceń: treść wizualna (mockup UI, diagram architektury, porównanie side-by-side layoutów) → browser; treść konceptualna/tekstowa (zakres, tradeoff, wybór podejścia, API) → terminal. Pytanie "o" temat wizualny nie jest automatycznie pytaniem wizualnym — "jaki kreator chcesz?" to terminal (koncepcja), "który z tych dwóch layoutów kreatora wygląda lepiej?" to browser (percepcja).
+**Graceful fallback, bezpieczeństwo, headless** — patrz zasady poniżej. Zawsze kontynuuj w terminalu jeśli companion niedostępny.
 
-**Graceful fallback — brak Node.** Jeśli środowisko nie ma dostępnego Node (typowe na Codex/Pi, runy headless/nieinteraktywne) — NIE próbuj uruchamiać `start-server.sh` i NIE zgłaszaj tego jako błędu przerywającego sesję. Kontynuuj całą rozmowę wyłącznie w terminalu — to normalna, w pełni funkcjonalna ścieżka fallback, nie degradacja wymagająca komentarza.
+**Przypomnienie:** dodaj `.superpowers/` do `.gitignore` projektu (tam lądują ekrany).
 
-**Bezpieczeństwo — statyczny render.** Companion serwuje wyłącznie statyczny HTML/diagram wygenerowany przez Ciebie — NIGDY nie wykonuje kodu pochodzącego z projektu użytkownika ani z treści jego requestu, niezależnie od tego jak "techniczne" jest pytanie. To wyłącznie warstwa prezentacji, nie sandbox wykonawczy.
+### Companion Protocol (konkretne kroki — używaj tego)
 
-**Gate integrity — niedostępność ≠ akceptacja.** Brak Node, zablokowany port, ograniczenia sandboxa czy jakikolwiek inny błąd companion NIGDY nie jest domyślną akceptacją designu. HARD-GATE (patrz wyżej) nadal wymaga jawnej, wprost wyrażonej akceptacji użytkownika — niedostępność companion nie zwalnia z tego wymogu.
+1. **Oferta (w osobnej wiadomości):**
+   "To pytanie o [np. layout dashboardu / przepływ danych] dobrze zobaczyć wizualnie z interaktywnymi opcjami. Uruchomić Visual Companion (otworzy przeglądarkę)? Możesz potem klikać i komentować."
 
-**Tryb nieinteraktywny (headless).** Gdy nie ma człowieka do kliknięcia w przeglądarce ani odpowiedzi w terminalu — brak odpowiedzi traktuj jako rezygnację z companion, nie jako zawieszenie. Proces kontynuuje dalej bez niego, sesja się nie zawiesza.
+2. **Po wyraźnym TAK:**
+   Uruchom serwer (użyj narzędzia Bash):
+   ```
+   companion-scripts/start-server.sh --project-dir . --open
+   ```
+   Z outputu JSON zapamiętaj:
+   - `screen_dir` (tu będziesz pisał HTML fragmenty przez Write)
+   - `state_dir` (tu czytasz events)
+   - `url` (podaj użytkownikowi w całości z ?key=...)
 
-**Uruchomienie i szczegóły:** patrz `skills/feature-discuss/visual-companion.md` — tam mechanika serwera (`companion-scripts/start-server.sh`, `stop-server.sh`), pętla ekran→feedback, format HTML i klas CSS.
+   Jeśli `--open` nie zadziała (headless, remote), podaj URL ręcznie.
 
-**Przypomnienie:** jeśli katalogu jeszcze nie ma w `.gitignore`, dopisz `.superpowers/` — to katalog roboczy ekranów companion, nie idzie do repo.
+3. **Pokazywanie ekranu (gdy decyzja: companion):**
+   - Wygeneruj **fragment HTML** (bez `<html>`, `<head>`, `<body>` — serwer sam wrapuje).
+   - Używaj klas z `visual-companion.md`: `.options` + `.option[data-choice]`, `.cards`, `.mockup`, `.split`, `.pros-cons`, mock- elementy itp.
+   - Nadaj semanticzną nazwę pliku (np. `layout-options.html`, `data-flow-v1.html`).
+   - **Zawsze nowy plik** — nigdy nie nadpisuj.
+   - Użyj narzędzia **Write**:
+     `Write( {screen_dir}/layout-options.html , <div class="options"> ... </div> )`
+   - Powiedz użytkownikowi:
+     "Patrz w przeglądarce: {pełny url}
+     [krótki opis co pokazuje].
+     Kliknij opcję lub napisz w terminalu co myślisz / co zmienić."
+
+4. **Odczyt feedbacku (kolejna tura):**
+   - Przeczytaj `Read( {state_dir}/events )` (jeśli istnieje) — JSON lines z kliknięciami (`data-choice`).
+   - Połącz z tekstową odpowiedzią użytkownika z terminala.
+   - Na podstawie tego: albo nowy ekran (nowy plik w screen_dir), albo przejdź do następnego pytania.
+
+5. **Wracasz do czystego terminala (np. pytania o zakres):**
+   - Wypchnij ekran wyczyszczający:
+     `Write( {screen_dir}/waiting-1.html , <div style="...">Kontynuujemy w terminalu...</div> )`
+   - Użytkownik nie patrzy na stary ekran podczas rozmowy tekstowej.
+
+6. **Zakończenie / czyszczenie:**
+   Gdy nie będzie więcej pytań wizualnych lub na końcu sesji:
+   ```
+   companion-scripts/stop-server.sh {session_dir_lub_state_dir_parent}
+   ```
+   (session_dir to katalog zawierający `content` i `state`).
+
+**Uwagi techniczne:**
+- Serwer automatycznie wrapuje fragmenty w ramkę + helper.js (toggleSelect itp.).
+- Zawsze potwierdzaj, że serwer działa (sprawdź `state_dir/server-info` lub output).
+- Jeśli serwer padnie — restartuj tym samym `--project-dir`.
+- Na Codex/Pi często foreground — skrypt sam to obsługuje.
+- Nie używaj `cat` / heredoc do pisania ekranów — używaj Write.
+
+Pełne klasy CSS i przykłady fragmentów: `skills/feature-discuss/visual-companion.md`. Używaj ich.
+
+**Bezpieczeństwo (twarde):**
+- Companion serwuje **tylko statyczny HTML wygenerowany przez Ciebie**.
+- Nigdy nie renderuj kodu z projektu użytkownika.
+- Brak Node / błąd → graceful fallback do terminala, bez blokowania HARD-GATE.
+- Zawsze podawaj pełny URL z `?key=...`.
+
+Teraz companion jest w pełni wpięty — używaj go aktywnie w Faza 1, 3 i 4 gdy pytanie zyska na wizualizacji.
 
 ## Router trybu — ustal to ZANIM zaczniesz rozmowę
 
@@ -177,7 +234,7 @@ Po potwierdzeniu kierunku (Faza 0) drąż CO i DLACZEGO — nie JAK. Cel: zrozum
 
 Jeśli przy którymś punkcie łapiesz się na tym, że wpisujesz własny domysł zamiast odpowiedzi użytkownika — to sygnał, żeby zapytać, nie zakładać.
 
-Gdy któreś z tych pytań zyskałoby na pokazaniu zamiast opisu (np. layout, diagram powiązań) — patrz sekcja **Visual Companion** wyżej.
+Gdy któreś z tych pytań zyskałoby na pokazaniu zamiast opisu (np. layout, diagram powiązań, UI flow) — **użyj Companion Protocol** z sekcji Visual Companion (zaoferuj → uruchom po zgodzie → pisz ekrany przez Write do screen_dir → czytaj events). Jedno pytanie na turę.
 
 **ZASADA: JEDNO PYTANIE NA TURĘ.**
 
@@ -268,7 +325,7 @@ Na podstawie analizy kodu i dyskusji:
 
 **NIE prezentuj 3 równorzędnych opcji i nie czekaj aż użytkownik wybierze.** Ty jesteś architektem — rekomenduj, uzasadnij, pozwól użytkownikowi skorygować.
 
-Jeśli którakolwiek sekcja designu zyskałaby na pokazaniu (mockup, diagram, porównanie wariantów) — patrz sekcja **Visual Companion** wyżej.
+Jeśli którakolwiek sekcja designu zyskałaby na pokazaniu (mockup, diagram, porównanie wariantów, layout) — **użyj Companion Protocol** (Visual Companion). Prezentuj sekcje wizualne jako interaktywne ekrany zamiast czystego tekstu. Po każdej sekcji (lub ekranie) osobne pytanie o akceptację.
 
 #### Prezentacja designu sekcjami (ścieżka nie-epic)
 
@@ -322,7 +379,7 @@ Iteruj na podstawie feedbacku użytkownika:
 - Jakie zależności trzeba uwzględnić?
 - Czy są kwestie wydajnościowe, bezpieczeństwa, migracji?
 
-Gdy doprecyzowanie zyskałoby na pokazaniu (np. porównanie wariantów edge case'a) — patrz sekcja **Visual Companion** wyżej.
+Gdy doprecyzowanie zyskałoby na pokazaniu (np. porównanie wariantów edge case'a, mockup zachowania) — **użyj Companion Protocol**. Pisz nowe ekrany lub warianty i zbieraj kliknięcia + komentarze.
 
 **Pamiętaj: jedno pytanie na turę, z opcjami do wyboru.**
 

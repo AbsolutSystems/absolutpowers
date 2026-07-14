@@ -6,6 +6,9 @@
 # Usage: task-brief PLAN_FILE TASK_NUMBER [OUTFILE]
 # Default OUTFILE: <repo-root>/.superpowers/sdd/task-<N>-brief.md
 # (per worktree; concurrent runs in the same working tree share it).
+#
+# NOTE (cross-ref cleanup 2026): Original vendored version. AbsolutPowers
+# forked version (if used) lives alongside in implement/scripts/.
 set -euo pipefail
 
 if [ $# -lt 2 ] || [ $# -gt 3 ]; then

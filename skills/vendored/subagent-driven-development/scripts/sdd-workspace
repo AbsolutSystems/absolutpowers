@@ -13,6 +13,11 @@
 # review-package cannot drift to different directories.
 #
 # Usage: sdd-workspace
+#
+# NOTE (cross-ref cleanup 2026): This is the original vendored script using
+# .superpowers/sdd. The active fork used by AbsolutPowers `implement` lives in
+# skills/implement/scripts/sdd-workspace and uses ${AP_TASKS_DIR}/.scratch instead.
+# See VENDORED.md and skills/implement/SKILL.md (Path Resolution + review-package calls).
 set -euo pipefail
 
 root=$(git rev-parse --show-toplevel)

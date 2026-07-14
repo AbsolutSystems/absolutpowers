@@ -532,6 +532,11 @@ grok plugin install /path/to/absolut-ai-skills --trust
 Versioning is SemVer, kept in sync across all manifests
 (`.claude-plugin/plugin.json`, `.codex-plugin/plugin.json`, and `.grok-plugin/plugin.json`).
 
+### 5.1.4 — Visual Companion wired + vendored cross-ref cleanup
+- **Visual Companion fully wired into `feature-discuss`.** The companion (vendored from obra/superpowers `brainstorming`, telemetry removed, CSP hardened in 5.1.2) is now actively integrated. Added concrete "Companion Protocol" inside the skill (offer with explicit user approval → `start-server.sh` → Write HTML fragments to `screen_dir` via tool → Read `state_dir/events` for clicks → push waiting screens when returning to terminal → `stop-server.sh`). Integrated decision points and usage in Faza 1 (understanding), Faza 3 (solution proposal), and Faza 4 (refinement). The AI now drives the full loop instead of just being told to consult the guide. Updated `visual-companion.md` header and instructions.
+- **Cross-references cleaned in vendored skills.** Removed or annotated outdated `superpowers:*` references across `systematic-debugging`, `executing-plans`, `subagent-driven-development` (including diagrams, Integration sections, and example paths). Mapped to local vendored equivalents or AbsolutPowers concepts (`ship` for closeout, `generate-tasks` grafts for writing-plans, `Test-first:` + `review` pipeline, etc.). Updated scripts comments. Added dedicated "Cross-reference cleanup (2026-07)" section in `VENDORED.md` documenting the pass.
+- Version bumped to 5.1.4 across all plugin manifests.
+
 ### 5.1.3 — fix: duplicate hooks manifest reference
 - **SessionStart hook load failure fixed (config bug).** `.claude-plugin/plugin.json` declared `"hooks": "./hooks/hooks.json"`, but Claude Code auto-loads the standard `hooks/hooks.json` — pointing the manifest at that same file triggered `Duplicate hooks file detected` on every session start, aborting hook load. `manifest.hooks` is only for *additional* hook files, so the key is removed; the standard hook still loads automatically. Codex manifest was already clean (no `hooks` key)
 

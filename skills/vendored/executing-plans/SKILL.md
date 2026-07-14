@@ -5,6 +5,8 @@ description: Use when you have a written implementation plan to execute in a sep
 
 _Vendored from [obra/superpowers](https://github.com/obra/superpowers) `skills/executing-plans` @ `d884ae0` (tag v6.1.1, MIT license — see [`LICENSE-VENDORED`](../../../LICENSE-VENDORED))._
 
+**Cross-ref cleanup (2026):** upstream `superpowers:*` names replaced/annotated with local vendored or AbsolutPowers equivalents (writing-plans was grafted; finishing-a-development-branch role largely moved to `ship`). See VENDORED.md.
+
 # Executing Plans
 
 ## Overview
@@ -13,7 +15,9 @@ Load plan, review critically, execute all tasks, report when complete.
 
 **Announce at start:** "I'm using the executing-plans skill to implement this plan."
 
-**Note:** Tell your human partner that Superpowers works much better with access to subagents. The quality of its work will be significantly higher if run on a platform with subagent support (Claude Code, Codex CLI, Codex App, and Copilot CLI all qualify; see the per-platform tool refs in `../using-superpowers/references/`). If subagents are available, use superpowers:subagent-driven-development instead of this skill.
+**Note:** Tell your human partner that this works much better with access to subagents. The quality of its work will be significantly higher if run on a platform with subagent support (Claude Code, Codex, Pi, Grok Build all qualify; see `references/*-tools.md` in the AbsolutPowers tree). If subagents are available, prefer the local vendored `subagent-driven-development` (or AbsolutPowers `implement` in orchestrated mode) instead of this skill.
+
+(Upstream references to `../using-superpowers/references/` were not vendored; use the AbsolutPowers harness references instead.)
 
 ## The Process
 
@@ -34,9 +38,9 @@ For each task:
 ### Step 3: Complete Development
 
 After all tasks complete and verified:
-- Announce: "I'm using the finishing-a-development-branch skill to complete this work."
-- **REQUIRED SUB-SKILL:** Use superpowers:finishing-a-development-branch
-- Follow that skill to verify tests, present options, execute choice
+- Announce: "Completing the feature."
+- In AbsolutPowers the closeout role is largely covered by the `ship` skill (commit message + PR description + optional artifact archiving). The local vendored `finishing-a-development-branch` can still be used as reference if needed.
+- **Local equivalent:** `finishing-a-development-branch` (vendored) or `@absolutpowers:ship` after review.
 
 ## When to Stop and Ask for Help
 
@@ -66,7 +70,9 @@ After all tasks complete and verified:
 
 ## Integration
 
-**Required workflow skills:**
-- **superpowers:using-git-worktrees** - Ensures isolated workspace (creates one or verifies existing)
-- **superpowers:writing-plans** - Creates the plan this skill executes
-- **superpowers:finishing-a-development-branch** - Complete development after all tasks
+**Required / related workflow skills (local vendored or AbsolutPowers equivalents):**
+- **using-git-worktrees** (local vendored) - Ensures isolated workspace
+- **writing-plans** — upstream donor; its content was grafted into AbsolutPowers `generate-tasks` (see planning docs and ADR for fuzja)
+- **finishing-a-development-branch** (local vendored) — closeout; in AbsolutPowers largely replaced by `ship` for commit + archive after `review`
+
+See main `CLAUDE.md` / `README.md` for how AbsolutPowers wires planning → tasks → implement → review → ship.

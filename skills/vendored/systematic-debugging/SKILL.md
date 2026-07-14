@@ -5,6 +5,8 @@ description: Use when encountering any bug, test failure, or unexpected behavior
 
 _Vendored from [obra/superpowers](https://github.com/obra/superpowers) `skills/systematic-debugging` @ `d884ae0` (tag v6.1.1, MIT license — see [`LICENSE-VENDORED`](../../../LICENSE-VENDORED))._
 
+**Cross-ref cleanup (2026):** upstream `superpowers:*` names replaced/annotated with local vendored or AbsolutPowers equivalents. Original names left in comments where they aid future upstream diffing. See VENDORED.md.
+
 # Systematic Debugging
 
 ## Overview
@@ -178,7 +180,7 @@ You MUST complete each phase before proceeding to the next.
    - Automated test if possible
    - One-off test script if no framework
    - MUST have before fixing
-   - Use the `superpowers:test-driven-development` skill for writing proper failing tests
+   - Use TDD (in AbsolutPowers: follow the `**Test-first:**` marker decided in generate-tasks; the vendored test-driven-development skill is not present here)
 
 2. **Implement Single Fix**
    - Address the root cause identified
@@ -286,8 +288,9 @@ These techniques are part of systematic debugging and available in this director
 - **`condition-based-waiting.md`** - Replace arbitrary timeouts with condition polling
 
 **Related skills:**
-- **superpowers:test-driven-development** - For creating failing test case (Phase 4, Step 1)
-- **superpowers:verification-before-completion** - Verify fix worked before claiming success
+- TDD convention: follow `**Test-first:**` marker from the plan (AbsolutPowers generate-tasks / implement)
+- **verification-before-completion** (local vendored copy) - Verify fix worked before claiming success
+- Note: upstream `superpowers:test-driven-development` and some other workflow skills were not vendored into this tree (selective vendoring; see VENDORED.md).
 
 ## Real-World Impact
 

@@ -5,6 +5,8 @@ description: Use when executing implementation plans with independent tasks in t
 
 _Vendored from [obra/superpowers](https://github.com/obra/superpowers) `skills/subagent-driven-development` @ `d884ae0` (tag v6.1.1, MIT license — see [`LICENSE-VENDORED`](../../../LICENSE-VENDORED))._
 
+**Cross-ref cleanup (2026):** upstream `superpowers:*` and relative paths to non-vendored skills (`requesting-code-review`, `using-superpowers`) annotated or replaced with local vendored names / AbsolutPowers equivalents. The active orchestrated implementation lives in AbsolutPowers `implement` (which uses forked `review-package` + `sdd-workspace` from this directory + `progress.md` ledger). See VENDORED.md and `skills/implement/SKILL.md`. Original upstream names retained in a few places to ease future diffs.
+
 # Subagent-Driven Development
 
 Execute plan by dispatching a fresh implementer subagent per task, a task review (spec compliance + code quality) after each, and a broad whole-branch review at the end.
@@ -64,8 +66,8 @@ digraph process {
 
     "Read plan, note context and global constraints, create todos" [shape=box];
     "More tasks remain?" [shape=diamond];
-    "Dispatch final code reviewer subagent (../requesting-code-review/code-reviewer.md)" [shape=box];
-    "Use superpowers:finishing-a-development-branch" [shape=box style=filled fillcolor=lightgreen];
+    "Dispatch final code reviewer subagent (requesting-code-review not vendored; use AbsolutPowers review / review-implementation / triada-review)" [shape=box];
+    "Finish / ship (local vendored finishing-a-development-branch or AbsolutPowers `ship`)" [shape=box style=filled fillcolor=lightgreen];
 
     "Read plan, note context and global constraints, create todos" -> "Dispatch implementer subagent (./implementer-prompt.md)";
     "Dispatch implementer subagent (./implementer-prompt.md)" -> "Implementer subagent asks questions?";
@@ -79,8 +81,8 @@ digraph process {
     "Task reviewer reports spec ✅ and quality approved?" -> "Mark task complete in todo list and progress ledger" [label="yes"];
     "Mark task complete in todo list and progress ledger" -> "More tasks remain?";
     "More tasks remain?" -> "Dispatch implementer subagent (./implementer-prompt.md)" [label="yes"];
-    "More tasks remain?" -> "Dispatch final code reviewer subagent (../requesting-code-review/code-reviewer.md)" [label="no"];
-    "Dispatch final code reviewer subagent (../requesting-code-review/code-reviewer.md)" -> "Use superpowers:finishing-a-development-branch";
+    "More tasks remain?" -> "Dispatch final code reviewer" [label="no"];
+    "Dispatch final code reviewer" -> "Finish / ship (local or AbsolutPowers `ship`)";
 }
 ```
 
@@ -253,9 +255,7 @@ sequences — the single most expensive failure observed. Track progress in
 a ledger file, not only in todos.
 
 - At skill start, check for a ledger:
-  `cat "$(git rev-parse --show-toplevel)/.superpowers/sdd/progress.md"`. Tasks listed there
-  as complete are DONE — do not re-dispatch them; resume at the first task
-  not marked complete.
+  `cat "$(git rev-parse --show-toplevel)/.superpowers/sdd/progress.md"`. (This path is from the original upstream; in AbsolutPowers the active implementation uses `progress.md` inside the tasks directory for the feature, managed by `implement` orchestrator. See `skills/implement/SKILL.md` "Durable Progress (ledger)".) Tasks listed there as complete are DONE — do not re-dispatch them; resume at the first task not marked complete.
 - When a task's review comes back clean, append one line to the ledger in
   the same message as your other bookkeeping:
   `Task N: complete (commits <base7>..<head7>, review clean)`.
@@ -269,14 +269,14 @@ a ledger file, not only in todos.
 
 - [implementer-prompt.md](implementer-prompt.md) - Dispatch implementer subagent
 - [task-reviewer-prompt.md](task-reviewer-prompt.md) - Dispatch task reviewer subagent (spec compliance + code quality)
-- Final whole-branch review: use superpowers:requesting-code-review's [code-reviewer.md](../requesting-code-review/code-reviewer.md)
+- Final whole-branch review: use AbsolutPowers `review` / `review-implementation` (or `triada-review`). The upstream `requesting-code-review` skill was not vendored.
 
 ## Example Workflow
 
 ```
 You: I'm using Subagent-Driven Development to execute this plan.
 
-[Read plan file once: docs/superpowers/plans/feature-plan.md]
+[Read plan file once: <path-to-your-plan>]  (example from upstream; adapt to local planning-*.md or tasks-*.md)
 [Create todos for all tasks]
 
 Task 1: Hook installation script
@@ -285,7 +285,7 @@ Task 1: Hook installation script
 
 Implementer: "Before I begin - should the hook be installed at user or system level?"
 
-You: "User level (~/.config/superpowers/hooks/)"
+You: "User level (example from upstream; adapt to your project's hook location)"
 
 Implementer: "Got it. Implementing now..."
 [Later] Implementer:
@@ -407,14 +407,16 @@ Done!
 
 ## Integration
 
-**Required workflow skills:**
-- **superpowers:using-git-worktrees** - Ensures isolated workspace (creates one or verifies existing)
-- **superpowers:writing-plans** - Creates the plan this skill executes
-- **superpowers:requesting-code-review** - Code review template for the final whole-branch review
-- **superpowers:finishing-a-development-branch** - Complete development after all tasks
+**Required / related workflow skills (mapped for AbsolutPowers vendoring):**
+- **using-git-worktrees** (local vendored) - Ensures isolated workspace
+- **writing-plans** — content grafted into AbsolutPowers `generate-tasks` (see VENDORED.md "Dawce sekcji")
+- Final review — use AbsolutPowers `review` skill + `review-implementation` gate (or `triada-review`). Upstream `requesting-code-review` not vendored.
+- Closeout — local vendored `finishing-a-development-branch` or (preferred in AbsolutPowers) `@absolutpowers:ship` after review.
 
-**Subagents should use:**
-- **superpowers:test-driven-development** - Subagents follow TDD for each task
+**Subagents / implementation should use:**
+- TDD convention from AbsolutPowers: explicit `**Test-first:**` markers generated by `generate-tasks`; implement follows them (no separate vendored test-driven-development skill).
 
-**Alternative workflow:**
-- **superpowers:executing-plans** - Use for parallel session instead of same-session execution
+**Alternative workflow (local vendored):**
+- **executing-plans** - Use for parallel / separate session instead of same-session orchestrated execution.
+
+See main AbsolutPowers docs for how `generate-tasks` + `implement` (orchestrated mode with workers + phase-review) replaced/fused much of the upstream SDD + writing-plans + finishing flow.

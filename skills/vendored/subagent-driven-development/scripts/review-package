@@ -7,6 +7,10 @@
 # Usage: review-package BASE HEAD [OUTFILE]
 # Default OUTFILE: <repo-root>/.superpowers/sdd/review-<base7>..<head7>.diff
 # (named per range, so a re-review after fixes gets a distinct fresh file).
+#
+# NOTE (cross-ref cleanup 2026): Original vendored path. Active fork for
+# AbsolutPowers is in skills/implement/scripts/review-package (uses
+# AP_TASKS_DIR). Called by implement orchestrator.
 set -euo pipefail
 
 if [ $# -lt 2 ] || [ $# -gt 3 ]; then

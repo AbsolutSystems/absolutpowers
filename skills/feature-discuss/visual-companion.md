@@ -1,6 +1,8 @@
 # Visual Companion Guide
 
-_Vendored from [obra/superpowers](https://github.com/obra/superpowers) `skills/brainstorming/visual-companion.md` @ `d884ae0` (tag v6.1.1, MIT license — see [`LICENSE-VENDORED`](../../LICENSE-VENDORED)). Telemetry neutralized: see `companion-scripts/server.cjs` and `VENDORED.md`. Scripts live in `companion-scripts/` (renamed from upstream `scripts/`). Not wired into `feature-discuss/SKILL.md` yet — that integration is a later fusion phase._
+_Vendored from [obra/superpowers](https://github.com/obra/superpowers) `skills/brainstorming/visual-companion.md` @ `d884ae0` (tag v6.1.1, MIT license — see [`LICENSE-VENDORED`](../../LICENSE-VENDORED)). Telemetry neutralized: see `companion-scripts/server.cjs` and `VENDORED.md`. Scripts live in `companion-scripts/` (renamed from upstream `scripts/`).
+
+**Wired into `feature-discuss/SKILL.md`** (2026). Główna logika użycia (kiedy oferować, protokół uruchamiania, pętla Write ekranów + Read events, waiting screens) jest osadzona w feature-discuss. Ten plik zawiera szczegóły techniczne (klasy CSS, format fragmentów, pełna mechanika serwera). Zawsze używaj Companion Protocol z SKILL.md jako głównego drivera.
 
 Browser-based visual brainstorming companion for showing mockups, diagrams, and options.
 

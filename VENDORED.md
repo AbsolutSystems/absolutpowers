@@ -36,13 +36,13 @@ wersji z obrą.
 | Skill | Źródłowa ścieżka | SHA | Lokalne modyfikacje |
 |---|---|---|---|
 | `using-git-worktrees` | `skills/using-git-worktrees/` | `d884ae0` | Skopiowany bez zmian treści poza notą MIT (frontmatter → adnotacja). Brak sekcji Cursor/Kimi/Antigravity/Gemini w źródle — nic do przycięcia. |
-| `systematic-debugging` | `skills/systematic-debugging/` | `d884ae0` | Skopiowany razem z pomocniczymi plikami (`CREATION-LOG.md`, `condition-based-waiting.md`, `condition-based-waiting-example.ts`, `defense-in-depth.md`, `root-cause-tracing.md`, `find-polluter.sh`, `test-*.md`) bez zmian treści poza notą MIT. Brak sekcji harnessów do przycięcia. Zawiera nieprzepisane odniesienia `superpowers:test-driven-development` (linia ~181, ~289) i `superpowers:verification-before-completion` (linia ~290) — oba dawcy pozostawieni as-is (poza scope tej fazy). Uwaga: `superpowers:verification-before-completion` to **kolizja nazw** z lokalnym `skills/vendored/verification-before-completion/` — odniesienie w tekście nadal wskazuje na nieistniejący namespace `superpowers:`, NIE zostało automatycznie przełączone na lokalny odpowiednik; wymaga jawnej decyzji przy fuzji (Faza 2/3 planu), nie prostego find-replace. |
+| `systematic-debugging` | `skills/systematic-debugging/` | `d884ae0` | Skopiowany razem z pomocniczymi plikami. Cross-ref cleanup (2026): odniesienia `superpowers:*` zastąpione/adnotowane (patrz nowa sekcja "Cross-reference cleanup"). |
 | `verification-before-completion` | `skills/verification-before-completion/` | `d884ae0` | Skopiowany bez zmian treści poza notą MIT. Brak sekcji harnessów do przycięcia. |
 | `dispatching-parallel-agents` | `skills/dispatching-parallel-agents/` | `d884ae0` | Skopiowany bez zmian treści poza notą MIT. Brak sekcji harnessów do przycięcia. |
 | `finishing-a-development-branch` | `skills/finishing-a-development-branch/` | `d884ae0` | Skopiowany bez zmian treści poza notą MIT. Brak sekcji harnessów do przycięcia. Konsolidacja z `ship` odłożona (poza scope Fazy 1 planu — patrz Faza 3 planu). |
 | `executing-plans` | `skills/executing-plans/` | `d884ae0` | Skopiowany bez zmian treści poza notą MIT. Zawiera odniesienie do `superpowers:subagent-driven-development` i do `../using-superpowers/references/` (dawca niewendorowany) — świadomie NIE przepisane (poza scope tej fazy; wire-up cross-referencji to fuzja z Faz 2/3 planu, nie kopiowanie). |
 | `subagent-driven-development` | `skills/subagent-driven-development/` | `d884ae0` | Skopiowany razem z `implementer-prompt.md`, `task-reviewer-prompt.md`, `scripts/review-package`, `scripts/task-brief`, `scripts/sdd-workspace` bez zmian treści poza notą MIT. Brak sekcji harnessów do przycięcia. Odniesienia `superpowers:*` (writing-plans, requesting-code-review, test-driven-development, using-git-worktrees, finishing-a-development-branch, executing-plans) pozostawione as-is — integracja z `implement` to Faza 2 planu, poza scope tej fazy. |
-| Visual companion (feature-discuss) | `skills/brainstorming/visual-companion.md` + `skills/brainstorming/scripts/{server.cjs,helper.js,frame-template.html,start-server.sh,stop-server.sh}` | `d884ae0` | Skopiowany do `skills/feature-discuss/visual-companion.md` + `skills/feature-discuss/companion-scripts/`. **Telemetria zneutralizowana**: w `server.cjs` usunięto stałą `SUPERPOWERS_BRAND_IMAGE_URL` (zdalne logo Prime Radiant) i gałąź `<img>` w `brandMarkup()`; flaga `SUPERPOWERS_TELEMETRY_DISABLED` zahardkodowana na `true` (niezależna od zmiennych środowiskowych); usunięto nieużywaną już `isTruthyEnv()`. Branding uproszczony do lokalnego tekstu, zero zewnętrznego GET. Ścieżki w `visual-companion.md` zaktualizowane `scripts/` → `companion-scripts/`. NIE wpięty do `feature-discuss/SKILL.md` w tej fazie (fuzja odłożona do Fazy 2/3 planu) — pliki złożone obok, gotowe do przyszłego wire-upu. **Utwardzenie bezpieczeństwa (review major-v5, fix):** (a) `server.cjs` — restrykcyjne CSP na odpowiedziach HTML z helperem (`default-src 'none'; style-src 'unsafe-inline'; img-src 'self' data:; connect-src 'self'; frame-ancestors 'none'; script-src 'nonce-{losowy}'`), helper i bootstrap-script jedyne skrypty z per-response noncem; reject aktywnej treści ekranu (`findActiveContent`: `<script`, inline `on*=`, `javascript:`, remote `src/href/action`, `<link>/<base>/<meta http-equiv>`) — ekran z aktywną treścią zastąpiony statycznym "Screen blocked" (upstream renderował ekran verbatim z CSP tylko `frame-ancestors`). (b) `start-server.sh` — ostrzeżenie na stderr przy bind poza loopbackiem (`BIND_HOST` ≠ `127.0.0.1`/`localhost`), nie blokujące (0.0.0.0 dozwolone dla kontenerów). |
+| Visual companion (feature-discuss) | `skills/brainstorming/visual-companion.md` + `skills/brainstorming/scripts/{server.cjs,helper.js,frame-template.html,start-server.sh,stop-server.sh}` | `d884ae0` | Skopiowany do `skills/feature-discuss/visual-companion.md` + `skills/feature-discuss/companion-scripts/`. **Telemetria zneutralizowana**: w `server.cjs` usunięto stałą `SUPERPOWERS_BRAND_IMAGE_URL` (zdalne logo Prime Radiant) i gałąź `<img>` w `brandMarkup()`; flaga `SUPERPOWERS_TELEMETRY_DISABLED` zahardkodowana na `true` (niezależna od zmiennych środowiskowych); usunięto nieużywaną już `isTruthyEnv()`. Branding uproszczony do lokalnego tekstu, zero zewnętrznego GET. Ścieżki w `visual-companion.md` zaktualizowane `scripts/` → `companion-scripts/`. **Wpięty do `feature-discuss/SKILL.md`** (2026) — dodano pełny "Companion Protocol" z operacyjnymi krokami (oferta → start → Write ekranów do screen_dir → Read events → waiting screens → stop), plus integracja w Faza 1/3/4. Szczegóły techniczne (klasy, fragmenty) pozostają w `visual-companion.md`. **Utwardzenie bezpieczeństwa (review major-v5, fix):** (a) `server.cjs` — restrykcyjne CSP na odpowiedziach HTML z helperem (`default-src 'none'; style-src 'unsafe-inline'; img-src 'self' data:; connect-src 'self'; frame-ancestors 'none'; script-src 'nonce-{losowy}'`), helper i bootstrap-script jedyne skrypty z per-response noncem; reject aktywnej treści ekranu (`findActiveContent`: `<script`, inline `on*=`, `javascript:`, remote `src/href/action`, `<link>/<base>/<meta http-equiv>`) — ekran z aktywną treścią zastąpiony statycznym "Screen blocked" (upstream renderował ekran verbatim z CSP tylko `frame-ancestors`). (b) `start-server.sh` — ostrzeżenie na stderr przy bind poza loopbackiem (`BIND_HOST` ≠ `127.0.0.1`/`localhost`), nie blokujące (0.0.0.0 dozwolone dla kontenerów). |
 
 Ogólna uwaga: żaden z 7 skilli bez fuzji nie zawierał sekcji specyficznych dla
 Cursor/Kimi/Antigravity/Gemini w źródle (zweryfikowane grep-em) — jedynym plikiem
@@ -103,3 +103,28 @@ weryfikacji, nie jest częścią repo. `--skipLibCheck` pomija niepowiązane bł
 przechodnich zależnościach pakietu `@earendil-works/pi-coding-agent` samego
 (`undici-types`, `@modelcontextprotocol/sdk`) — nasz plik przechodzi zero błędów zarówno
 z, jak i bez tej flagi.
+
+## Cross-reference cleanup (2026-07)
+
+Podczas audytu skilli (po vendoringu Fazy 1-3) posprzątano odwołania `superpowers:*`
+w vendored kopiach. Zmiany minimalne, dokumentacyjne + precyzyjne zastąpienia, żeby
+ułatwić przyszłe upstream diffy.
+
+Dotyczy:
+- `skills/vendored/systematic-debugging/SKILL.md`
+  - `superpowers:test-driven-development` → notka o konwencji `**Test-first:**` w AbsolutPowers (generate-tasks/implement)
+  - `superpowers:verification-before-completion` → lokalny vendored odpowiednik
+- `skills/vendored/executing-plans/SKILL.md`
+  - `superpowers:subagent-driven-development`, `superpowers:finishing-a-development-branch`, `superpowers:writing-plans`, `../using-superpowers/references/` → adnotacje + mapowanie na lokalne vendored + `ship` / `generate-tasks`
+- `skills/vendored/subagent-driven-development/SKILL.md` + skrypty
+  - Wiele `superpowers:XXX` w sekcjach Integration, diagramach, Prompt Templates
+  - `requesting-code-review` (niezvendorowane) → odwołanie do AbsolutPowers `review` / `review-implementation` / `triada-review`
+  - `.superpowers/sdd` ścieżki w komentarzach i przykładach → dodano notki wyjaśniające, że aktywna implementacja używa forkowanych skryptów w `skills/implement/scripts/` + `progress.md` ledger
+  - `writing-plans` → grafted do `generate-tasks`
+  - `finishing-a-development-branch` → mapowane na `ship`
+
+Skrypty w vendored/ dostały nagłówki z notką o forkach.
+
+Zmiany dodają jasność dla użytkownika AbsolutPowers bez niszczenia wierności oryginałowi upstream (dla kwartalnych przeglądów).
+
+Nowe nagłówki w plikach + sekcja w VENDORED.md. Żadnych zmian w logice promptów poza adnotacjami.
