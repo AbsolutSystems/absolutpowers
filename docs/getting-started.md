@@ -40,25 +40,26 @@ pi -e /path/to/absolut-ai-skills
 
 ### Weryfikacja instalacji
 
-**Claude Code:** wpisz `/absolutpowers:` i sprawdź autouzupełnianie — zobaczysz 14 workflow skilli + `preboot`:
+**Claude Code:** wpisz `/absolutpowers:` i sprawdź autouzupełnianie — zobaczysz 16 workflow skilli + `preboot`:
 
 | Pipeline | Triage / debug | Wiedza / docs | Kontekst / setup |
 |---|---|---|---|
 | feature-discuss | problem-discuss | try-learn-skill | update-ai-context |
 | generate-tasks | debug | document-feature | constitution |
 | implement | analyze | document-module | preboot |
-| review | | explain | |
+| review | receiving-code-review | explain | |
+| triada-review | | | |
 | ship | | | |
 
-Plus komenda `/absolutpowers:triada-review` (równoległy multi-agent review).
+Na Claude `/absolutpowers:triada-review` wywołuje bezpośrednio wspólny skill.
 
-**Codex:** wpisz `$absolutpowers` i sprawdź autouzupełnianie — te same 14 workflow skille + `preboot` (jeden wspólny wierzchołek `skills/`, bez osobnej kopii). Brak komend i brak *zarejestrowanych* review gate'ów — nie dlatego, że Codex nie potrafi wywołać subagenta (ma `multi_agent=true` → `spawn_agent`/`wait_agent`/`close_agent`), ale dlatego, że nie ma rejestru nazwanych typów agentów (`agents/*.md`), więc `Agent(subagent_type=...)` nie ma do czego się odnieść. Bramki degradują dwustopniowo — dispatch generycznego subagenta z treścią docelowego `agents/{name}.md` jako promptem, albo review inline z jawną notą o braku pełnej izolacji i advisory verdictem; orchestrated `implement` wykonuje fazy sekwencyjnie inline gdy brak multi-agent. Szczegóły: `references/codex-tools.md`.
+**Codex:** wpisz `$absolutpowers` i sprawdź autouzupełnianie — te same 16 workflow skilli + `preboot` (jeden wspólny wierzchołek `skills/`, bez osobnej kopii). Codex nie ma rejestru nazwanych typów agentów (`agents/*.md`), ale przy `multi_agent=true` skill `triada-review` uruchamia role przez równoległe `spawn_agent` z pełnym ciałem odpowiedniego promptu. Bez multi-agent wynik degraduje do jawnie advisory review inline. Ta sama dwustopniowa ścieżka obowiązuje bramki pipeline'u. Szczegóły: `references/codex-tools.md`.
 
 **Grok:** wpisz `/` lub `/skills` i sprawdź — te same skille (często pod kwalifikowaną nazwą pluginu). Użyj `grok inspect` lub TUI (`/plugins`, `/skills`). Szczegóły degradacji i bootstrapu: `references/grok-tools.md`.
 
-**Pi:** te same 14 workflow skilli + `preboot`, ładowane natywnie. Review gate'y degradują dwustopniowo — dispatch generycznego subagenta (jeśli zainstalowany `pi-subagents`) z treścią docelowego `agents/{name}.md` jako promptem, albo review inline z jawną notą o braku pełnej izolacji. Szczegóły: `references/pi-tools.md`.
+**Pi:** te same 16 workflow skilli + `preboot`, ładowane natywnie. `triada-review` i review gate'y używają generycznych subagentów, jeśli zainstalowany jest `pi-subagents`, albo review inline z jawną notą advisory. Szczegóły: `references/pi-tools.md`.
 
-**Grok Build:** te same 14 workflow skilli + `preboot`. Instalacja przez `grok plugin marketplace add` + `grok plugin install`. Grok ma natywną obsługę `SKILL.md` i silną kompatybilność z Claude (automatycznie czyta `.claude/skills/`, `CLAUDE.md`). Bramki degradują przez `spawn_subagent` + `references/grok-tools.md`. Szczegóły instalacji i weryfikacji: patrz `references/grok-tools.md` i sekcja "Grok" w README.
+**Grok Build:** te same 16 workflow skilli + `preboot`. `triada-review` uruchamia role równolegle przez `spawn_subagent` typu `general-purpose`, przekazując ciała promptów z `agents/`; nie próbuje rejestrowanych nazw Claude. Szczegóły instalacji, bramek i bootstrapu: `references/grok-tools.md` oraz sekcja "Grok" w README.
 
 ## Krok 1: Przygotuj projekt
 

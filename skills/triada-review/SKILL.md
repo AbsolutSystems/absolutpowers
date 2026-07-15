@@ -1,5 +1,14 @@
 ---
-description: Code review aktualnego brancha vs master — 3 agentów z rozłącznymi zakresami (tech-lead, security-auditor, ui), synteza przez orchestratora. Czyta rules.md projektu.
+name: triada-review
+description: >
+  Host-agnostic, multi-agent code review of the current branch: delegates independent
+  tech-lead, security/correctness/test, and optional UI perspectives, then synthesizes
+  one verdict. TRIGGER when: "triada review", "multi-agent review", "review trzema
+  agentami", "sprawdź branch z kilku perspektyw", large PR review, independent
+  architecture/security/UI review before merge. NIE wyzwalaj na: solo full review
+  (use review); incoming PR feedback (use receiving-code-review); AC-to-task-to-code
+  traceability (use analyze).
+allowed-tools: Read, Glob, Grep, Bash, Agent
 argument-hint: "[dodatkowy kontekst]"
 ---
 
@@ -12,29 +21,62 @@ $ARGUMENTS
 
 Wykonaj code review aktualnego brancha względem mastera, używając trzech agentów z rozłącznymi zakresami. Ty (orchestrator) zbierasz kontekst, delegujesz, syntetyzujesz.
 
-> To jest **standalone, multi-agentowy review na żądanie** — nie zastępuje gate'ów
-> pipeline (`review-implementation`) ani solo skilla `/absolutpowers:review`.
-> Różnica: `review` = solo, 4-fazy, audit trail do pliku, działa też na Codex.
-> `triada-review` = 3 agentów równolegle, JSON + synteza, Claude-only.
+> To jest **standalone, host-agnostyczny multi-agent review na żądanie** — nie
+> zastępuje gate'ów pipeline (`review-implementation`) ani solo skilla `review`.
+> Różnica: `review` = solo, 4 fazy i audit trail do pliku.
+> `triada-review` = niezależne perspektywy, JSON + synteza na każdym harnessie
+> wyposażonym w dispatch subagentów; bez dispatchu działa sekwencyjnie/inline jako advisory.
+
+---
+
+## Kontrakt dispatchu per harness
+
+Przed pierwszym delegowaniem przeczytaj `references/harness-dispatch.md` oraz mapping
+aktywnego harnessu, jeśli istnieje (`references/codex-tools.md`,
+`references/pi-tools.md` albo `references/grok-tools.md`).
+
+Dla każdej aktywnej roli przeczytaj pełne ciało odpowiadającego jej promptu:
+
+| Rola | Prompt roli | Claude registered type |
+|---|---|---|
+| `tech-lead-advisor` | `agents/tech-lead-agent.md` | `absolutpowers:tech-lead-agent` |
+| `security-auditor` | `agents/codebase-auditor.md` | `absolutpowers:codebase-auditor` |
+| `ui-reviewer` | `agents/ui-reviewer.md` | `absolutpowers:ui-reviewer` |
+
+Registered type jest optymalizacją Claude Code, a nie warunkiem działania skilla.
+Na harnessie bez registry dispatchuj świeżego generycznego subagenta z pełnym ciałem
+promptu roli i konkretnym kontekstem z KROKU 3. Preferuj równoległy dispatch. Jeśli
+harness potrafi uruchamiać subagentów tylko sekwencyjnie, zachowaj osobny świeży
+kontekst dla każdej roli. Dopiero przy całkowitym braku dispatchu wykonaj perspektywy
+inline i oznacz końcowy wynik jako `advisory (not fully isolated)`.
+
+Przy wielu paczkach dispatchuj w falach mieszczących się w limicie współbieżności
+harnessu. Nie zamieniaj braku wolnego slotu w inline fallback — poczekaj na wynik
+bieżącej fali, a następnie uruchom kolejną.
+
+Nigdy nie próbuj najpierw wywoływać nieistniejącego registered type na Codex, Pi lub
+Grok. Użyj od razu natywnej ścieżki z mappingu harnessu.
 
 ---
 
 ## KROK 0 — Wczytaj konfigurację agentów
 
-Domyślnie agenci są **wbudowani w plugin** (poniższa tabela) — komenda działa bez
-żadnego configu. Opcjonalnie pozwól projektowi nadpisać mapowanie: odczytaj plik
-`.claude/triada-review.agents.json` (szukaj w root repo; jeśli cwd to podprojekt
-— wejdź wyżej do katalogu z `.claude/`).
+Domyślnie prompty ról są **wbudowane w plugin** (tabela wyżej), więc skill działa
+bez configu. Opcjonalnie pozwól projektowi nadpisać mapowanie: najpierw odczytaj
+`.absolutpowers/triada-review.agents.json` z root repo. Dla kompatybilności wstecznej,
+jeśli go nie ma, odczytaj `.claude/triada-review.agents.json`.
 
 Struktura: `agents.<rola>.{ subagent_type, enabled, scope }`.
-- `subagent_type` — typ agenta do spawnu przez Agent tool. Pusty → spawn opisowy (bez konkretnego typu).
+- `subagent_type` — opcjonalny natywny/registered type. Użyj go tylko, jeśli aktywny
+  harness potrafi go rozwiązać; w przeciwnym razie użyj generycznego subagenta z promptem roli.
 - `enabled` — `true` (zawsze), `false` (pomiń tę rolę całkowicie), `"ui-only"` (spawn tylko dla paczek zawierających pliki UI).
 - `scope` — **steruje którymi kryteriami** ocenia ta rola. Wartości:
   - `"all"` lub pominięte → wszystkie kryteria roli (patrz tabela kluczy w KROKU 3).
   - lista kluczy, np. `["security", "correctness"]` → tylko te kryteria. Klucze spoza zestawu roli ignoruj i odnotuj w syntezie.
   - `[]` (pusta lista) → brak kryteriów → potraktuj jak `enabled: false` dla tej roli (odnotuj w syntezie).
 
-**Defaulty wbudowane** (gdy pliku brak lub jest niepoprawny):
+**Defaulty Claude Code** (gdy configu brak lub jest niepoprawny). Pozostałe harnessy
+używają tych samych promptów ról przez swoje generyczne primitive dispatchu:
 
 | Rola | subagent_type | enabled |
 |---|---|---|
@@ -42,7 +84,8 @@ Struktura: `agents.<rola>.{ subagent_type, enabled, scope }`.
 | `security-auditor` | `absolutpowers:codebase-auditor` | true |
 | `ui-reviewer` | `absolutpowers:ui-reviewer` | ui-only |
 
-W finalnym podsumowaniu odnotuj, których agentów (i z jakim `subagent_type`) faktycznie użyłeś, oraz które role pominąłeś i dlaczego (np. `ui-reviewer` pominięty — brak UI; rola wyłączona w configu).
+W finalnym podsumowaniu odnotuj role, faktyczny mechanizm dispatchu (registered type,
+generic isolated subagent, sequential isolated albo inline advisory) oraz pominięcia.
 
 ---
 
@@ -156,7 +199,9 @@ Dla każdej paczki przygotuj mini-kontekst: nazwa, rola, lista plików, fragment
 
 ## KROK 3 — Deleguj do trzech agentów równolegle
 
-Każda paczka (lub cały diff w trybie pojedynczym) idzie do trzech agentów. Każdy ma **inny zakres**, nie wchodzi w cudzy. Spawnuj agentów **równolegle** (wiele wywołań Agent tool w jednej turze).
+Każda paczka (lub cały diff w trybie pojedynczym) idzie do aktywnych ról. Każda ma
+**inny zakres** i nie wchodzi w cudzy. Dispatchuj role **równolegle**, jeśli harness
+to obsługuje, używając kontraktu dispatchu powyżej.
 
 ### Co przekazać każdemu agentowi
 
@@ -172,7 +217,8 @@ Każda paczka (lub cały diff w trybie pojedynczym) idzie do trzech agentów. Ka
 
 ### Podział kryteriów
 
-> Dla każdej roli spawnuj agenta z `subagent_type` wczytanym w KROKU 0. Role z `enabled: false` pomiń. `ui-reviewer` (`enabled: "ui-only"`) spawnuj tylko dla paczek z plikami UI. Nazwy ról poniżej (`tech-lead-advisor` itd.) to **etykiety zakresów**, nie typy agentów — typ bierzesz z configu.
+> Dla każdej roli użyj mechanizmu dispatchu ustalonego w KROKU 0. `subagent_type`
+> stosuj tylko wtedy, gdy harness rzeczywiście go rejestruje. Role z `enabled: false` pomiń. `ui-reviewer` (`enabled: "ui-only"`) spawnuj tylko dla paczek z plikami UI. Nazwy ról poniżej (`tech-lead-advisor` itd.) to **etykiety zakresów**, nie typy agentów — typ bierzesz z configu.
 >
 > **Filtr kryteriów przez `scope`:** każde kryterium ma stały klucz (tabela niżej). Agent ocenia **tylko** kryteria, których klucz jest w `scope` danej roli. `scope: "all"` lub brak → wszystkie kryteria roli. W instrukcji dla agenta wymień konkretnie które kryteria (z numerami) ma ocenić, a które pominąć. W syntezie odnotuj zawężenie scope (np. „`security-auditor` ograniczony do security + correctness — testy pominięte przez config").
 >
@@ -349,7 +395,14 @@ Spełnione / brak naruszeń w sprawdzonych obszarach:
 ───────────────────────────────────────────────────────────────
 🤖 UŻYCI AGENCI
 ───────────────────────────────────────────────────────────────
-- tech-lead-advisor (absolutpowers:tech-lead-agent) — scope: <...>
-- security-auditor (absolutpowers:codebase-auditor) — scope: <...>
-- ui-reviewer (absolutpowers:ui-reviewer) — <użyty dla paczek [...] | pominięty: brak UI>
+- tech-lead-advisor — prompt: agents/tech-lead-agent.md; dispatch: <...>; scope: <...>
+- security-auditor — prompt: agents/codebase-auditor.md; dispatch: <...>; scope: <...>
+- ui-reviewer — prompt: agents/ui-reviewer.md; dispatch: <...>; <użyty dla paczek [...] | pominięty: brak UI>
 ```
+
+
+## Terminal state
+
+Skill kończy się po syntezie wszystkich aktywnych perspektyw i zwróceniu jednego
+werdyktu. To punkt domknięcia review: przy `approve` / `approve_with_comments`
+można przejść do `@ship`; przy `request_changes` / `block` wróć do pętli poprawek.

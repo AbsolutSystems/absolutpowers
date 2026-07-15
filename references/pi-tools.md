@@ -17,6 +17,14 @@ Skills speak in actions ("dispatch a subagent", "invoke a review gate", "create 
 | Review gate (`review-tasks`, `review-plan`, `review-implementation`, `phase-review`, `qa-enrichment`) | These are Claude Code **registered agent types** — they do not exist as such on Pi. See "Review gates on Pi" below. |
 | Task tracking ("create a todo", "mark complete", `TodoWrite`) | Use an installed todo/task tool if available, otherwise track tasks in the plan file or a repo-local `TODO.md`. |
 
+## Triada review on Pi
+
+`triada-review` is a shared skill. If `pi-subagents` is installed, dispatch the active
+roles as independent generic agents (parallel when supported), feeding each the full body
+of its matching `agents/{name}.md` prompt plus the package context prepared by the skill.
+Without a subagent extension, run the perspectives inline and label the result
+`advisory (not fully isolated)`.
+
 ## Subagents
 
 Pi core does not ship a standard subagent tool. The `pi-subagents` package is a strong

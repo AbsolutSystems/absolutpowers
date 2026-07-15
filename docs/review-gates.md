@@ -24,7 +24,11 @@ all phases + final verification ──▶ review-implementation ──▶ PASS /
 
 `phase-review` jest lekkim gate'em jednej fazy. Pełny `review-implementation` nadal działa dopiero po zakończeniu wszystkich faz i final verification.
 
-> **Uwaga:** `/absolutpowers:triada-review` to osobne narzędzie — standalone, multi-agentowy review na żądanie (Claude only), **nie** gate pipeline'u. Nie zastępuje `review-implementation` ani solo skilla `review`; uruchamiasz go ręcznie gdy chcesz równoległą, wieloperspektywiczną ocenę brancha.
+> **Uwaga:** `triada-review` to osobny, host-agnostyczny skill — standalone,
+> multi-agentowy review na żądanie, **nie** gate pipeline'u. Claude używa
+> zarejestrowanych ról, Codex/Grok generycznych izolowanych subagentów z tymi samymi
+> promptami, a Pi `pi-subagents` jeśli jest dostępny. Nie zastępuje
+> `review-implementation` ani solo skilla `review`.
 
 ## Mechanizm działania
 
@@ -42,7 +46,7 @@ all phases + final verification ──▶ review-implementation ──▶ PASS /
 | Harness | Review gates |
 |-----------|-------------|
 | Claude Code | Tak (zarejestrowane subagenty w `agents/`, w tym `phase-review` dla orchestrated implementation) |
-| Codex | Nie jako pełny gate — precyzyjnie: Codex nie ma rejestru **zarejestrowanych typów agentów** (nie da się wystawić `agents/*.md` jako nazwanej tożsamości subagenta), więc `Agent(subagent_type="review-tasks", ...)` nie ma do czego się odnieść. To nie znaczy braku dispatchu subagentów — Codex ma `multi_agent=true` → `spawn_agent`/`wait_agent`/`close_agent`. Degradacja dwustopniowa: jeśli dostępny multi-agent, dispatch generycznego subagenta z treścią docelowego `agents/{name}.md` jako promptem; inaczej review inline z jawną notą o braku pełnej izolacji i **advisory verdictem** (nigdy ciche pominięcie bramki). Zobacz `references/codex-tools.md` ("Review gates on Codex") |
+| Codex | Nie jako pełny gate — precyzyjnie: Codex nie ma rejestru **zarejestrowanych typów agentów** (nie da się wystawić `agents/*.md` jako nazwanej tożsamości subagenta), więc `Agent(subagent_type="review-tasks", ...)` nie ma do czego się odnieść. To nie znaczy braku dispatchu subagentów — Codex ma `multi_agent=true` → `spawn_agent`/`wait_agent`. Degradacja dwustopniowa: jeśli dostępny multi-agent, dispatch generycznego subagenta z treścią docelowego `agents/{name}.md` jako promptem; inaczej review inline z jawną notą o braku pełnej izolacji i **advisory verdictem** (nigdy ciche pominięcie bramki). Zobacz `references/codex-tools.md` ("Review gates on Codex") |
 | Pi | Nie jako pełny gate — z tego samego powodu (brak rejestru typów agentów). Degradacja dwustopniowa: jeśli zainstalowany `pi-subagents`, dispatch generycznego subagenta z treścią docelowego `agents/{name}.md` jako promptem; inaczej review inline z jawną notą o braku pełnej izolacji. Zobacz `references/pi-tools.md` ("Review gates on Pi") |
 
 ## qa-enrichment

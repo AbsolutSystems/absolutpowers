@@ -18,14 +18,27 @@ literal `Agent(subagent_type=...)` on Codex — translate it via this file inste
 | Action skills request | Codex equivalent |
 | --- | --- |
 | `Skill` tool / invoke a skill | Codex has no `Skill` tool. Load the relevant `SKILL.md` with a file read when the skill applies, or let a human invoke it explicitly. |
-| Dispatch a subagent (`Agent(subagent_type=...)` template) | If `multi_agent=true`: `spawn_agent` with the target `agents/{name}.md` body as the prompt, then `wait_agent` / `close_agent`. Otherwise: run the work **sequentially/inline in the current session**. See "Subagents" and "Orchestrated dispatch on Codex" below. |
+| Dispatch a subagent (`Agent(subagent_type=...)` template) | If `multi_agent=true`: `spawn_agent` with the target `agents/{name}.md` body as the prompt, then `wait_agent`. Otherwise: run the work **sequentially/inline in the current session**. See "Subagents" and "Orchestrated dispatch on Codex" below. |
 | Review gate (`review-tasks`, `review-plan`, `review-implementation`, `phase-review`, `qa-enrichment`) | Claude Code **registered agent types** — no equivalent registry on Codex. See "Review gates on Codex" below. |
 | Task tracking ("create a todo", "mark complete", `TodoWrite`) | Use an installed todo/task tool if available, otherwise track state in the tasks/phase files already produced by `generate-tasks`, or a repo-local `TODO.md`. |
 
+## Triada review on Codex
+
+`triada-review` is a shared skill, not a Claude-only command. Codex still has no
+plugin-level registry for the three role types, so do not try
+`absolutpowers:tech-lead-agent`, `absolutpowers:codebase-auditor`, or
+`absolutpowers:ui-reviewer` as named `subagent_type` values.
+
+When `multi_agent=true`, spawn the active roles as independent generic agents, preferably
+in parallel. Feed each agent the full body of its matching prompt from `agents/` plus the
+package context prepared by the skill. Wait for all JSON results, then synthesize them in
+the root session. If multi-agent is unavailable, run the perspectives inline and label the
+final verdict `advisory (not fully isolated)`.
+
 ## Subagents
 
-Codex exposes subagent dispatch when `multi_agent=true`: `spawn_agent` / `wait_agent` /
-`close_agent`. What it lacks is the **registry** — there is no way to name
+Codex exposes subagent dispatch when `multi_agent=true`: `spawn_agent` / `wait_agent`.
+What it lacks is the **registry** — there is no way to name
 `subagent_type="implementation-worker"` and have it resolve to `agents/implementation-worker.md`.
 
 So the *dispatch pattern* is portable; only the *named type* is Claude-only. To dispatch a
@@ -35,7 +48,8 @@ subagent on Codex:
 2. `spawn_agent` and pass that file's body as the subagent's instructions, plus the same
    arguments the skill would have passed (tasks file path, phase file path, shared context
    path, etc.).
-3. `wait_agent` for its result, read the returned verdict/handoff, then `close_agent`.
+3. `wait_agent` for its result and read the returned verdict/handoff. Completed agents
+   release their execution slot; use `interrupt_agent` only to stop a still-running task.
 
 If `multi_agent` is **not** available, do not fabricate `Agent`/`Task`/`spawn_agent` calls —
 execute the work sequentially in the current session (see below) and say so.

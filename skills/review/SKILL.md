@@ -15,11 +15,11 @@ argument-hint: "[branch bazowy, default: main]"
 
 Wykonaj PEŁNY review zmian w bieżącym BRANCHU (w porównaniu do main/master). Przejdź przez WSZYSTKIE 4 fazy po kolei.
 
-> **To review vs `/absolutpowers:triada-review`:** to `review` = solo, pełne 4 fazy,
+> **To review vs `triada-review`:** to `review` = solo, pełne 4 fazy,
 > audit trail do `./absolutpowers/reviews/`, integracja z `project-memory.md`,
-> działa też na Codex. Dla równoległego, multi-agentowego review większych PR
-> (3 agentów z rozłącznymi zakresami + synteza, Claude-only) użyj
-> `/absolutpowers:triada-review`. Nie konkurują — to dwa różne narzędzia.
+> działa na każdym harnessie. Dla multi-agentowego review większych PR
+> (3 role z rozłącznymi zakresami + synteza) użyj `triada-review`, który dobiera
+> natywny dispatch per harness. Nie konkurują — to dwa różne narzędzia.
 
 > **Review vs `analyze`:** `review` ocenia **JAKOŚĆ kodu** na branchu (4 fazy: semantyka, edge cases, reguły, garbage). `analyze` ocenia **KOMPLETNOŚĆ trace'owalności / spójność** planning↔tasks↔kod przez artefakty — zupełnie inny wymiar. Nie scalać: gdy pytanie brzmi „czy taski/kod pokrywają plan i AC", użyj `analyze`; gdy pytanie brzmi „czy kod jest poprawny i bezpieczny", użyj `review`.
 

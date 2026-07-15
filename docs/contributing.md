@@ -14,11 +14,8 @@ absolut-ai-skills/
 │   │   └── SKILL.md                 # definicja skilla (frontmatter + prompt), host-agnostyczna
 │   └── vendored/                    # skille zvendorowane z obra/superpowers (MIT) — patrz VENDORED.md
 │
-├── agents/                          # subagenty — top-level, Claude-only
-│   └── {agent-name}.md              # definicja agenta (frontmatter + prompt)
-├── commands/                        # slash commands — top-level, Claude-only
-│   └── triada-review.md
-│
+├── agents/                          # prompty ról; Claude rejestruje je jako typy agentów,
+│   └── {agent-name}.md              # pozostałe harnessy przekazują ciało generycznym agentom
 ├── references/                      # mapowania per-harness + shared contracts
 │   ├── codex-tools.md
 │   ├── pi-tools.md

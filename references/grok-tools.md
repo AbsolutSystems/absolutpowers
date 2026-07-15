@@ -27,6 +27,15 @@ This document describes the **native first-class path**.
 | Review gate (`review-tasks`, `review-plan`, `review-implementation`, `phase-review`, `qa-enrichment`) | No registered agent types. See "Review gates on Grok" below. |
 | Task tracking ("create a todo", "mark complete", `TodoWrite`) | Use an installed todo/task tool if available, otherwise track state in the tasks/phase files already produced by `generate-tasks`, or a repo-local `TODO.md`. |
 
+## Triada review on Grok
+
+`triada-review` is a shared skill. Run it like any other plugin skill. For every active
+role, call `spawn_subagent` with `subagent_type: "general-purpose"` and the full body of
+the matching `agents/{name}.md` prompt plus the package context prepared by the skill.
+Spawn independent roles in parallel, collect their JSON results, and synthesize them in
+the parent session. Do not first probe Claude's registered type names — Grok cannot
+resolve them. If dispatch is unavailable, use the skill's explicit inline advisory path.
+
 ## Subagents
 
 Grok uses the `spawn_subagent` tool (enabled by default). The child gets its own context

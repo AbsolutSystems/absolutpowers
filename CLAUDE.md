@@ -4,15 +4,15 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## What This Is
 
-AbsolutPowers — a Claude Code + Codex + Pi + Grok plugin providing AI-assisted development lifecycle skills: problem intake/triage, feature discussion, task generation, implementation, review, debugging, project context management, and project constitution. Version 5.2.0. As of 5.0.0 the repo is a single host-agnostic skill tree (see Repository Layout) with thin per-harness manifests/integrations, replacing the earlier two mirrored `claude/`/`codex/` trees; it also introduces `skills/vendored/` — selected skills vendored from [obra/superpowers](https://github.com/obra/superpowers) under MIT (see `VENDORED.md`, `LICENSE-VENDORED`). Grok Build is supported as a first-class harness via `.grok-plugin/` + `references/grok-tools.md`.
+AbsolutPowers — a Claude Code + Codex + Pi + Grok plugin providing AI-assisted development lifecycle skills: problem intake/triage, feature discussion, task generation, implementation, review, debugging, project context management, and project constitution. Version 5.3.0. As of 5.0.0 the repo is a single host-agnostic skill tree (see Repository Layout) with thin per-harness manifests/integrations, replacing the earlier two mirrored `claude/`/`codex/` trees; it also introduces `skills/vendored/` — selected skills vendored from [obra/superpowers](https://github.com/obra/superpowers) under MIT (see `VENDORED.md`, `LICENSE-VENDORED`). Grok Build is supported as a first-class harness via `.grok-plugin/` + `references/grok-tools.md`.
 
 ## Repository Layout
 
-One host-agnostic skill tree serves every harness (Claude Code, Codex, Pi); thin per-harness manifests and integrations layer on top (obra/superpowers pattern):
+One host-agnostic skill tree serves every harness (Claude Code, Codex, Pi, Grok); thin per-harness manifests and integrations layer on top (obra/superpowers pattern):
 
 - `skills/{name}/SKILL.md` — single source of truth. Host-agnostic body; Claude-only sections (frontmatter `allowed-tools`/`argument-hint`, agent gate sections) are inert on Codex/Pi.
 - `skills/vendored/{name}/` — vendored obra/superpowers skills with MIT attribution (see `VENDORED.md`, `LICENSE-VENDORED`).
-- `agents/{name}.md`, `commands/{name}.md` — top-level, Claude-only; other harnesses ignore them.
+- `agents/{name}.md` — Claude registers these as named agent types; other harnesses reuse their bodies as generic-agent prompts.
 - `hooks/` — slim Claude SessionStart hook (`hooks.json` + `run-hook.cmd` + `session-start`) plus shared `hooks/session-context.md`.
 - `references/{harness}-tools.md` — per-harness primitive mappings, read conditionally. Adding a harness = new integration/manifest + optional reference, zero skill edits (Grok: `.grok-plugin/plugin.json` + `references/grok-tools.md`).
 
@@ -133,7 +133,7 @@ Pipeline wiring:
 
 Subagents auto-verify each pipeline step. PASS or REJECTED with issues. Up to 3 fix iterations, then asks user.
 
-**Precise Codex/Pi statement (do not simplify to "no subagent support"):** Codex and Pi lack **registered agent type definitions** — there is no mechanism to load `agents/*.md` as an installable subagent identity the way Claude Code plugins do, so `Agent(subagent_type="review-tasks", ...)` calls have nothing to resolve to. That is *not* the same as lacking subagent dispatch: Codex exposes `multi_agent=true` → `spawn_agent`/`wait_agent`/`close_agent` primitives, and Pi has the optional `pi-subagents` package. So the *execution pattern* (dispatch a subagent, hand it a prompt, wait, read its verdict) is portable across harnesses — only the *registry* (named, reusable agent types) is Claude-only. Practical effect: review gates as AbsolutPowers implements them (named `agents/*.md` types) are Claude-only, but a harness can still run the same review inline or via a generic dispatched subagent fed the `agents/{name}.md` body as its prompt. See `references/pi-tools.md` ("Review gates on Pi") and the parallel `references/codex-tools.md` ("Review gates on Codex" / "Orchestrated dispatch on Codex") for the worked-out degradation paths (see "Adding a New Harness" below).
+**Precise Codex/Pi statement (do not simplify to "no subagent support"):** Codex and Pi lack **registered agent type definitions** — there is no mechanism to load `agents/*.md` as an installable subagent identity the way Claude Code plugins do, so `Agent(subagent_type="review-tasks", ...)` calls have nothing to resolve to. That is *not* the same as lacking subagent dispatch: Codex exposes `multi_agent=true` → `spawn_agent`/`wait_agent` primitives, and Pi has the optional `pi-subagents` package. So the *execution pattern* (dispatch a subagent, hand it a prompt, wait, read its verdict) is portable across harnesses — only the *registry* (named, reusable agent types) is Claude-only. Practical effect: review gates as AbsolutPowers implements them (named `agents/*.md` types) are Claude-only, but a harness can still run the same review inline or via a generic dispatched subagent fed the `agents/{name}.md` body as its prompt. See `references/pi-tools.md` ("Review gates on Pi") and the parallel `references/codex-tools.md` ("Review gates on Codex" / "Orchestrated dispatch on Codex") for the worked-out degradation paths (see "Adding a New Harness" below).
 
 ### Orchestrated Implementation (Claude only)
 
@@ -168,9 +168,9 @@ gate): judges whether the task set as a whole achieves the *goal/intent* of the
 planning doc, not just literal per-requirement coverage. Complements `analyze`
 (in-flight gate vs post-hoc audit).
 
-### Standalone Triada Review (Claude only)
+### Standalone Triada Review (all harnesses)
 
-`/absolutpowers:triada-review` — on-demand multi-agent code review of the current
+`triada-review` — on-demand multi-agent code review of the current
 branch vs master. The main session acts as orchestrator: gathers context (diff, PR,
 CI, `rules.md`), delegates to three agents **in parallel** with non-overlapping
 scopes, then synthesizes one report (JSON per agent → merged verdict).
@@ -179,14 +179,12 @@ scopes, then synthesizes one report (JSON per agent → merged verdict).
 - `security-auditor` (`absolutpowers:codebase-auditor`) — security, correctness, test quality
 - `ui-reviewer` (`absolutpowers:ui-reviewer`) — UI states, interactions, a11y, data, UI races, user goal (spawned only when UI files present)
 
-Defaults are baked into the command; an optional per-project
-`.claude/triada-review.agents.json` can override role → `subagent_type`, `enabled`,
-and `scope`. This is separate from the pipeline gates and from the solo `review`
-skill — see the `review` SKILL for the distinction. Codex/Pi have no equivalent —
-not because dispatch is unavailable, but because there is no registered
-`tech-lead-advisor`/`codebase-auditor`/`ui-reviewer` agent type to fan out to, and
-no built-in mechanism to run three dispatched subagents in parallel and merge
-their verdicts.
+The workflow lives in `skills/triada-review/SKILL.md`. Claude dispatches registered roles.
+Codex and Grok dispatch generic isolated agents in parallel with the matching `agents/*.md` bodies; Pi
+uses `pi-subagents` when installed. If dispatch is unavailable, the skill runs inline and
+labels the verdict advisory. Optional config lives at
+`.absolutpowers/triada-review.agents.json`, with the legacy
+`.claude/triada-review.agents.json` accepted as fallback.
 
 ## Key Development Commands
 
