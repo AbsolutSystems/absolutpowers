@@ -2,7 +2,7 @@
 name: generate-tasks
 description: >
   Staff Engineer creating implementation plans for an AI coding agent.
-  Reads a planning doc or review report, then produces a tasks-*.md file
+  Reads a planning doc, review report, or QA review report, then produces a tasks-*.md file
   with sequential implementation steps for an AI agent. Supports epic phase
   docs that live in a feature/{epic-slug}/ subfolder, keeping all task output
   inside that same subfolder.
@@ -12,7 +12,7 @@ description: >
   NIE wyzwalaj na: dyskusję/design feature'a (to `feature-discuss`); wykonywanie tasków (to `implement`);
   audyt spójności AC↔task↔kod (to `analyze`); review jakości kodu (to `review`).
 allowed-tools: Read, Glob, Grep, Bash(find:*), Bash(wc:*), Bash(cat:*), Bash(head:*), Bash(tail:*), Bash(tree:*), Write(**/absolutpowers/feature/**), Agent
-argument-hint: "[ścieżka do planning-*.md lub review-*.md]"
+argument-hint: "[ścieżka do planning-*.md, review-*.md lub qa-review-*.md]"
 ---
 
 # Generate Tasks — Implementation Plan Creator
@@ -21,7 +21,7 @@ You are a Staff Software Engineer creating implementation plans for an AI coding
 
 ## Input
 
-The argument can be one of four types:
+The argument can be one of five types:
 
 **Planning doc** (new feature):
 `./absolutpowers/feature/planning-{slug}.md`
@@ -32,6 +32,9 @@ Read it as: Problem = root cause with evidence, Wybrane rozwiązanie = chosen fi
 
 **Review report** (fixing review findings):
 `./absolutpowers/reviews/YYYY-MM-DD-{branch-slug}.md`
+
+**QA review report** (planning findings already judged ready for task generation):
+`./absolutpowers/reviews/qa-review-{scope}-YYYY-MM-DD-HHmmss.md`
 
 **Epic phase doc** (planning one phase of an epic):
 `./absolutpowers/feature/{epic-slug}/planning-phase-N-{subslug}.md`
@@ -47,10 +50,12 @@ Output file is always in `./absolutpowers/feature/`:
 | Planning doc | `./absolutpowers/feature/planning-push-notifications.md` | `./absolutpowers/feature/tasks-push-notifications.md` |
 | Fix planning doc | `./absolutpowers/feature/planning-fix-{slug}.md` | `./absolutpowers/feature/tasks-fix-{slug}.md` |
 | Review report | `./absolutpowers/reviews/2026-04-21-feature-auth.md` | `./absolutpowers/feature/tasks-fix-feature-auth.md` |
+| QA review report | `./absolutpowers/reviews/qa-review-{scope}-YYYY-MM-DD-HHmmss.md` | `./absolutpowers/feature/tasks-fix-qa-{scope}-YYYY-MM-DD-HHmmss.md` |
 | Epic phase doc | `./absolutpowers/feature/push-notif/planning-phase-1-data-model.md` | `./absolutpowers/feature/push-notif/tasks-phase-1-data-model.md` |
 
 For planning docs: replace `planning-` prefix with `tasks-`. This rule covers both `planning-{slug}.md` and `planning-fix-{slug}.md` — the prefix replacement produces `tasks-fix-{slug}.md` with no special-casing required.
 For review reports: use `tasks-fix-{branch-slug}` (drop the date, add `fix-` prefix).
+For QA review reports: map `qa-review-{scope}-YYYY-MM-DD-HHmmss.md -> tasks-fix-qa-{scope}-YYYY-MM-DD-HHmmss.md`; preserve both report scope and timestamp by replacing the `qa-review-` prefix with `tasks-fix-qa-` and keeping the rest of the basename unchanged.
 
 **Epic phase docs (input lives in a `feature/{epic-slug}/` subfolder):** keep all output INSIDE that same subfolder — never flatten to `feature/` root. Set `{slug}` = the part after `planning-` (e.g. `phase-1-data-model`) and treat `./absolutpowers/feature/{epic-slug}/` as the working directory for every output path below. So orchestrated outputs become `feature/{epic-slug}/tasks-{slug}/...`. This preserves epic grouping and prevents slug collisions between epics that both have a `phase-1`.
 
@@ -100,7 +105,15 @@ W absolutpowers **`implement` jest jedynym egzekutorem** tasków — nie ma osob
 Read the document provided as argument. Understand what needs to be implemented:
 - for a planning doc: the feature, scope, chosen solution, and constraints
 - for a review report: the findings, broken rules, and fixes required
-- for an epic phase doc: ALSO read the parent `./absolutpowers/feature/{epic-slug}/planning-main.md` first — it holds the shared architectural context, cross-cutting decisions (with ADR links), and phase dependencies. Treat it as binding context for the tasks, and honor the phase's `## Context Contract -> Requires` (artifacts produced by earlier phases). Do NOT re-plan sibling phases — your scope is this one phase.
+- for a QA review report: parse the stable `## Actionable Findings` section and select only findings whose exact `Route` is `GENERATE_TASKS`. Preserve each selected finding's ID, severity, evidence, risk, operation, recommendation, plus the report scope and timestamp as task-planning context. Do not infer readiness from severity or recommendation text.
+- for an epic phase doc: resolve and read the exact parent epic-planning path referenced under the phase doc's `## Kontekst nadrzędny` — do not assume its filename. It holds shared architectural context, cross-cutting decisions (with ADR links), and phase dependencies. Treat it as binding context for the tasks, copy that exact path into `Epic context`, and honor the phase's `## Context Contract -> Requires` (artifacts produced by earlier phases). Do NOT re-plan sibling phases — your scope is this one phase.
+
+For a QA review report, validate routing before planning:
+
+1. Build the selected set from `Route: GENERATE_TASKS` findings only; every generated implementation task must retain its source QA finding ID.
+2. Build an explicit skipped summary for every `FEATURE_DISCUSS` finding (`reason: expected behaviour or design is unresolved; next workflow: @feature-discuss with the report path and finding ID`) and every `INLINE_FIX` finding (`reason: requires separate explicit approval; next workflow: obtain approval and apply through a direct fix workflow`). Never silently include either route in task scope.
+3. Show the selected IDs and skipped/routing summary to the user when returning the tasks document.
+4. If the selected set is empty, write no tasks document. Return only the explicit skipped summary with each finding ID, reason, and correct next workflow.
 
 Also read (if they exist):
 - **`./absolutpowers/patterns.md`** — established code patterns to reference in tasks
@@ -134,6 +147,8 @@ Questions before finalizing:
 
 ### Step 4: Create tasks document
 After questions are answered, generate the implementation plan.
+
+For QA inputs, keep report provenance in the generated document's `## Project Context`: the exact originating QA report path, its `Report scope`, its filename timestamp, and the selected `GENERATE_TASKS` finding IDs. Copy severity, evidence, risk, operation, and recommendation into the corresponding task without promoting skipped findings into constraints or implementation work.
 
 ---
 
@@ -347,7 +362,7 @@ This fails every check in `## No Placeholders` above — "Write tests" and "Hand
 Generate output in the selected mode.
 
 For `single-file`, generate the tasks file at `./absolutpowers/feature/tasks-{slug}.md` with:
-1. Project Context section (including reference to planning doc, and to `planning-main.md` if this is an epic phase)
+1. Project Context section (including reference to planning doc, and the exact referenced parent epic-planning path if this is an epic phase)
 2. `## Mode` set to `single-file`
 3. Sequential implementation tasks (all with `**Status:** pending`)
 4. A final verification task as the last task, using concrete build/validation commands
@@ -390,7 +405,7 @@ Po zapisaniu tasks doc, uruchom subagenta `review-tasks` żeby zweryfikować jak
 Agent(subagent_type="review-tasks", prompt="Review tasks document: ./absolutpowers/feature/tasks-{slug}.md. If Mode is orchestrated, also review all phase files referenced from Phase Overview and implementation-context.md.")
 ```
 
-> Jeśli taski pochodzą z fazy epica: podaj pełną ścieżkę w podfolderze (`./absolutpowers/feature/{epic-slug}/tasks-{slug}.md`) i dodaj do promptu notkę: "This is one phase of an epic — cross-phase dependencies are declared in the phase Context Contract (Requires) and in `planning-main.md`; treat them as a contract, not as missing context." Dzięki temu review nie odrzuci planu za artefakty, które dostarczą wcześniejsze fazy.
+> Jeśli taski pochodzą z fazy epica: podaj pełną ścieżkę w podfolderze (`./absolutpowers/feature/{epic-slug}/tasks-{slug}.md`) i dodaj do promptu notkę: "This is one phase of an epic — cross-phase dependencies are declared in the phase Context Contract (Requires) and in the exact parent planning document recorded as `Epic context`; treat them as a contract, not as missing context." Dzięki temu review nie odrzuci planu za artefakty, które dostarczą wcześniejsze fazy.
 
 **Jeśli VERDICT: PASS:**
 - Poinformuj użytkownika: "Taski przeszły review. Następny krok: `/absolutpowers:implement @absolutpowers/feature/tasks-{slug}.md`"

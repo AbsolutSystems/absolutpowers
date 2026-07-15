@@ -4,7 +4,7 @@ AI-assisted development lifecycle — from feature design through implementation
 
 Instead of ad-hoc prompting, AbsolutPowers gives your AI agent a structured workflow. Each skill owns one phase. Skills chain into a pipeline with automated quality gates (Claude Code) that catch problems before they cascade.
 
-As of **5.0.0** the repo is one host-agnostic skill tree under `skills/` — not mirrored per-harness trees — plus a thin manifest/integration per harness (Claude, Codex, Pi, Grok) and a small set of skills vendored under MIT from [obra/superpowers](https://github.com/obra/superpowers) in `skills/vendored/`. Current release: **5.3.0** (host-agnostic `triada-review` with native dispatch degradation per harness). See [Repo Structure](#repo-structure-this-repository) and [Attribution](#attribution).
+As of **5.0.0** the repo is one host-agnostic skill tree under `skills/` — not mirrored per-harness trees — plus a thin manifest/integration per harness (Claude, Codex, Pi, Grok) and a small set of skills vendored under MIT from [obra/superpowers](https://github.com/obra/superpowers) in `skills/vendored/`. Current release: **5.4.0** (static, cross-harness `qa-review` test-value audits). See [Repo Structure](#repo-structure-this-repository) and [Attribution](#attribution).
 
 ## Quick Start
 
@@ -68,7 +68,7 @@ Creates `CLAUDE.md`, `AGENTS.md`, `absolutpowers/patterns.md`, `absolutpowers/ru
 /absolutpowers:ship @absolutpowers/feature/tasks-push-notifications.md        # CLOSE (commit + PR text + archive artifacts)
 ```
 
-Knowledge capture and side tools (`try-learn-skill`, `document-feature`, `document-module`, `receiving-code-review`, `analyze`) are separate and on-demand — run them when useful, they are not pipeline gates.
+Knowledge capture and side tools (`try-learn-skill`, `document-feature`, `document-module`, `receiving-code-review`, `analyze`, `qa-review`) are separate and on-demand — run them when useful, they are not pipeline gates.
 
 Each step writes a file that feeds the next. Review gates between steps (Claude Code) catch issues automatically. Each pipeline skill ends with a **`## Terminal state`** block (what it delivered + next step / close) so `/goal` sessions keep chaining correctly.
 
@@ -104,6 +104,16 @@ Pick by how well the problem is already classified:
 - **`review`** — solo 4-phase audit of **your own** branch before merge. Writes a report, integrates with project memory, works on every harness. Default choice for everyday code review.
 - **`triada-review`** — host-agnostic multi-agent review for **larger PRs or someone else's branch** — three independent perspectives (tech-lead / security / optional UI). Claude uses registered roles; Codex, Pi, and Grok dispatch generic isolated agents with the same role prompts, or fall back to an explicitly advisory inline review.
 - **`analyze`** — traceability audit, not code quality: does planning ↔ tasks ↔ code form a consistent chain? Optional after `implement` / before merge when you suspect scope creep or coverage gaps. Orthogonal to `review`/`triada-review`.
+- **`qa-review`** — static, read-only test-value audit: it identifies missing scenarios, misleading tests, weak doubles, wrong test levels, and integration/E2E gaps without executing tests, measuring coverage, or editing code. It complements `review` (solo branch quality), `triada-review` (multi-perspective branch quality), and `analyze` (AC→task→code traceability); it never becomes a mandatory gate.
+
+  ```text
+  @qa-review
+  @qa-review feature absolutpowers/feature/planning-auth.md
+  @qa-review codebase
+  @qa-review codebase skills/generate-tasks
+  ```
+
+  Empty arguments audit the current feature. An explicit feature artifact anchors intent; an empty feature with no changes or scope artifact stops without silently widening to the whole project. Whole-codebase mode discovers logical areas, audits them in module waves, and synthesizes cross-boundary risks; a path keeps local findings inside that module and labels advice requiring other modules separately. Every completed audit writes a new immutable report: feature mode uses `absolutpowers/reviews/qa-review-{feature-slug}-YYYY-MM-DD-HHmmss.md`, whole-codebase mode uses `absolutpowers/reviews/qa-review-codebase-YYYY-MM-DD-HHmmss.md`, and scoped mode uses `absolutpowers/reviews/qa-review-{module-slug}-YYYY-MM-DD-HHmmss.md`. Reports use verdict `ADEQUATE`, `IMPROVEMENTS_RECOMMENDED`, `GAPS_FOUND`, or `MISLEADING_CONFIDENCE` and expose a stable `Actionable Findings` section. Follow findings safely in this order: resolve `FEATURE_DISCUSS`, obtain explicit approval for any `INLINE_FIX`, send `GENERATE_TASKS` findings to `@generate-tasks`, then re-run `@qa-review`. The canonical schema and calibration remain in [`skills/qa-review/references/testing-rubric.md`](skills/qa-review/references/testing-rubric.md).
 - **`receiving-code-review`** — you **received** PR/review feedback (human or bot) and need to address it: verify against the codebase first, clarify unclear items, push back when wrong, implement one fix at a time. Not for *writing* a review (that's `review` / `triada-review`).
 - **`explain`** — standalone HTML when a **human** needs a fast explanation of a plan or diff. Ephemeral, not durable docs.
 - Also: `constitution` (ratify project principles), `try-learn-skill` / `document-feature` / `document-module` (knowledge capture).
@@ -164,7 +174,7 @@ claude -p "/goal <same condition>" --output-format stream-json --verbose
 
 `all` = every harness (Claude Code, Codex, Pi, Grok — one shared `skills/{name}/SKILL.md`). `Claude` = Claude Code only (registered agent types and/or parallel subagent dispatch).
 
-**16 workflow skills + `preboot`** in the shared tree (plus vendored helpers under `skills/vendored/`, not counted as pipeline skills).
+**17 workflow skills + `preboot`** in the shared tree (plus vendored helpers under `skills/vendored/`, not counted as pipeline skills).
 
 | Skill | What it does | In → Out | Harnesses |
 |---|---|---|---|
@@ -177,6 +187,7 @@ claude -p "/goal <same condition>" --output-format stream-json --verbose
 | `problem-discuss` | Triage fuzzy multi-item client report: split, classify, route | report → `problem/problem-{slug}.md` | all |
 | `analyze` | Cross-artifact audit: AC→task→code matrix, 6 divergence classes | slug → `reviews/analyze-{slug}.md` | all |
 | `triada-review` | Multi-agent branch review + synthesis with per-harness dispatch | branch → report in session | all |
+| `qa-review` | Static test-value audit for a feature, module, or whole codebase | scope → immutable `reviews/qa-review-{scope}-{timestamp}.md` | all |
 | `constitution` | Author/ratify project principles (pryncypia) | topic → `constitution.md` | all |
 | `update-ai-context` | Bootstrap/refresh `CLAUDE.md`, `AGENTS.md`, `patterns.md`, `rules.md` | path → context files | all |
 | `explain` | Standalone HTML onboarding report for a plan or diff | path/diff → `docs/onboarding/*.html` | all |
@@ -205,7 +216,7 @@ Interactive Product Owner / Product Architect session — discusses requirements
 
 - **When:** starting a feature, brainstorming, "chcę dodać…", "potrzebujemy…"
 - **In → Out:** feature description → `absolutpowers/feature/planning-{slug}.md` (optionally `docs/adr/YYYY-MM-DD-{slug}.md`)
-- **Trivial changes** (one-liner, config) skip the planning doc — the skill suggests **inline** implementation after you accept CO+WHERE (HARD-GATE still applies; Terminal state: **skip** `generate-tasks`). **Epics** split into `planning-main.md` + per-phase docs in a `feature/{epic-slug}/` subfolder (next step = plan each phase in a new session, not `generate-tasks` on the main).
+- **Trivial changes** (one-liner, config) skip the planning doc — the skill suggests **inline** implementation after you accept CO+WHERE (HARD-GATE still applies; Terminal state: **skip** `generate-tasks`). **Epics** split into a main planning document (default name `planning-main.md`) + per-phase docs in a `feature/{epic-slug}/` subfolder; downstream skills preserve its exact referenced path instead of reconstructing the filename (next step = plan each phase in a new session, not `generate-tasks` on the main).
 - **Gap handoff (Mode C):** hand it a `problem-{slug}.md` from `problem-discuss` (item classified as a gap) and it inherits the confirmed evidence — business rule, what's missing, where — instead of re-interviewing from zero. It designs only *how* to fill the gap and stamps `**Źródło:** problem-{slug}.md, Sprawa N` for traceability.
 - Optional **Visual Companion** (browser mockups/options) after explicit approval — see `skills/feature-discuss/visual-companion.md`.
 
@@ -233,11 +244,11 @@ Reads a planning doc (or a review report, or a `planning-fix-` doc from `debug`)
 
 ### `/absolutpowers:implement`
 
-Senior engineer executing tasks sequentially, following each task's `Test-first:` marker (write-tests-first + red run for `yes`, direct implement for `no`; legacy docs without the marker fall back to judgment; see also `references/tdd-anti-patterns.md`). Embeds the `AC-N` token in tests covering a traced AC; AC fulfillment is then determined by grepping test sources for that token, and a traced AC with **no** token-matched test (`NOT VERIFIED (untested)`) blocks completion. Marks a task `in-progress` before touching code and `completed` only after verification (interruption-safe). Runs final verification, then the `review-implementation` gate. Orchestrated plans → `implementation-worker` per phase + `phase-review` (Claude); other harnesses degrade via `references/harness-dispatch.md`. Respects `constitution.md`. Can create ADRs and memory candidates (`references/project-memory.md`).
+Senior engineer executing tasks sequentially, following each task's `Test-first:` marker (write-tests-first + red run for `yes`, direct implement for `no`; legacy docs without the marker fall back to judgment; see also `references/tdd-anti-patterns.md`). Embeds the `AC-N` token in tests covering a traced AC; AC fulfillment is then determined by grepping test sources for that token, and a traced AC with **no** token-matched test (`NOT VERIFIED (untested)`) blocks completion. Marks a task `in-progress` before touching code and `completed` only after verification (interruption-safe). For epic phases it resolves the exact referenced parent planning document regardless of filename and persists phase state across sessions. After the implementation gate it aggregates every `Implementation Decisions / Remarks` entry into a versioned HTML report; non-empty remarks create a durable human-acceptance checkpoint before the phase becomes `Zrobiona`. Orchestrated plans → `implementation-worker` per phase + `phase-review` (Claude); other harnesses degrade via `references/harness-dispatch.md`. Respects `constitution.md`. Can create ADRs and memory candidates (`references/project-memory.md`).
 
 - **When:** after `generate-tasks`
 - **In → Out:** path to a tasks file → implementation code + tests, updated tasks file
-- **After PASS:** next is `@review` / `@triada-review`; optionally `@analyze {slug}` for AC↔task↔code consistency; then `@ship`
+- **After PASS:** next is `@review` / `@triada-review`. A standalone feature or final epic phase can then go through optional `@analyze` and `@ship`; an epic with remaining phases instead gets a state-aware handoff to the next phase (`@feature-discuss` / `@generate-tasks` / `@implement`) and defers epic closeout.
 
 ```bash
 /absolutpowers:implement @absolutpowers/feature/tasks-push-notifications.md
@@ -586,6 +597,14 @@ grok plugin install /path/to/absolut-ai-skills --trust
 
 Versioning is SemVer, kept in sync across all manifests
 (`.claude-plugin/plugin.json`, `.codex-plugin/plugin.json`, and `.grok-plugin/plugin.json`).
+
+### 5.4.0 — Static QA Review
+
+- Added `qa-review`, an on-demand read-only audit of test value for the current feature, an explicit artifact, a module path, or the whole codebase
+- Added the canonical testing rubric and isolated `qa-reviewer` worker, with parallel module waves and explicit sequential/inline reduced-isolation fallback across harnesses
+- Added stable immutable reports and safe `FEATURE_DISCUSS` → approved `INLINE_FIX` → `GENERATE_TASKS` → re-audit routing
+- Added optional post-implementation QA-review guidance for elevated test-risk signals; QA review remains outside the mandatory review pipeline
+- Version **5.4.0** across all plugin manifests
 
 ### 5.3.0 — Host-agnostic Triada Review
 - Promoted `triada-review` from a Claude-only command to `skills/triada-review/SKILL.md`, shared by Claude Code, Codex, Pi, and Grok

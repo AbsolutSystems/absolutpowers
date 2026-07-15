@@ -72,7 +72,7 @@ Draft — [data]
 [Kluczowe ustalenia z rozmowy]
 ```
 
-## Format: epic main doc (`planning-main.md`)
+## Format: główny planning epica (domyślnie `planning-main.md`)
 
 > LEKKI, kontekstowy. BEZ szczegółowego planu implementacji, BEZ Acceptance Criteria
 > (te mieszkają w phase docach). Main to "mapa" epica i wspólny kontekst.
@@ -106,7 +106,13 @@ Draft — [data]
 | 2 | [nazwa] | [cel] | Do zaplanowania | `planning-phase-2-{subslug}.md` |
 | 3 | [nazwa] | [cel] | Do zaplanowania | `planning-phase-3-{subslug}.md` |
 
-> Statusy: `Do zaplanowania` → `Zaplanowana` → `W toku` → `Zrobiona`
+> Statusy są trwałym stanem między sesjami:
+> `Do zaplanowania` → `Zaplanowana` (ustawia `feature-discuss`) → `W toku`
+> (ustawia `implement` przed pierwszą zmianą kodu/dispatch) → opcjonalnie
+> `Do akceptacji decyzji` (niepuste Implementation Decisions / Remarks) → `Zrobiona`
+> (dopiero po final verification, PASS bramki implementacyjnej lub jawnym override oraz
+> wymaganym human decision review). `Zrobiona` nie zastępuje osobnego branch-level
+> `review`/`triada-review`.
 
 ## Zależności między fazami
 - Faza 2 zależy od Fazy 1 ([dlaczego])
@@ -132,8 +138,8 @@ Draft — [data]
 # Faza [N]: [Nazwa]  (epic: [nazwa epica])
 
 ## Kontekst nadrzędny
-> ZACZNIJ od przeczytania `./absolutpowers/feature/{slug}/planning-main.md`.
-- Epic: `planning-main.md`
+> ZACZNIJ od przeczytania `{dokładna ścieżka do głównego planning doca epica}`.
+- Epic planning: `{dokładna ścieżka; nie odtwarzaj jej później z konwencji nazwy}`
 - Zależności od innych faz: [np. wymaga Fazy 1 — modelu danych]
 
 ## Status

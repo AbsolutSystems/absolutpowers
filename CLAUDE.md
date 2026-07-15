@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## What This Is
 
-AbsolutPowers — a Claude Code + Codex + Pi + Grok plugin providing AI-assisted development lifecycle skills: problem intake/triage, feature discussion, task generation, implementation, review, debugging, project context management, and project constitution. Version 5.3.0. As of 5.0.0 the repo is a single host-agnostic skill tree (see Repository Layout) with thin per-harness manifests/integrations, replacing the earlier two mirrored `claude/`/`codex/` trees; it also introduces `skills/vendored/` — selected skills vendored from [obra/superpowers](https://github.com/obra/superpowers) under MIT (see `VENDORED.md`, `LICENSE-VENDORED`). Grok Build is supported as a first-class harness via `.grok-plugin/` + `references/grok-tools.md`.
+AbsolutPowers — a Claude Code + Codex + Pi + Grok plugin providing AI-assisted development lifecycle skills: problem intake/triage, feature discussion, task generation, implementation, review, static QA test-value auditing, debugging, project context management, and project constitution. Version 5.4.0. As of 5.0.0 the repo is a single host-agnostic skill tree (see Repository Layout) with thin per-harness manifests/integrations, replacing the earlier two mirrored `claude/`/`codex/` trees; it also introduces `skills/vendored/` — selected skills vendored from [obra/superpowers](https://github.com/obra/superpowers) under MIT (see `VENDORED.md`, `LICENSE-VENDORED`). Grok Build is supported as a first-class harness via `.grok-plugin/` + `references/grok-tools.md`.
 
 ## Repository Layout
 
@@ -167,6 +167,34 @@ AC→task→code traceability matrix and detect divergences that per-step gates 
 gate): judges whether the task set as a whole achieves the *goal/intent* of the
 planning doc, not just literal per-requirement coverage. Complements `analyze`
 (in-flight gate vs post-hoc audit).
+
+### Static QA Review (all harnesses, on-demand)
+
+`qa-review` audits whether tests protect meaningful behavior for the current feature, an explicit
+feature artifact, one module path, or the whole codebase. It is static and read-only: it never
+runs tests, measures coverage, edits code, or acts as a mandatory pipeline gate. Its boundary is
+deliberate: `review`/`triada-review` assess branch quality, while `analyze` checks
+AC→task→code traceability.
+
+- Public forms: `@qa-review`, `@qa-review feature [artifact]`, and
+  `@qa-review codebase [path]`. Feature mode with no changes and no scope-defining artifact stops
+  without a report and never widens to codebase mode.
+- Completed audits create one immutable
+  `absolutpowers/reviews/qa-review-{scope}-YYYY-MM-DD-HHmmss.md` with verdict
+  `ADEQUATE | IMPROVEMENTS_RECOMMENDED | GAPS_FOUND | MISLEADING_CONFIDENCE` and stable
+  `Actionable Findings`. Consumers follow `FEATURE_DISCUSS` decisions, explicit `INLINE_FIX`
+  approval, `GENERATE_TASKS`, then re-audit.
+- `skills/qa-review/references/testing-rubric.md` solely owns `QAFinding`, the seven dimensions,
+  calibration, routes, and verdict mapping. Other docs link to it instead of duplicating it.
+- `agents/qa-reviewer.md` owns isolated, read-only analysis of one scope package and returns
+  `QAWorkerResult`; the root skill owns module discovery, cross-boundary analysis, deduplication,
+  verdict, routing, and the single report.
+- Whole-codebase audits dispatch independent logical modules in parallel waves within harness
+  concurrency limits. Claude uses the registered worker; Codex/Grok use fresh generic agents with
+  the same prompt body; Pi uses `pi-subagents`. Without isolated dispatch, process every module
+  sequentially/inline and label the result `advisory (not fully isolated)`—never omit scope
+  silently. Scoped-module recommendations involving another module stay separately labeled as
+  cross-boundary integration/E2E advice.
 
 ### Standalone Triada Review (all harnesses)
 

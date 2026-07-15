@@ -16,9 +16,13 @@ Concise, factual overview for agent orientation:
 ```markdown
 ## Project Context
 
-**Source doc:** `./absolutpowers/feature/planning-{slug}.md` or `./absolutpowers/reviews/YYYY-MM-DD-{branch-slug}.md` or `./absolutpowers/feature/{epic-slug}/planning-phase-N-{subslug}.md`
+**Source doc:** `./absolutpowers/feature/planning-{slug}.md` or `./absolutpowers/reviews/YYYY-MM-DD-{branch-slug}.md` or `./absolutpowers/reviews/qa-review-{scope}-YYYY-MM-DD-HHmmss.md` or `./absolutpowers/feature/{epic-slug}/planning-phase-N-{subslug}.md`
 
-**Epic context (if applicable):** `./absolutpowers/feature/{epic-slug}/planning-main.md`
+**QA source (QA report only):** `./absolutpowers/reviews/qa-review-{scope}-YYYY-MM-DD-HHmmss.md`
+**QA report scope / timestamp (QA report only):** `{scope}` / `YYYY-MM-DD-HHmmss`
+**Selected QA findings (QA report only):** `QA-001, QA-004` (only findings with `Route: GENERATE_TASKS`)
+
+**Epic context (if applicable):** `{exact parent epic-planning path copied from the phase doc; do not synthesize a filename}`
 
 **Stack:** [languages, frameworks, key libraries]
 
@@ -116,14 +120,16 @@ The main `tasks-{slug}.md` file is an index for the orchestrator, not the full i
 pending
 
 ## Source
-- Planning doc: `./absolutpowers/feature/planning-{slug}.md`  <!-- for epic phases: ./absolutpowers/feature/{epic-slug}/planning-phase-N-{subslug}.md -->
-- Epic context (if applicable): `./absolutpowers/feature/{epic-slug}/planning-main.md`
+- Source doc: `./absolutpowers/feature/planning-{slug}.md`  <!-- review variants: ./absolutpowers/reviews/YYYY-MM-DD-{branch-slug}.md or ./absolutpowers/reviews/qa-review-{scope}-YYYY-MM-DD-HHmmss.md; epic phases: ./absolutpowers/feature/{epic-slug}/planning-phase-N-{subslug}.md -->
+- Epic context (if applicable): `{exact parent epic-planning path copied from the phase doc; do not synthesize a filename}`
+- QA traceability (QA report only): report scope `{scope}`, timestamp `YYYY-MM-DD-HHmmss`, selected `GENERATE_TASKS` findings `QA-001, QA-004`
 
 ## Mode
 orchestrated
 
 ## Project Context
 **Stack:** [languages, frameworks, key libraries]
+**QA source (if applicable):** [exact QA report path, report scope, timestamp, and selected finding IDs; omit for non-QA inputs]
 **Global Constraints:** [spec-derived requirements binding every phase/task in this plan — copied verbatim from the planning doc; cite binding `constitution.md` articles as `Per Artykuł N`, never copy article text. Distinct from `constitution.md` (project pryncypia) and `rules.md` (lint) — see the single-file `## Project Context` template above for the full demarcation note.]
 **Verification commands:** [canonical commands]
 **Shared implementation context:** `./absolutpowers/feature/tasks-{slug}/implementation-context.md`

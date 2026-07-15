@@ -147,6 +147,29 @@ Agent(subagent_type="review-plan", prompt="Review planning document: ./absolutpo
 AI agent przeczyta tę instrukcję i użyje narzędzia Agent z odpowiednimi parametrami. Na Codex/Pi
 ta sama sekcja jest inertna (zwykła proza) — patrz `references/pi-tools.md` po wzorzec degradacji.
 
+### Utrzymanie `qa-review` i workera QA
+
+`qa-review` jest specjalistycznym audytem wartości testów, a nie kolejnym gate'em code review.
+Statycznie czyta zadeklarowany scope; nie uruchamia testów, nie mierzy coverage i nie zmienia kodu.
+Nie łącz go semantycznie z `review`/`triada-review` (jakość brancha) ani `analyze`
+(traceability AC→task→kod), i nie dodawaj go do obowiązkowego pipeline'u.
+
+- `skills/qa-review/SKILL.md` jest właścicielem scope discovery, module-wave dispatch, syntezy,
+  stabilnego `Actionable Findings`, nazwy `qa-review-{scope}-YYYY-MM-DD-HHmmss.md` i routingu
+  `FEATURE_DISCUSS` → jawnie zaakceptowany `INLINE_FIX` → `GENERATE_TASKS` → re-audit.
+- `skills/qa-review/references/testing-rubric.md` jest jedynym źródłem prawdy dla `QAFinding`,
+  wymiarów oceny, severity/confidence, operacji, routes i verdictów. Linkuj go; nie kopiuj rubryki.
+- `agents/qa-reviewer.md` jest read-only workerem jednego kompletnego scope package. Zwraca
+  `QAWorkerResult`; nie rozszerza scope, nie liczy końcowego verdictu i nie zapisuje raportu.
+- Root skill dzieli większy codebase na logiczne moduły, dispatchuje niezależne workery falami
+  w granicach concurrency, a następnie deduplikuje i syntetyzuje jeden raport. Claude używa
+  zarejestrowanego `qa-reviewer`; Codex/Grok przekazują ciało promptu świeżemu generic agentowi,
+  a Pi używa `pi-subagents`. Gdy izolacja jest niedostępna, wszystkie moduły są analizowane
+  sekwencyjnie/inline z jawnym `advisory (not fully isolated)` — nigdy pomijane po cichu.
+- Feature bez diffu i bez artefaktu ustalającego scope kończy się bez raportu; nie może awaryjnie
+  przełączyć się na whole-codebase. Scoped module zachowuje granicę, a rekomendacje wymagające
+  innych modułów trafiają do osobnej sekcji cross-boundary integration/E2E.
+
 ## Checklist nowego / zmienianego skilla
 
 Przed PR-em na skill (lub agent/command, który zmienia kontrakt pipeline):

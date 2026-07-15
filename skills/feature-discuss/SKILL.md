@@ -10,11 +10,12 @@ description: >
   brainstorming, feature design, "what if we", product discussion, requirements gathering,
   "should we build", architecture decision for new functionality, "omowmy etap",
   "zaplanuj faze", "przeczytaj glowny planing", existing planning-main.md,
-  gap routed from problem-discuss ("sprawa N to gap", path to problem-*.md).
+  gap routed from problem-discuss ("sprawa N to gap", path to problem-*.md),
+  or selected FEATURE_DISCUSS findings from a qa-review-*.md report.
   NIE wyzwalaj na: implementację (to `implement`/`generate-tasks`); triage zgłoszenia klienta (to `problem-discuss`);
   debug errora (to `debug`); sam review kodu (to `review`).
 allowed-tools: Read, Glob, Grep, Bash(find:*), Bash(wc:*), Bash(cat:*), Bash(head:*), Bash(tail:*), Bash(tree:*), Bash(mkdir:*), Bash(companion-scripts/start-server.sh:*), Bash(companion-scripts/stop-server.sh:*), Write(**/absolutpowers/feature/**/*.md), Write(**/docs/adr/*.md), Write(**/.superpowers/brainstorm/**/*.html), Agent
-argument-hint: "[opis feature'a, LUB ścieżka do planning-main.md + numer/nazwa fazy]"
+argument-hint: "[opis feature'a, planning-main.md + faza, problem-*.md + sprawa, LUB qa-review-*.md + QA IDs]"
 ---
 
 # Feature Discussion Mode — Product Owner / Product Architect
@@ -69,7 +70,7 @@ Pełny protokół + klasy CSS: **`skills/feature-discuss/visual-companion.md`**.
 
 ## Router trybu — ustal to ZANIM zaczniesz rozmowę
 
-Ten skill ma **trzy tryby wejścia**. Na podstawie `$ARGUMENTS` i pierwszej wiadomości ustal który:
+Ten skill ma **cztery tryby wejścia**. Na podstawie `$ARGUMENTS` i pierwszej wiadomości ustal który:
 
 ### Tryb A — Nowy feature (default)
 Użytkownik opisuje nową potrzebę/feature od zera. Brak odwołania do istniejącego planu.
@@ -116,6 +117,34 @@ Procedura:
 
 **W Trybie C dziedziczysz ewidencję, nie wnioski projektowe** — problem-discuss ustalił CO
 brakuje i DLACZEGO to gap; JAK to uzupełnić projektujesz tutaj, od zera.
+
+### Tryb D — Handoff z QA review (nierozstrzygnięty design)
+Sygnały: `$ARGUMENTS` zawiera ścieżkę `absolutpowers/reviews/qa-review-{scope}-YYYY-MM-DD-HHmmss.md`
+oraz co najmniej jeden wybrany identyfikator `QA-NNN`, np. `QA-003 QA-007`.
+
+Procedura:
+1. **Przeczytaj wskazany raport i zwaliduj wybór przed rozmową.** Każdy podany identyfikator
+   musi istnieć w stabilnej sekcji `## Actionable Findings` i mieć dokładnie `Route: FEATURE_DISCUSS`.
+   Brakujący identyfikator albo route `GENERATE_TASKS` / `INLINE_FIX` odrzuć jawnie: wypisz ID,
+   faktyczny route i właściwy następny workflow. Nie dołączaj go po cichu do zakresu planowania.
+2. Wczytaj jako kontekst startowy: `Report scope`, `## Intent Sources`, a dla każdego zaakceptowanego
+   findingu jego evidence, risk i recommendation oraz raportowe `## Limitations`. Rekomendacja z audytu
+   jest hipotezą wejściową do oceny, **nie zaakceptowanym rozwiązaniem** ani zgodą na implementację.
+3. **Faza 0 = parafraza problemu i niepewności z raportu.** Potwierdź z użytkownikiem oczekiwane
+   zachowanie oraz granicę wybranych findingów. Zachowaj zwykły HARD-GATE, analizę kodu, prezentację
+   designu sekcjami, akceptację i review-plan; QA handoff nie skraca normalnego procesu projektowego.
+4. Zakres Trybu D obejmuje wyłącznie zaakceptowane ID z route `FEATURE_DISCUSS`. Findingi
+   `GENERATE_TASKS` należą do `@generate-tasks`, a `INLINE_FIX` wymagają osobnej jawnej zgody i
+   bezpośredniego workflow poprawki; podsumuj je jako pominięte, jeśli występują w żądaniu.
+5. W wynikowym standardowym lub phase planning docu zapisz trwałą proweniencję:
+   `**Źródło QA:** absolutpowers/reviews/qa-review-{scope}-YYYY-MM-DD-HHmmss.md; findingi: QA-003, QA-007`.
+   Nie zapisuj w tej liście ID odrzuconych ani niewybranych.
+6. Po jawnej akceptacji i standardowych bramkach przekaż planning doc do zwykłego łańcucha:
+   `@generate-tasks` → `@implement` → `@review`/`@triada-review` → `@ship`.
+
+**W Trybie D dziedziczysz ewidencję i ryzyko, nie decyzję produktową ani rozwiązanie** — celem
+feature-discuss jest rozstrzygnięcie oczekiwanego zachowania i zaakceptowanie designu z pełną
+traceability raport QA → findingi → planning doc.
 
 ## Konwencja plików
 

@@ -24,6 +24,7 @@ step; a human (or a headless runner) triggers the transition by invoking the nex
 | Execute tasks | `@implement` |
 | Code quality on branch | `@review` or `@triada-review` |
 | AC↔task↔code consistency | `@analyze` (on-demand) |
+| Static test-value audit | `@qa-review [feature [artifact] \| codebase [path]]` (on-demand) |
 | Commit + archive feature | `@ship` |
 | Bug / test fail root cause | `@debug` |
 | Project principles | `@constitution` |
@@ -33,6 +34,17 @@ step; a human (or a headless runner) triggers the transition by invoking the nex
 | Ephemeral HTML explain | `@explain` |
 | Mine learned skills | `@try-learn-skill` |
 | PR review feedback | `@receiving-code-review` |
+
+`@qa-review` is a read-only specialist audit, never a pipeline gate: it inspects test value
+statically without running tests, measuring coverage, or editing code. Use `@qa-review` for the
+current feature, `@qa-review feature absolutpowers/feature/planning-auth.md` for an explicit
+artifact, `@qa-review codebase` for logical-area synthesis across the repository, or
+`@qa-review codebase skills/generate-tasks` for a bounded module. An empty current feature stops
+without a report; it never expands into a whole-codebase audit. Reports are immutable
+`absolutpowers/reviews/qa-review-{scope}-YYYY-MM-DD-HHmmss.md` files with rubric-derived verdicts
+and stable `Actionable Findings`; route decisions first (`FEATURE_DISCUSS`), then separately
+approved `INLINE_FIX`, then `GENERATE_TASKS`, and finally re-run the audit. The canonical finding
+contract and calibration live only in `skills/qa-review/references/testing-rubric.md`.
 
 If this session was already mid-skill (an active checklist/todo, an implementation phase,
 a pending gate) — return to that checklist and resume instead of starting fresh. This

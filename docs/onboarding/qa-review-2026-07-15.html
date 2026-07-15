@@ -1,0 +1,301 @@
+<!doctype html>
+<html lang="pl">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>QA Review — onboarding do planu</title>
+  <style>
+    :root {
+      color-scheme: light dark;
+      --bg: #f4f7fb;
+      --card: #ffffff;
+      --text: #172033;
+      --muted: #5f6b7a;
+      --line: #d9e1ec;
+      --brand: #3157c8;
+      --brand-soft: #edf2ff;
+      --verified: #087f5b;
+      --verified-bg: #e8f8f1;
+      --planned: #8a5b00;
+      --planned-bg: #fff4d6;
+      --high: #b42318;
+      --high-bg: #fff0ee;
+      --medium: #a15c00;
+      --medium-bg: #fff5df;
+      --low: #1967a3;
+      --low-bg: #eaf5ff;
+      --code: #f1f4f8;
+      --shadow: 0 8px 28px rgba(35, 48, 73, .08);
+    }
+    @media (prefers-color-scheme: dark) {
+      :root {
+        --bg: #111621;
+        --card: #192130;
+        --text: #edf2f8;
+        --muted: #aab5c5;
+        --line: #334056;
+        --brand: #91aaff;
+        --brand-soft: #242f50;
+        --verified: #6ee7b7;
+        --verified-bg: #173a32;
+        --planned: #f7cc67;
+        --planned-bg: #42351e;
+        --high: #ff9b91;
+        --high-bg: #4a2527;
+        --medium: #ffd084;
+        --medium-bg: #45341d;
+        --low: #8ecbff;
+        --low-bg: #1d3549;
+        --code: #111827;
+        --shadow: 0 8px 28px rgba(0, 0, 0, .22);
+      }
+    }
+    * { box-sizing: border-box; }
+    html { scroll-behavior: smooth; }
+    body {
+      margin: 0;
+      background: var(--bg);
+      color: var(--text);
+      font: 16px/1.62 system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    }
+    main { max-width: 920px; margin: 0 auto; padding: 40px 20px 64px; }
+    header { margin-bottom: 24px; }
+    h1 { margin: 0 0 8px; font-size: clamp(2rem, 5vw, 3.25rem); line-height: 1.08; letter-spacing: -.035em; }
+    h2 { margin: 0 0 16px; font-size: 1.45rem; line-height: 1.25; }
+    h3 { margin: 22px 0 8px; font-size: 1.08rem; }
+    p { margin: 8px 0 14px; }
+    a { color: var(--brand); }
+    code { padding: .12rem .35rem; border-radius: 5px; background: var(--code); font-size: .9em; }
+    .subtitle { color: var(--muted); max-width: 720px; font-size: 1.08rem; }
+    .card {
+      margin: 18px 0;
+      padding: 24px;
+      border: 1px solid var(--line);
+      border-radius: 16px;
+      background: var(--card);
+      box-shadow: var(--shadow);
+    }
+    .toc ul, .compact { margin: 8px 0 0; padding-left: 22px; }
+    .toc li { margin: 4px 0; }
+    .badge {
+      display: inline-block;
+      margin-right: 6px;
+      padding: 2px 9px;
+      border-radius: 999px;
+      font-size: .76rem;
+      font-weight: 750;
+      letter-spacing: .025em;
+      vertical-align: .1em;
+    }
+    .verified { color: var(--verified); background: var(--verified-bg); }
+    .planned { color: var(--planned); background: var(--planned-bg); }
+    .decision-box { border-left: 5px solid var(--brand); background: var(--brand-soft); }
+    .decision-list { display: grid; gap: 12px; margin-top: 14px; }
+    .decision {
+      padding: 14px 16px;
+      border: 1px solid var(--line);
+      border-radius: 11px;
+      background: var(--card);
+    }
+    .decision strong { display: block; margin-bottom: 3px; }
+    .callout {
+      padding: 14px 16px;
+      border-left: 4px solid var(--brand);
+      border-radius: 8px;
+      background: var(--brand-soft);
+    }
+    .grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px; }
+    .mini { padding: 15px; border: 1px solid var(--line); border-radius: 11px; }
+    .mini h3 { margin-top: 0; }
+    .table-wrap { overflow-x: auto; border: 1px solid var(--line); border-radius: 12px; }
+    table { width: 100%; min-width: 700px; border-collapse: collapse; font-size: .93rem; }
+    th, td { padding: 12px 14px; border-bottom: 1px solid var(--line); text-align: left; vertical-align: top; }
+    th { background: var(--brand-soft); }
+    tbody tr:nth-child(even) { background: color-mix(in srgb, var(--card) 92%, var(--brand) 8%); }
+    tbody tr:last-child td { border-bottom: 0; }
+    .risk { margin: 10px 0; padding: 14px 16px; border-radius: 10px; border-left: 5px solid; }
+    .risk.high { color: var(--high); background: var(--high-bg); border-color: var(--high); }
+    .risk.medium { color: var(--medium); background: var(--medium-bg); border-color: var(--medium); }
+    .risk.low { color: var(--low); background: var(--low-bg); border-color: var(--low); }
+    .risk span { color: var(--text); }
+    .mermaid { padding: 10px 0; text-align: center; overflow-x: auto; }
+    .file-group { margin-top: 18px; }
+    .file-group:first-of-type { margin-top: 0; }
+    .file-list { margin: 8px 0 0; padding-left: 22px; }
+    .file-list li { margin: 7px 0; }
+    footer { margin-top: 30px; color: var(--muted); font-size: .88rem; }
+    @media (max-width: 680px) {
+      main { padding: 26px 14px 48px; }
+      .card { padding: 19px; border-radius: 13px; }
+      .grid { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+<main>
+  <header>
+    <h1>QA Review</h1>
+    <p class="subtitle">Onboarding do planu specjalistycznego, read-only audytu jakości testów — dla pojedynczego feature’a albo logicznie podzielonego codebase’u.</p>
+  </header>
+
+  <nav class="card toc" aria-label="Spis treści">
+    <h2>Spis treści</h2>
+    <ul>
+      <li><a href="#tldr">TL;DR</a></li>
+      <li><a href="#decisions">Pytania i decyzje</a></li>
+      <li><a href="#before">Punkt wyjścia</a></li>
+      <li><a href="#plan">Co planujemy</a></li>
+      <li><a href="#flow">Architektura i przepływ</a></li>
+      <li><a href="#tradeoffs">Wybrane rozwiązania</a></li>
+      <li><a href="#risks">Ryzyka</a></li>
+      <li><a href="#files">Mapa plików</a></li>
+      <li><a href="#glossary">Glosariusz</a></li>
+    </ul>
+  </nav>
+
+  <section id="tldr" class="card">
+    <h2>TL;DR</h2>
+    <p><span class="badge planned">PLANOWANE</span>Powstanie jeden skill <code>qa-review</code> z trybami <code>feature</code> i <code>codebase</code>. Nie będzie sprawdzał, czy testy są zielone; ma odpowiedzieć, czy testy rzeczywiście chronią istotne zachowanie, czy nie brakuje edge case’ów i czy mocki nie budują fałszywego poczucia bezpieczeństwa.</p>
+    <p><span class="badge planned">PLANOWANE</span>Każdy audyt zakończy się nowym raportem Markdown z werdyktem, dowodami <code>plik:linia</code> oraz routingiem do <code>feature-discuss</code>, <code>generate-tasks</code> albo osobno zaakceptowanego drobnego fixu.</p>
+    <p><span class="badge verified">ZWERYFIKOWANE</span>Obecne skille <code>review</code> i <code>triada-review</code> oceniają branch szerzej; rola <code>codebase-auditor</code> zawiera krótką sekcję jakości testów, ale repo nie ma jeszcze osobnego skilla ani katalogu <code>skills/qa-review/</code>.</p>
+  </section>
+
+  <section id="decisions" class="card decision-box">
+    <h2>Pytania i decyzje dla człowieka</h2>
+    <p><strong>Brak otwartych pytań.</strong> Poniższe cztery decyzje zostały już zaakceptowane i są najważniejszymi punktami do pilnowania podczas implementacji oraz review.</p>
+    <div class="decision-list">
+      <div class="decision"><strong>1. Audyt pozostaje bezwzględnie read-only</strong>Nawet one-liner trafia do raportu jako <code>INLINE_FIX</code>; skill nie edytuje kodu ani testów.</div>
+      <div class="decision"><strong>2. Skill nie uruchamia testów, E2E ani coverage</strong>Przyjmuje wynik implementacji/CI jako wejście i analizuje znaczenie testów statycznie.</div>
+      <div class="decision"><strong>3. Jeden rubric obsługuje dwa tryby</strong><code>feature</code> i <code>codebase</code> różnią się sposobem ustalania zakresu, nie definicją dobrego testu.</div>
+      <div class="decision"><strong>4. QA nie staje się obowiązkową bramką</strong><code>implement</code> może tylko zasugerować audyt przy podwyższonym ryzyku testowym; uruchomienie pozostaje decyzją użytkownika.</div>
+    </div>
+  </section>
+
+  <section id="before" class="card">
+    <h2>Punkt wyjścia</h2>
+    <div class="grid">
+      <div class="mini">
+        <h3><span class="badge verified">ZWERYFIKOWANE</span>Review brancha</h3>
+        <p><code>skills/review/SKILL.md</code> prowadzi cztery fazy: semantyka, edge case’y, reguły i garbage collection. Testy są elementem ogólnego obrazu, nie osobnym audytem strategii QA.</p>
+      </div>
+      <div class="mini">
+        <h3><span class="badge verified">ZWERYFIKOWANE</span>Triada</h3>
+        <p><code>agents/codebase-auditor.md</code> sprawdza security, correctness i testy w jednej roli. Jego testowy rubric obejmuje m.in. pokrycie zmian, edge case’y, flaky patterns i dobór mock/fake, ale jest celowo krótki i branch-oriented.</p>
+      </div>
+      <div class="mini">
+        <h3><span class="badge verified">ZWERYFIKOWANE</span>Pipeline</h3>
+        <p>Po PASS z <code>implement</code> repo kieruje dziś do <code>review</code> lub <code>triada-review</code>, opcjonalnie do <code>analyze</code>, a następnie do <code>ship</code>.</p>
+      </div>
+      <div class="mini">
+        <h3><span class="badge verified">ZWERYFIKOWANE</span>Routing napraw</h3>
+        <p><code>generate-tasks</code> umie już przyjąć klasyczny raport review, ale nie zna jeszcze formatu <code>qa-review-*</code> ani mieszanego routingu findings.</p>
+      </div>
+    </div>
+  </section>
+
+  <section id="plan" class="card">
+    <h2>Co planujemy</h2>
+    <p><span class="badge planned">PLANOWANE</span>Domyślne <code>@qa-review</code> działa jak <code>@qa-review feature</code>. Ustala intencję kolejno z planningu/AC, tasks, PR/commitów oraz pełnego obrazu zmian: diffu względem bazy, staged, unstaged i untracked. Brak planningu nie blokuje audytu, jeśli pozostałe źródła wiarygodnie wyznaczają zakres.</p>
+    <p><span class="badge planned">PLANOWANE</span><code>@qa-review codebase</code> odkrywa logiczne obszary przez granice workspace/package, domeny, warstwy, a dopiero na końcu katalogi najwyższego poziomu. Każdy obszar jest oceniany osobno, po czym orchestrator deduplikuje findings i szuka luk na granicach modułów oraz w E2E.</p>
+    <p><span class="badge planned">PLANOWANE</span>Rubric ma siedem osi: pokrycie intencji, scenariusze i edge case’y, wartość regresyjna, test doubles, poziom testu, konstrukcja testów oraz strategia integracyjna/E2E. Wynik to <code>ADEQUATE</code>, <code>IMPROVEMENTS_RECOMMENDED</code>, <code>GAPS_FOUND</code> albo <code>MISLEADING_CONFIDENCE</code>.</p>
+    <div class="callout"><strong>Ważna granica:</strong> <code>ADEQUATE</code> jest możliwe tylko przy pełnym zadeklarowanym zakresie. Pominięte lub niedostępne obszary muszą trafić do <code>Omitted scope</code> i obniżyć pewność oceny.</div>
+  </section>
+
+  <section id="flow" class="card">
+    <h2>Architektura i przepływ danych</h2>
+    <p><span class="badge planned">PLANOWANE</span>Ten sam orchestrator obsłuży oba wejścia i wspólną syntezę. Workerzy są optymalizacją dla niezależnych modułów, a nie warunkiem działania.</p>
+    <div class="mermaid">
+flowchart TD
+  A[Wywolanie qa-review] --> B{Tryb}
+  B -->|feature| C[Artefakty plus pelny diff]
+  B -->|codebase| D[Odkrycie modulow]
+  C --> E[Zakres i intencja]
+  D --> F[Paczki modulow]
+  E --> G[Rubric QA]
+  F --> H[Workerzy QA lub fallback]
+  H --> G
+  G --> I[Synteza i deduplikacja]
+  I --> J[Raport qa-review timestamp]
+  J --> K{Routing findingu}
+  K -->|FEATURE_DISCUSS| L[Decyzja produktowa]
+  K -->|GENERATE_TASKS| M[Taski naprawcze]
+  K -->|INLINE_FIX| N[Osobna zgoda]
+    </div>
+    <p class="callout"><span class="badge verified">ZWERYFIKOWANE</span>Repo ma już wspólny kontrakt dispatchu: Claude używa registered agent types, Codex generycznego <code>spawn_agent</code>, Pi opcjonalnego <code>pi-subagents</code>, a Grok <code>spawn_subagent</code>. Plan rozszerza ten istniejący wzorzec o rolę <code>qa-reviewer</code>.</p>
+  </section>
+
+  <section id="tradeoffs" class="card">
+    <h2>Wybrane rozwiązania i trade-offy</h2>
+    <h3>Jeden skill, dwa tryby</h3>
+    <p><span class="badge planned">PLANOWANE</span>Wspólny rubric ogranicza drift między audytem feature’a a audytem codebase’u. Kosztem jest bardziej rozbudowany router zakresu w jednym <code>SKILL.md</code>, ale różnica między trybami dotyczy głównie wejścia i podziału pracy.</p>
+    <h3>Raport zamiast automatycznej naprawy</h3>
+    <p><span class="badge planned">PLANOWANE</span>Oddzielenie audytu od implementacji stabilizuje badany materiał i zachowuje wiarygodny audit trail. Ceną jest dodatkowy krok użytkownika nawet dla oczywistej poprawki.</p>
+    <h3>Analiza statyczna zamiast ponownego test runu</h3>
+    <p><span class="badge planned">PLANOWANE</span>Skill skupia uwagę na tym, czego samo zielone CI nie mówi: wartości asercji, lukach zachowania i złym poziomie testu. Nie potwierdzi jednak faktycznej niestabilności; flaky patterns może opisać wyłącznie jako ryzyko.</p>
+    <h3>Warunkowy nudge zamiast gate’a</h3>
+    <p><span class="badge planned">PLANOWANE</span>Duże i ryzykowne zmiany dostaną czytelną sugestię, ale małe feature’y nie będą obciążone kolejną ceremonią. Pipeline zachowuje obecny terminalny review.</p>
+  </section>
+
+  <section id="risks" class="card">
+    <h2>Ryzyka i miejsca wymagające uwagi</h2>
+    <div class="risk high"><strong>WYSOKIE — prompt injection i wyciek danych</strong><br><span>Kod, komentarze, fixtures i snapshoty muszą być traktowane jako dane. Worker nie może wykonać znalezionej instrukcji, uruchomić projektu ani wkleić sekretu do raportu. Plan zabezpiecza to w AC-13–AC-15; implementacja powinna mieć te reguły zarówno w orchestratorze, jak i promptcie workera.</span></div>
+    <div class="risk medium"><strong>ŚREDNIE — niespójna synteza między workerami</strong><br><span>Różne moduły mogą zgłosić ten sam problem z innym severity lub routingiem. Stabilny schema findings, wspólny rubric i jawna deduplikacja są krytyczne, szczególnie w trybie codebase.</span></div>
+    <div class="risk medium"><strong>ŚREDNIE — fałszywie pełny werdykt</strong><br><span>Duży codebase, pominięte pliki albo nieaktualne artefakty mogą wyglądać na pełny audyt. Raport musi zawsze wymieniać scanned scope, omitted scope i źródła intencji; częściowy zakres wyklucza <code>ADEQUATE</code>.</span></div>
+    <div class="risk medium"><strong>ŚREDNIE — overlap z triadą</strong><br><span>Dokumentacja i opisy triggerów muszą jasno utrzymać granicę: triada to szerokie review brancha z kilkoma perspektywami, a <code>qa-review</code> to głęboki audyt wartości testów, również dla całego codebase’u.</span></div>
+    <div class="risk low"><strong>NISKIE — nadmiar rekomendacji E2E lub REMOVE</strong><br><span>Rubric ma ograniczać E2E do krytycznych przepływów przekraczających realne granice systemu, a usunięcie testu dopuszczać tylko przy wysokim confidence i konkretnym dowodzie.</span></div>
+  </section>
+
+  <section id="files" class="card">
+    <h2>Mapa planowanych plików</h2>
+    <p><span class="badge planned">PLANOWANE</span>Poniższa mapa pochodzi z zaakceptowanego planning docu. Pliki nowego skilla jeszcze nie istnieją; wymienione pliki integracyjne istnieją i zostały sprawdzone w bieżącym repo.</p>
+    <div class="file-group">
+      <h3>Nowe źródła</h3>
+      <ul class="file-list">
+        <li><code>skills/qa-review/SKILL.md</code> — publiczny workflow, routing trybów, synteza i zapis raportu.</li>
+        <li><code>skills/qa-review/references/testing-rubric.md</code> — jedno źródło kryteriów, severity, confidence i poziomów testowania.</li>
+        <li><code>agents/qa-reviewer.md</code> — read-only worker analizujący jedną paczkę lub moduł.</li>
+      </ul>
+    </div>
+    <div class="file-group">
+      <h3>Integracja workflow i dispatchu</h3>
+      <ul class="file-list">
+        <li><code>references/harness-dispatch.md</code>, <code>references/codex-tools.md</code>, <code>references/pi-tools.md</code>, <code>references/grok-tools.md</code> — przenośny dispatch workera oraz sekwencyjny fallback.</li>
+        <li><code>skills/generate-tasks/SKILL.md</code> i <code>skills/generate-tasks/references/task-formats.md</code> — wejście <code>qa-review-*</code>, filtrowanie routingu i nazwy <code>tasks-fix-qa-*</code>.</li>
+        <li><code>skills/feature-discuss/SKILL.md</code> — handoff findings <code>FEATURE_DISCUSS</code> z traceability do raportu.</li>
+        <li><code>skills/implement/SKILL.md</code> — warunkowy, nieblokujący nudge po ryzykownej implementacji.</li>
+      </ul>
+    </div>
+    <div class="file-group">
+      <h3>Dokumentacja i wydanie</h3>
+      <ul class="file-list">
+        <li><code>hooks/session-context.md</code>, <code>README.md</code>, <code>docs/contributing.md</code>, <code>CLAUDE.md</code> — discovery, pozycjonowanie skilla, utrzymanie workera i opis architektury.</li>
+        <li><code>.claude-plugin/plugin.json</code>, <code>.codex-plugin/plugin.json</code>, <code>.grok-plugin/plugin.json</code> — spójne podbicie wersji z <code>5.3.0</code> do <code>5.4.0</code>.</li>
+      </ul>
+    </div>
+  </section>
+
+  <section id="glossary" class="card">
+    <h2>Glosariusz</h2>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>Pojęcie</th><th>Znaczenie w tym planie</th></tr></thead>
+        <tbody>
+          <tr><td><code>test double</code></td><td>Mock, stub, fake lub spy zastępujący rzeczywistą zależność w teście.</td></tr>
+          <tr><td><code>MISLEADING_CONFIDENCE</code></td><td>Najostrzejszy werdykt: testy wyglądają na zabezpieczenie krytycznego zachowania, ale realnie go nie sprawdzają.</td></tr>
+          <tr><td><code>INLINE_FIX</code></td><td>Prosta rekomendacja, która nadal wymaga osobnej zgody i wykonania poza audytem.</td></tr>
+          <tr><td><code>Omitted scope</code></td><td>Jawna lista obszarów, których audyt nie przeczytał lub nie mógł wiarygodnie ocenić.</td></tr>
+          <tr><td><code>audit trail</code></td><td>Historia osobnych raportów z sekundowym timestampem; ponowiony audyt nie nadpisuje poprzedniego.</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <footer>
+    <p>Wygenerowano: 2026-07-15 (Europe/Warsaw). Zakres: <code>absolutpowers/feature/planning-qa-review.md</code> oraz zweryfikowane punkty integracji w repo na branchu <code>main</code>, HEAD <code>90ca433</code>. Planning jest lokalnym, nieśledzonym artefaktem.</p>
+    <p><span class="badge verified">ZWERYFIKOWANE</span>sprawdzone bezpośrednio w repozytorium &nbsp; <span class="badge planned">PLANOWANE</span>opis docelowego zachowania z zaakceptowanego planu.</p>
+  </footer>
+</main>
+<script src="https://cdn.jsdelivr.net/npm/mermaid/dist/mermaid.min.js"></script>
+<script>mermaid.initialize({ startOnLoad: true, theme: "neutral", securityLevel: "strict" });</script>
+</body>
+</html>

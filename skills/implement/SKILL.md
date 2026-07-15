@@ -64,7 +64,49 @@ After reading the tasks file, find the `**Source doc:**` field in the `## Projec
 
 - If the planning doc has an `## Acceptance Criteria` section: extract all `AC-N:` items and keep them in memory for fulfillment tracking.
 - If no `## Acceptance Criteria` section exists: note that AC traceability is not available for this tasks file and proceed normally.
-- **If the source doc is an epic phase doc** (`feature/{epic-slug}/planning-phase-N-{subslug}.md`): the AC live in that phase doc — extract them from there. Also read the parent `feature/{epic-slug}/planning-main.md` for cross-cutting context (shared decisions, ADR links, phase dependencies); treat it as binding context, but do NOT re-derive AC from the main — the main intentionally has none.
+- **If the source doc is an epic phase doc** (commonly `planning-phase-N-{subslug}.md`, but do not rely on the filename): the AC live in that phase doc — extract them from there. Resolve the exact parent epic-planning path using this precedence: (1) `**Epic context:**` / `Epic context` in the tasks doc, (2) the explicit parent-planning link under the phase doc's `## Kontekst nadrzędny`, (3) a unique planning document in the same epic directory whose phase map references the current phase doc. If none or multiple match, report the ambiguity instead of assuming `planning-main.md`. Read the resolved `{epic-main-path}` for cross-cutting context; treat it as binding context, but do NOT re-derive AC from it — the main intentionally has none.
+
+### Epic continuation context
+
+When the source doc is an epic phase doc, keep the epic identity until the final output — do not
+collapse it into a standalone feature at closeout:
+
+1. Match the current phase against its row in `{epic-main-path}` using the phase number and the
+   `Plan` path from `## Mapa faz`.
+2. Read the ordered phase map and dependencies. Identify the next actionable sibling after the
+   current phase, skipping rows already marked `Zrobiona`. Do not implement or plan that sibling
+   inside this invocation.
+3. Before printing the final handoff, inspect the sibling's phase doc and tasks artifact (if any)
+   so the suggested workflow reflects durable state:
+   - phase status `Do zaplanowania` or a stub/TODO doc → `@feature-discuss` with
+     `{epic-main-path}` and that phase;
+   - full phase doc ready, but no tasks doc → `@generate-tasks` on the phase doc;
+   - tasks doc exists with pending/in-progress work → `@implement` on that tasks doc;
+   - phase marked `Zrobiona` → skip it and evaluate the next row.
+4. If the current phase cannot be matched, or dependencies make the next phase ambiguous, report
+   the mismatch instead of guessing a phase.
+
+This continuation lookup is routing only. The current phase still requires `@review` or
+`@triada-review` before moving to the sibling phase.
+
+#### Durable phase status in the epic planning document
+
+Treat the current row in `## Mapa faz` as cross-session state, not decorative documentation:
+
+- Immediately before the first code change or orchestrated worker dispatch, change the current
+  phase status from `Zaplanowana` to `W toku`. If it is already `W toku` during a resume, preserve
+  it. Do not modify sibling rows.
+- After final verification and `review-implementation` PASS (or an explicit recorded override),
+  run the Decision Review checkpoint below. With non-empty remarks, set the current phase to
+  `Do akceptacji decyzji`; change it to `Zrobiona` only after human acceptance. With no remarks,
+  change it directly to `Zrobiona` after generating the zero-decision report.
+- On a blocker, failed/skipped final verification, or unresolved rejected gate, leave the status
+  as `W toku`. Never mark a phase `Zrobiona` merely because its implementation tasks were attempted.
+- If the phase row cannot be matched or the main update fails, report the state-sync failure
+  explicitly. Do not claim that the epic roadmap is synchronized and do not guess the next phase.
+
+`Zrobiona` means the phase passed the implement skill's complete tasks + final verification +
+implementation-gate contract. The separate branch-level `@review`/`@triada-review` remains required.
 
 ## Project Memory
 
@@ -246,6 +288,17 @@ Agent(subagent_type="review-implementation", prompt="Re-review implementation fo
 **Jeśli VERDICT: REJECTED (3. raz):**
 - Pokaż pozostałe problemy i te same opcje (a/b/c)
 
+### Step 9: Decision Review — human checkpoint
+
+After `review-implementation` PASS/override and before the completion handoff, **read and follow**:
+
+→ **`skills/implement/references/decision-report.md`**
+
+It aggregates every `## Implementation Decisions / Remarks` entry, writes a human-readable HTML
+report, persists `## Decision Review` in the main tasks doc, and requires human acceptance when
+remarks are non-empty. Do not suggest the next phase, `@ship`, or branch review while that
+checkpoint is `pending-human-review` or `changes-requested`.
+
 ---
 
 ## Rules
@@ -254,6 +307,7 @@ Agent(subagent_type="review-implementation", prompt="Re-review implementation fo
 - Follow task order strictly - tasks are sequential and may depend on previous ones
 - In orchestrated mode, advance only one phase at a time and wait for `phase-review` PASS before updating the parent phase status
 - In orchestrated mode, resolve phase/context/verification paths from the explicit fields in the main tasks file (see Path Resolution) so epic-nested locations stay correct
+- For an epic phase, persist `W toku`/`Do akceptacji decyzji`/`Zrobiona` in the matching `{epic-main-path}` row at the lifecycle points defined above
 - Use referenced files as implementation patterns
 - Match existing code style and conventions
 - Run tests after implementation
@@ -340,27 +394,97 @@ AC Fulfillment:
 - AC-3: NOT VERIFIED (untested) — token `AC-3` absent from test sources
 ```
 
-### Optional: closeout (best-effort)
+### Optional QA review nudge after PASS
 
-After reporting completion, optionally suggest one line to the user:
+After `review-implementation` returns PASS, evaluate this decision once before printing the
+existing closeout guidance:
+
+```text
+shouldSuggestQAReview(signals) -> boolean
+```
+
+It returns `true` when `signals` contains at least one of:
+- orchestrated implementation mode;
+- a security, public API, migration, integration, or multi-module boundary;
+- a new critical flow;
+- a substantial test rewrite;
+- a test-related warning from an implementation or review gate;
+- an Acceptance Criterion that was difficult to verify.
+
+For `true`, print exactly one best-effort suggestion using the most relevant signal and an
+available planning/tasks artifact when useful:
+
+```text
+QA review (optional): elevated test-risk signal `<signal>`; run `@qa-review feature [optional planning/tasks artifact]` to statically evaluate test value without rerunning tests.
+```
+
+For `false`, emit no QA-review nudge. This nudge never auto-invokes or dispatches QA review,
+never gates implementation completion, and never replaces `@review` or `@triada-review` as the
+pipeline closure point. It does not change the closeout order selected below: a standalone/last
+phase uses `review -> ship -> merge`; an epic in progress uses `review current phase -> continue epic`.
+
+Structural scenarios:
+- `highRiskImplementationSuggestsQaReview`: each signal enumerated above independently makes
+  `shouldSuggestQAReview` return `true` and produces the one post-PASS suggestion.
+- `lowRiskImplementationDoesNotSuggestQaReview`: an empty signal set returns `false` and produces
+  no suggestion for a small routine change.
+- `qaReviewNudgeIsOptionalAndNonBlocking`: the suggestion contains no automatic dispatch, does
+  not affect PASS/completion, and preserves the applicable closeout/continuation branch.
+
+### Completion handoff (best-effort)
+
+After reporting completion, select exactly one branch.
+
+**Standalone feature or last unfinished epic phase:** optionally suggest:
 
 > Po PASS bramki implementacji: (1) `@review` lub `@triada-review`, (2) opcjonalnie
 > `@analyze {slug}` (traceability AC→task→kod — on-demand, nie gate), (3) po czystym
 > review: `/absolutpowers:ship @absolutpowers/feature/tasks-{slug}.md`.
 > Docs/learned: ad-hoc (`@document-feature`, `@try-learn-skill`).
 
-To czysto opcjonalne. Pominięcie nie jest błędem — nie blokuje ani nie cofa
-completion. Nie odpalaj go automatycznie; tylko zaproponuj.
+**Epic phase with another actionable phase:** print the current review step plus one concrete
+continuation command. Example when the next phase is still a stub:
+
+> Faza {N} epica jest zaimplementowana. Najpierw uruchom `@review` lub `@triada-review`
+> dla bieżących zmian. Po czystym review epic nadal jest w toku — nie uruchamiaj jeszcze
+> `@ship` jako closeoutu epica. Następny krok:
+> `@feature-discuss @{epic-main-path} "Omów Fazę {N+1}: {nazwa}"`.
+
+If durable state routes to `@generate-tasks` or `@implement`, substitute that exact command and
+artifact path instead. Mention the current phase and the selected next phase by number and name.
+Do not suggest `@ship` in this branch; it becomes appropriate only after all epic phases are
+implemented and reviewed.
+
+These handoffs are best-effort guidance. Do not auto-invoke them from this skill.
+
+Structural scenarios:
+- `epicPhaseWithUnplannedSiblingContinuesDiscussion`: a completed phase whose next row is
+  `Do zaplanowania` prints review first, then an exact `@feature-discuss {epic-main-path} + phase`
+  command, with no `@ship` suggestion.
+- `epicParentPathIsReferenceDriven`: a nonstandard parent filename referenced by tasks/phase docs
+  is updated and used in the handoff; no `planning-main.md` path is synthesized.
+- `epicPhaseWithPreparedSiblingUsesDurableState`: a ready phase doc or existing incomplete tasks
+  doc routes to `@generate-tasks` or `@implement` respectively, without restarting discussion.
+- `finalEpicPhaseAllowsCloseout`: when no unfinished sibling remains, the handoff uses the normal
+  `review -> optional analyze -> ship` branch.
+- `epicPhaseStatusSurvivesContextReset`: starting implementation writes `W toku`; only successful
+  verification, implementation gate, and required human decision acceptance write `Zrobiona`.
+- `remarksRequireHumanDecisionReview`: non-empty remarks create an HTML report and durable pending
+  checkpoint; rejected decisions return the affected work to `W toku` before re-verification.
 
 ---
 
 ## Terminal state
 
-Stan terminalny tego skilla: wszystkie taski zaimplementowane i zweryfikowane, final verification wykonana, a końcowa bramka `review-implementation` zwróciła PASS (albo świadomy override). Kod jest napisany — ale jeszcze nie zrewidowany jako całość ani nie zmergowany.
+Stan terminalny tego skilla: wszystkie taski **bieżącego tasks-doca** zaimplementowane i zweryfikowane, final verification wykonana, końcowa bramka `review-implementation` zwróciła PASS (albo świadomy override), a raport decyzji implementacyjnych został wygenerowany. Przy niepustych remarks wymagany jest dodatkowo zapisany human acceptance w `## Decision Review`. Kod bieżącego zakresu jest napisany — ale jeszcze nie zrewidowany jako całość ani nie zmergowany.
 
-Następny krok w pipeline: `@review` (solo) lub `@triada-review` (multi-agent). Opcjonalnie przed merge: `@analyze {slug}` (spójność artefaktów). Po czystym review: `@ship`. Kolejność: review → ship → merge. Docs/learned ad-hoc (`@document-feature`, `@try-learn-skill`).
+Następny krok zawsze zaczyna się od `@review` (solo) lub `@triada-review` (multi-agent) dla bieżących zmian. Dalej:
+- **standalone feature / ostatnia faza epica:** opcjonalnie `@analyze {slug}`, potem `@ship`; kolejność: review → ship → merge;
+- **faza epica z kolejną fazą:** po czystym review wróć do epica zgodnie ze stanem następnej fazy (`@feature-discuss` na wykrytym `{epic-main-path}` + faza, `@generate-tasks` na gotowym phase docu albo `@implement` na istniejącym tasks-docu). Nie sugeruj `@ship`, dopóki wszystkie fazy epica nie są zaimplementowane i zrewidowane.
 
-Pipeline NIE jest domknięty na tym etapie — final gate PASS oznacza „kod zaimplementowany i zweryfikowany wewnętrznie", nie „feature dowieziony i zmergowany". Jeśli działasz pod `/goal` (np. „dowieź feature X"), NIE uznawaj celu za osiągnięty po tym skillu: kontynuuj do skilla terminalnego (`@review`/`@triada-review`, a po PASS — merge/ship), zanim uznasz cel za osiągnięty.
+Docs/learned pozostają ad-hoc (`@document-feature`, `@try-learn-skill`).
+
+Pipeline NIE jest domknięty na tym etapie — final gate PASS oznacza „kod bieżącego zakresu zaimplementowany i zweryfikowany wewnętrznie", nie „feature/epic dowieziony i zmergowany". Jeśli działasz pod `/goal` (np. „dowieź feature X"), NIE uznawaj celu za osiągnięty po tym skillu: dokończ review bieżącej zmiany, wszystkie pozostałe fazy epica (jeśli istnieją), a dopiero potem closeout/merge.
 
 ---
 
