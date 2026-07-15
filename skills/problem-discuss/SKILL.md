@@ -187,3 +187,13 @@ Jeśli łapiesz się na którejś myśli — wróć do granicy skilla:
 - "Klasyfikuję na czuja, bez czytania kodu" → wróć do Fazy 2, zbierz dowód.
 - "Wrzucę wszystkie uwagi do jednej sprawy" → wróć do Fazy 0, rozbij.
 - "Pominę załącznik, pewnie nic ważnego" → otwórz, dowód bywa właśnie tam.
+
+## Terminal state
+
+Stan terminalny: zapisany `absolutpowers/problem/problem-{slug}.md` z klasyfikacją
+i routingiem **per sprawa**. Skill **nie** naprawia ani nie planuje.
+
+Następne kroki (nudge, nie auto-run) — patrz Faza 5. Pipeline jest **rozgałęziony**:
+każda sprawa może iść inną ścieżką (`debug` / `feature-discuss` / fix / close).
+Sesja pod `/goal` typu „rozwiąż zgłoszenie" nie jest domknięta po samym triage —
+kontynuuj per-sprawa wybranymi skillami.

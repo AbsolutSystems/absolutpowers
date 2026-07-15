@@ -4,7 +4,7 @@ AI-assisted development lifecycle — from feature design through implementation
 
 Instead of ad-hoc prompting, AbsolutPowers gives your AI agent a structured workflow. Each skill owns one phase. Skills chain into a pipeline with automated quality gates (Claude Code) that catch problems before they cascade.
 
-As of **5.0.0** the repo is one host-agnostic skill tree under `skills/` — not mirrored per-harness trees — plus a thin manifest/integration per harness (Claude, Codex, Pi, Grok) and a small set of skills vendored under MIT from [obra/superpowers](https://github.com/obra/superpowers) in `skills/vendored/`. See [Repo Structure](#repo-structure-this-repository) and [Attribution](#attribution).
+As of **5.0.0** the repo is one host-agnostic skill tree under `skills/` — not mirrored per-harness trees — plus a thin manifest/integration per harness (Claude, Codex, Pi, Grok) and a small set of skills vendored under MIT from [obra/superpowers](https://github.com/obra/superpowers) in `skills/vendored/`. Current release: **5.2.0** (contracts hygiene, modularized core skills, multi-harness learned paths, `receiving-code-review`). See [Repo Structure](#repo-structure-this-repository) and [Attribution](#attribution).
 
 ## Quick Start
 
@@ -68,9 +68,9 @@ Creates `CLAUDE.md`, `AGENTS.md`, `absolutpowers/patterns.md`, `absolutpowers/ru
 /absolutpowers:ship @absolutpowers/feature/tasks-push-notifications.md        # CLOSE (commit + PR text + archive artifacts)
 ```
 
-Knowledge capture (`try-learn-skill`, `document-feature`, `document-module`) is separate and on-demand — run it when useful, it is not a pipeline step.
+Knowledge capture and side tools (`try-learn-skill`, `document-feature`, `document-module`, `receiving-code-review`, `analyze`) are separate and on-demand — run them when useful, they are not pipeline gates.
 
-Each step writes a file that feeds the next. Review gates between steps (Claude Code) catch issues automatically.
+Each step writes a file that feeds the next. Review gates between steps (Claude Code) catch issues automatically. Each pipeline skill ends with a **`## Terminal state`** block (what it delivered + next step / close) so `/goal` sessions keep chaining correctly.
 
 ## The Pipeline
 
@@ -101,11 +101,12 @@ Pick by how well the problem is already classified:
 
 ### On-demand tools (no gate, run anytime)
 
-- **`review`** — solo 4-phase audit of **your own** branch before merge. Writes a report, integrates with project memory, works on Codex. Default choice for everyday code review.
-- **`triada-review`** — parallel multi-agent review (Claude-only) for **larger PRs or someone else's branch** — three independent perspectives (tech-lead / security / UI) you don't have yourself. Reach for it when one pass isn't enough.
-- **`analyze`** — traceability audit, not code quality: does planning ↔ tasks ↔ code form a consistent chain? Run it when you suspect scope creep or coverage gaps ("czy mamy scope creep", "pokaż macierz AC→task→kod"). Orthogonal to `review`/`triada-review` — safe to run all three.
-- **`explain`** — standalone HTML report when a **human** needs a fast, auditable explanation of a plan or a diff (onboarding, handoff). Ephemeral, not durable docs.
-- Also: `constitution` (ratify project principles).
+- **`review`** — solo 4-phase audit of **your own** branch before merge. Writes a report, integrates with project memory, works on every harness. Default choice for everyday code review.
+- **`triada-review`** — parallel multi-agent review (Claude-only) for **larger PRs or someone else's branch** — three independent perspectives (tech-lead / security / UI). Reach for it when one pass isn't enough.
+- **`analyze`** — traceability audit, not code quality: does planning ↔ tasks ↔ code form a consistent chain? Optional after `implement` / before merge when you suspect scope creep or coverage gaps. Orthogonal to `review`/`triada-review`.
+- **`receiving-code-review`** — you **received** PR/review feedback (human or bot) and need to address it: verify against the codebase first, clarify unclear items, push back when wrong, implement one fix at a time. Not for *writing* a review (that's `review` / `triada-review`).
+- **`explain`** — standalone HTML when a **human** needs a fast explanation of a plan or diff. Ephemeral, not durable docs.
+- Also: `constitution` (ratify project principles), `try-learn-skill` / `document-feature` / `document-module` (knowledge capture).
 
 ### How gates work (Claude Code only)
 
@@ -161,7 +162,9 @@ claude -p "/goal <same condition>" --output-format stream-json --verbose
 
 ## Skills Reference
 
-`all` = every harness (Claude Code, Codex, Pi — one shared `skills/{name}/SKILL.md`). `Claude` = Claude Code only (needs a registered agent type and/or parallel subagent dispatch).
+`all` = every harness (Claude Code, Codex, Pi, Grok — one shared `skills/{name}/SKILL.md`). `Claude` = Claude Code only (registered agent types and/or parallel subagent dispatch).
+
+**15 workflow skills + `preboot`** in the shared tree (plus vendored helpers under `skills/vendored/`, not counted as pipeline skills).
 
 | Skill | What it does | In → Out | Harnesses |
 |---|---|---|---|
@@ -173,16 +176,26 @@ claude -p "/goal <same condition>" --output-format stream-json --verbose
 | `debug` | Root-cause first, then size the fix (inline vs hand-off) | bug desc → fix or `planning-fix-{slug}.md` | all |
 | `problem-discuss` | Triage fuzzy multi-item client report: split, classify, route | report → `problem/problem-{slug}.md` | all |
 | `analyze` | Cross-artifact audit: AC→task→code matrix, 6 divergence classes | slug → `reviews/analyze-{slug}.md` | all |
-| `triada-review` | Parallel 3-agent branch review + synthesis | branch → report in session | Claude |
+| `triada-review` | Parallel 3-agent branch review + synthesis (slash command) | branch → report in session | Claude |
 | `constitution` | Author/ratify project principles (pryncypia) | topic → `constitution.md` | all |
 | `update-ai-context` | Bootstrap/refresh `CLAUDE.md`, `AGENTS.md`, `patterns.md`, `rules.md` | path → context files | all |
 | `explain` | Standalone HTML onboarding report for a plan or diff | path/diff → `docs/onboarding/*.html` | all |
-| `try-learn-skill` | Scan whole codebase for repeated (≥3×, `file:line`) non-obvious procedures → invocable project learned-skills (batch approval, human-gated) | codebase → `.claude/skills/learned/` | all |
+| `try-learn-skill` | Scan whole codebase for repeated (≥3×, `file:line`) non-obvious procedures → invocable learned-skills (batch approval) | codebase → learned path **per harness** (see below) | all |
+| `receiving-code-review` | Address PR/review feedback with verify-first rigor (not blind agreement) | review comments → fixes or reasoned pushback | all |
 | `document-feature` | Per-module prose docs from planning + diff (intelligent merge) | `tasks-*.md` → `docs/modules/{module}.md` | all |
 | `document-module` | Architecture docs from a code scan + C4 diagrams | module → `docs/modules/{slug}-architecture.md` + HTML | all |
 | `preboot` | Doc router / guardrail for the PreBoot.io library ecosystem | PreBoot usage → reads `./preboot-docs/` | all |
 
-Cards below cover 6 key skills in depth (the four pipeline skills plus `try-learn-skill` and `ship`). The rest behave as the table describes.
+**Learned-skill output paths** (`try-learn-skill` picks one from session harness):
+
+| Harness | Path in the **target** project |
+|---------|--------------------------------|
+| Claude Code | `.claude/skills/learned/{name}/SKILL.md` |
+| Codex | `.agents/skills/learned/{name}/SKILL.md` |
+| Grok | `.grok/skills/learned/{name}/SKILL.md` |
+| Pi | `.pi/skills/learned/{name}/SKILL.md` |
+
+Cards below cover the four pipeline skills plus `try-learn-skill`, `ship`, and `receiving-code-review`. The rest behave as the table describes.
 
 ---
 
@@ -192,8 +205,9 @@ Interactive Product Owner / Product Architect session — discusses requirements
 
 - **When:** starting a feature, brainstorming, "chcę dodać…", "potrzebujemy…"
 - **In → Out:** feature description → `absolutpowers/feature/planning-{slug}.md` (optionally `docs/adr/YYYY-MM-DD-{slug}.md`)
-- **Trivial changes** (one-liner, config) skip the planning doc — the skill suggests direct implementation. **Epics** split into `planning-main.md` + per-phase docs in a `feature/{epic-slug}/` subfolder.
+- **Trivial changes** (one-liner, config) skip the planning doc — the skill suggests **inline** implementation after you accept CO+WHERE (HARD-GATE still applies; Terminal state: **skip** `generate-tasks`). **Epics** split into `planning-main.md` + per-phase docs in a `feature/{epic-slug}/` subfolder (next step = plan each phase in a new session, not `generate-tasks` on the main).
 - **Gap handoff (Mode C):** hand it a `problem-{slug}.md` from `problem-discuss` (item classified as a gap) and it inherits the confirmed evidence — business rule, what's missing, where — instead of re-interviewing from zero. It designs only *how* to fill the gap and stamps `**Źródło:** problem-{slug}.md, Sprawa N` for traceability.
+- Optional **Visual Companion** (browser mockups/options) after explicit approval — see `skills/feature-discuss/visual-companion.md`.
 
 ```bash
 /absolutpowers:feature-discuss "eksport danych użytkowników do CSV z filtrowaniem"
@@ -219,10 +233,11 @@ Reads a planning doc (or a review report, or a `planning-fix-` doc from `debug`)
 
 ### `/absolutpowers:implement`
 
-Senior engineer executing tasks sequentially, following each task's `Test-first:` marker (write-tests-first + red run for `yes`, direct implement for `no`; legacy docs without the marker fall back to judgment). Embeds the `AC-N` token in tests covering a traced AC; AC fulfillment is then determined by grepping test sources for that token, and a traced AC with **no** token-matched test (`NOT VERIFIED (untested)`) now blocks completion instead of being merely informational. Marks a task `in-progress` before touching code and `completed` only after verification (interruption-safe — a task found `in-progress` at session start triggers partial-state recovery, not blind re-implementation), proposes alternatives (asks first), runs the final verification task, then the `review-implementation` gate. Orchestrated plans → `implementation-worker` per phase + `phase-review` before advancing (Claude); Codex runs phase files sequentially in one session. Orchestrated runs (Claude) route worker results through a 4-status protocol (`DONE`/`DONE_WITH_CONCERNS`/`NEEDS_CONTEXT`/`BLOCKED`), dispatch every subagent with an explicit per-role model, resume from a git-anchored `progress.md` ledger, and hand reviewers a generated review package instead of a live diff. Respects `constitution.md`. Can create ADRs and memory candidates.
+Senior engineer executing tasks sequentially, following each task's `Test-first:` marker (write-tests-first + red run for `yes`, direct implement for `no`; legacy docs without the marker fall back to judgment; see also `references/tdd-anti-patterns.md`). Embeds the `AC-N` token in tests covering a traced AC; AC fulfillment is then determined by grepping test sources for that token, and a traced AC with **no** token-matched test (`NOT VERIFIED (untested)`) blocks completion. Marks a task `in-progress` before touching code and `completed` only after verification (interruption-safe). Runs final verification, then the `review-implementation` gate. Orchestrated plans → `implementation-worker` per phase + `phase-review` (Claude); other harnesses degrade via `references/harness-dispatch.md`. Respects `constitution.md`. Can create ADRs and memory candidates (`references/project-memory.md`).
 
 - **When:** after `generate-tasks`
 - **In → Out:** path to a tasks file → implementation code + tests, updated tasks file
+- **After PASS:** next is `@review` / `@triada-review`; optionally `@analyze {slug}` for AC↔task↔code consistency; then `@ship`
 
 ```bash
 /absolutpowers:implement @absolutpowers/feature/tasks-push-notifications.md
@@ -258,16 +273,45 @@ Full 4-phase code review of current-branch changes. Always runs all phases.
 
 Ad-hoc, on-demand knowledge capture — **not a pipeline step**. Scans the whole codebase (optional path narrows the scope; optional threshold, default N=3) for **repeated, non-obvious procedures** and proposes them as invocable project learned-skills. Its signal is codebase-wide repetition, not a single feature's artifacts — which is what keeps it from producing one-off skills.
 
-Two hard gates before anything is proposed: **repetition** (a procedural pattern must occur ≥N times with concrete `file:line` evidence) and **non-obviousness** (≥2 steps survive noun-substitution — knowledge the agent wouldn't have on its own). Survivors are shown as a **batch** of candidates; you tick which to keep, and only those are written to `.claude/skills/learned/{name}/SKILL.md` (human gate, no silent writes). Nothing meeting the bar → it reports that and writes nothing.
+Two hard gates before anything is proposed: **repetition** (a procedural pattern must occur ≥N times with concrete `file:line` evidence) and **non-obviousness** (≥2 steps survive noun-substitution — knowledge the agent wouldn't have on its own). Survivors are shown as a **batch** of candidates; you tick which to keep, and only those are written (human gate, no silent writes). Nothing meeting the bar → it reports that and writes nothing.
 
-Boundary vs `update-ai-context`: that skill produces **passive documentation** (`patterns.md`/`rules.md`/`CLAUDE.md`, read as background — "what this project is like"); `try-learn-skill` produces **active, invocable procedures** ("how to do repeated task X the way this project does it").
+**Write path depends on harness** (target project, not the AbsolutPowers repo):
+
+| Harness | Learned skills live under |
+|---------|---------------------------|
+| Claude Code | `.claude/skills/learned/` |
+| Codex | `.agents/skills/learned/` |
+| Grok | `.grok/skills/learned/` |
+| Pi | `.pi/skills/learned/` |
+
+Boundary vs `update-ai-context`: that skill produces **passive documentation** (`patterns.md`/`rules.md`/`CLAUDE.md`); `try-learn-skill` produces **active, invocable procedures**.
 
 - **When:** whenever you want to mine the project for reusable procedures — deliberately, not tied to a feature
-- **In → Out:** codebase (optional scope) → selected `.claude/skills/learned/{name}/SKILL.md`
+- **In → Out:** codebase (optional scope) → selected `{harness}/skills/learned/{name}/SKILL.md`
 
 ```bash
 /absolutpowers:try-learn-skill                 # scan whole codebase
 /absolutpowers:try-learn-skill src/payments/   # narrow the scan
+```
+
+---
+
+### `/absolutpowers:receiving-code-review`
+
+Handle **incoming** code review feedback (human partner, external reviewer, or bot) with technical rigor — not performative agreement and not blind implementation.
+
+```
+READ → UNDERSTAND → VERIFY against this codebase → EVALUATE → RESPOND → IMPLEMENT (one item at a time)
+```
+
+- **When:** PR comments to address, "fix review feedback", bot review (e.g. CodeRabbit), unclear multi-item lists
+- **Hard rules:** clarify unclear items **before** coding; push back with evidence when the suggestion is wrong for this stack / YAGNI / conflicts with ADR or constitution; no empty "thanks you're right" theater
+- **Not for:** writing a full branch review (`review` / `triada-review`) or turning a large structured report into tasks (`generate-tasks` on the review file)
+- **In → Out:** PR URL / pasted comments → verified fixes (or reasoned pushback)
+
+```bash
+/absolutpowers:receiving-code-review 123
+/absolutpowers:receiving-code-review "1) … 2) … from the PR thread"
 ```
 
 ---
@@ -301,6 +345,7 @@ Start from where you are, not from the skill list.
 | Doubt: "is the feature consistent / any scope creep?" | `analyze` | AC→task→code traceability audit |
 | Changes ready to commit (feature closeout) | `ship` | Commit message + PR text from artifacts, archives artifacts, local commit (gated) |
 | Want reusable procedures mined from the project | `try-learn-skill` | Codebase scan → invocable project learned-skills (ad-hoc) |
+| PR/review comments to address (not write the review) | `receiving-code-review` | Verify → fix or push back, one item at a time |
 | A change/plan to explain to a human | `explain` | Standalone HTML report |
 | The need to set project principles | `constitution` | Ratifies `constitution.md` (opt-in) |
 
@@ -359,7 +404,7 @@ Two files, two purposes:
 
 ### Learned skills vs `patterns.md`
 
-Learned skills are project-local callable procedures extracted by `try-learn-skill` into `.claude/skills/learned/learned-{name}/`. The bar is deliberately high: `try-learn-skill` **scans the whole codebase** (ad-hoc, not per-feature) and a procedure qualifies only when it recurs **≥3 times with `file:line` evidence** AND encodes **≥2 non-obvious steps** (surviving noun-substitution) — codebase-wide repetition is the reuse proof, in one pass. Survivors are proposed as a batch; only user-approved ones are written (human gate). They differ from `patterns.md`:
+Learned skills are project-local callable procedures extracted by `try-learn-skill` into the **harness-specific** learned root (`.claude/skills/learned/`, `.agents/skills/learned/`, `.grok/skills/learned/`, or `.pi/skills/learned/`). The bar is deliberately high: scan the **whole codebase** (ad-hoc, not per-feature); a procedure qualifies only when it recurs **≥3 times with `file:line` evidence** AND encodes **≥2 non-obvious steps** (surviving noun-substitution). Survivors are proposed as a batch; only user-approved ones are written (human gate). They differ from `patterns.md`:
 
 | | Learned skill | `patterns.md` |
 |---|---|---|
@@ -373,6 +418,8 @@ Learned skills are project-local callable procedures extracted by `try-learn-ski
 ### Project memory
 
 Skills discover durable lessons (recurring traps, non-obvious workarounds, failure patterns) and capture them as candidates in `absolutpowers/memory-candidates/`. Promotion to `absolutpowers/project-memory.md` requires your explicit approval; the candidate is then deleted. One-off notes, branch status, and facts that belong in `patterns.md`/`rules.md`/ADRs do **not** belong in project memory.
+
+Formats, promotion rules, and "write the lesson generally" guidance are shared in **`references/project-memory.md`** (used by `debug`, `review`, `implement`, `problem-discuss`) so skills do not drift.
 
 ### PreBoot skill
 
@@ -415,11 +462,11 @@ Most agents are subagents that skills spawn automatically — you don't invoke t
 
 ## Platform Differences
 
-Every harness shares the exact same `skills/{name}/SKILL.md` — 14 workflow skills + `preboot`, plus `skills/vendored/` (not user-facing pipeline skills). What differs is the thin per-harness layer on top:
+Every harness shares the exact same `skills/{name}/SKILL.md` — **15 workflow skills + `preboot`**, plus `skills/vendored/` (not user-facing pipeline skills). What differs is the thin per-harness layer on top:
 
 | Feature | Claude Code | Codex | Pi | Grok Build |
 |---|---|---|---|---|
-| Skills | 14 workflow + 1 PreBoot (shared tree) | same shared tree | same shared tree | same shared tree |
+| Skills | 15 workflow + 1 PreBoot (shared tree) | same shared tree | same shared tree | same shared tree |
 | Registered agent types | 9 (`agents/*.md`: review gates + phase worker + triada trio) | none — no plugin-level agent-type registry | none — no plugin-level agent-type registry | none (uses `spawn_subagent` + `subagent_type` + personas) |
 | Subagent dispatch primitive | `Agent(subagent_type=...)` against a registered type | available (`multi_agent=true` → `spawn_agent`/`wait_agent`/`close_agent`), but nothing registered to dispatch *to* for gates | available via optional `pi-subagents` package | `spawn_subagent` (with `subagent_type: "general-purpose"` etc.) |
 | Slash commands | `triada-review` | not available | not available | not available (use skills directly) |
@@ -472,43 +519,51 @@ manifest/integration on top of the same `skills/` (the obra/superpowers pattern)
 
 ```
 absolut-ai-skills/
-├── skills/                            # single source of truth, one body per harness
-│   ├── {name}/SKILL.md                # 14 workflow skills + preboot (host-agnostic body;
-│   │                                  # Claude-only frontmatter/gate sections are inert elsewhere)
-│   └── vendored/                      # skills vendored from obra/superpowers (MIT) — see VENDORED.md
+├── skills/                            # single source of truth (all harnesses)
+│   ├── {name}/
+│   │   ├── SKILL.md                   # 15 workflow skills + preboot (host-agnostic body;
+│   │   │                              # Claude-only frontmatter/gate sections inert elsewhere)
+│   │   └── references/                # optional large templates (formats, orchestrated steps)
+│   │                                  # e.g. feature-discuss, generate-tasks, implement
+│   └── vendored/                      # obra/superpowers (MIT) — see VENDORED.md + fork-policy.md
 │       ├── using-git-worktrees/
-│       ├── systematic-debugging/
+│       ├── systematic-debugging/      # library; canonical process = skills/debug
 │       ├── verification-before-completion/
 │       ├── dispatching-parallel-agents/
-│       ├── finishing-a-development-branch/
+│       ├── finishing-a-development-branch/  # prefer @ship for AbsolutPowers closeout
 │       ├── executing-plans/
 │       └── subagent-driven-development/
 ├── agents/                            # 9 subagent definitions — Claude-only, top-level
 ├── commands/                          # triada-review slash command — Claude-only, top-level
-├── references/                        # per-harness primitive mappings, read conditionally
-│   ├── codex-tools.md                 # Codex tool mapping + review-gate + orchestrated degradation
-│   └── pi-tools.md                    # Pi tool mapping + review-gate degradation path
+├── references/                        # shared contracts + per-harness mappings
+│   ├── codex-tools.md                 # Codex dispatch + gate degradation
+│   ├── pi-tools.md
+│   ├── grok-tools.md
+│   ├── harness-dispatch.md            # Claude / Codex / Pi / Grok gate-worker dispatch
+│   ├── project-memory.md              # shared memory capture contract
+│   ├── tdd-anti-patterns.md
+│   └── fork-policy.md                 # which copy is canonical when dual assets exist
 ├── hooks/                             # slim Claude SessionStart hook
 │   ├── hooks.json
 │   ├── run-hook.cmd
 │   ├── session-start
-│   └── session-context.md             # shared bootstrap content — also read by the Pi extension
-├── .pi/extensions/absolutpowers.ts    # Pi integration (registers skills/, injects session-context.md)
-├── .claude-plugin/plugin.json         # Claude manifest (root)
-├── .claude-plugin/marketplace.json    # Claude marketplace → source: "."
-├── .codex-plugin/plugin.json          # Codex manifest (root)
-├── .agents/plugins/marketplace.json   # Codex marketplace → source.path: "."
-├── .grok-plugin/plugin.json           # Grok manifest (root) — first-class support
+│   └── session-context.md             # pipeline + skill map + guardians (also Pi bootstrap)
+├── .pi/extensions/absolutpowers.ts
+├── .claude-plugin/plugin.json
+├── .claude-plugin/marketplace.json
+├── .codex-plugin/plugin.json
+├── .agents/plugins/marketplace.json
+├── .grok-plugin/plugin.json
 ├── AGENTS.md                          # symlink → CLAUDE.md (Codex bootstrap)
-├── VENDORED.md                        # vendoring log: source paths, pinned SHA, local modifications
-├── LICENSE-VENDORED                   # MIT license text for vendored obra/superpowers content
+├── VENDORED.md
+├── LICENSE-VENDORED
 ├── docs/
 └── README.md
 ```
 
 Adding a harness costs a new integration + optional `references/{harness}-tools.md` — zero
-skill edits. See `CLAUDE.md` → "Adding a New Harness" for the recipe, and "Attribution" below
-for the vendoring rationale.
+skill edits. Shared contracts (memory, dispatch, fork policy) live under `references/` so skills
+stay thinner. See `CLAUDE.md` → "Adding a New Harness" and "Attribution" below.
 
 ## Updating
 
@@ -531,6 +586,15 @@ grok plugin install /path/to/absolut-ai-skills --trust
 
 Versioning is SemVer, kept in sync across all manifests
 (`.claude-plugin/plugin.json`, `.codex-plugin/plugin.json`, and `.grok-plugin/plugin.json`).
+
+### 5.2.0 — Tech-lead skill audit: contracts, modularization, multi-harness hygiene
+- **Contract hygiene:** removed stale `codex/` mirror notes (single-tree era); `feature-discuss` Terminal state branches **standard / epic main / micro-change** (micro-change skips `generate-tasks`); `NIE wyzwalaj` on core skills; Terminal state on `problem-discuss`, `debug`, `analyze`
+- **Shared references:** `references/project-memory.md`, `harness-dispatch.md`, `tdd-anti-patterns.md`, `fork-policy.md`; large templates extracted to `skills/{name}/references/` (`feature-discuss`, `generate-tasks`, `implement`) so main `SKILL.md` files stay operable mid-context
+- **Canonical paths:** session auto-trigger is **`@debug` only** (not vendored `systematic-debugging`); vendored `finishing-a-development-branch` banners to prefer **`@ship`**; `debug/FORK.md` + implement `scripts/README.md`
+- **`try-learn-skill` multi-harness** write paths: `.claude` / `.agents` / `.grok` / `.pi` `…/skills/learned/`
+- **New skill `receiving-code-review`** — verify-first handling of incoming PR feedback (15 workflow skills total + preboot)
+- **DX:** skill map in `hooks/session-context.md`; skill authoring checklist in `docs/contributing.md`; optional `@analyze` after implement PASS; README skills/platform/repo sections updated for 5.2.0
+- Version **5.2.0** across all plugin manifests (`.claude-plugin`, `.codex-plugin`, `.grok-plugin`)
 
 ### 5.1.4 — Visual Companion wired + vendored cross-ref cleanup
 - **Visual Companion fully wired into `feature-discuss`.** The companion (vendored from obra/superpowers `brainstorming`, telemetry removed, CSP hardened in 5.1.2) is now actively integrated. Added concrete "Companion Protocol" inside the skill (offer with explicit user approval → `start-server.sh` → Write HTML fragments to `screen_dir` via tool → Read `state_dir/events` for clicks → push waiting screens when returning to terminal → `stop-server.sh`). Integrated decision points and usage in Faza 1 (understanding), Faza 3 (solution proposal), and Faza 4 (refinement). The AI now drives the full loop instead of just being told to consult the guide. Updated `visual-companion.md` header and instructions.

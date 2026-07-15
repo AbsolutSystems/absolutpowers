@@ -78,91 +78,9 @@ Jeśli jesteś NA BRANCHU main/master i nie ma diff vs HEAD — to znaczy że zm
 
 ## Project Memory
 
-Use `./absolutpowers/project-memory.md` as prior context for recurring traps and warning signs that might make the review sharper.
-Do not treat it as proof that a new diff is wrong; it is only a hint to inspect relevant areas more carefully.
-When reading `project-memory.md`, use only entries with `Status: active` as review hints. Ignore `superseded` and `archived` entries.
-
-Create a memory candidate only when ALL of these are true:
-- the review surfaced a recurring trap, workaround, or warning sign
-- the lesson is likely to matter again in future implementation/debugging/review work
-- the content is more operational than architectural, so it belongs in memory instead of ADRs or `rules.md`
-
-Do NOT create memory entries for:
-- one-off review comments tied only to this diff
-- subjective style preferences
-- findings that should instead become project rules
-
-When a durable lesson is worth capturing, use:
-- candidate path: `./absolutpowers/memory-candidates/memory-candidates-YYYY-MM-DD-{slug}.md`
-- permanent memory path: `./absolutpowers/project-memory.md`
-
-`project-memory.md` should be grouped by module, with explicit affected paths in every entry:
-
-```markdown
-## src/payments
-
-### Retry helper swallows the first provider error
-- Added: 2026-03-10
-- Source: review / feature/payment-retry branch
-- Last verified: 2026-03-10
-- Status: active
-- Problem: wrapper retries correctly but loses the original failure context
-- Symptoms: logs show generic timeout, root provider exception disappears
-- Root cause: helper overwrites the first caught error on each retry
-- Resolution: keep the first provider failure and attach later retry metadata separately
-- Warning signs:
-  - retries appear in logs without original provider message
-  - final exception is generic despite provider-specific failures
-- Affected paths:
-  - `src/payments/provider-retry.ts`
-  - `src/payments/provider-client.ts`
-```
-
-### Write the LESSON generally — keep specifics as the example
-
-Memory must transfer to NEW places, not only where it was found. So:
-- **Problem / Root cause / Warning signs** = the general CLASS of problem — a portable rule that applies to another module/file of the same nature. Capture the *mechanism*, not "file X line Y".
-- **Affected paths + this incident** = the concrete EXAMPLE (where it first showed up), not the lesson itself.
-
-Test: would someone working in a DIFFERENT module recognize this trap from the Warning signs alone? If not, it is too narrow — generalize the mechanism, keep one concrete example. Do not overshoot into uselessly vague ("be careful with config") either. Target: **general rule + portable warning signs + one concrete example.**
-
-Candidate file template:
-
-```markdown
-# Memory Candidate: [Short title]
-
-## Status
-Candidate — YYYY-MM-DD
-
-## Metadata
-- Added: YYYY-MM-DD
-- Source: review / `branch-name` vs `base`
-- Status: candidate
-
-## Module
-`path/to/module`
-
-## Problem
-...
-
-## Symptoms
-...
-
-## Root Cause
-...
-
-## Resolution
-...
-
-## Warning Signs
-- ...
-
-## Affected Paths
-- `path/to/file`
-
-## Why This May Matter Again
-...
-```
+**Read** `references/project-memory.md`. Use active entries as review hints only.
+Create candidates only for durable operational traps (not one-off style nits).
+Source label: `review / {branch} vs {base}`.
 
 ---
 
@@ -286,7 +204,8 @@ Na końcu raportu (zarówno w konsoli jak i w pliku), zaproponuj następne kroki
 
 **0-2 problemy (drobne):**
 ```
-Drobne fixy — napraw ręcznie i merguj.
+Drobne fixy — napraw ręcznie, potem @ship (commit/archiwizacja) i merge.
+Opcjonalnie: @analyze {slug} jeśli feature ma planning/tasks (traceability).
 ```
 
 **3+ problemy:**

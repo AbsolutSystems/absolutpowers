@@ -205,5 +205,4 @@ Jeśli działasz pod `/goal` typu „dowieziony feature": właściwym punktem, w
 - **Lokalnie i tyle** — bez pusha, bez PR z inicjatywy skilla, bez issues.
 - **Degraduj czysto** — brak planning/tasks = commit z samego diffa,
   z jawnym zastrzeżeniem; brak AC = pomiń sekcję, nie wymyślaj kryteriów.
-- **Codex parity**: mirror w `codex/` ma identyczne ciało bez `allowed-tools` /
-  `argument-hint`.
+- **Single-tree**: jedno `skills/ship/`; pola `allowed-tools`/`argument-hint` są Claude-only i inertne na Codex/Pi/Grok.

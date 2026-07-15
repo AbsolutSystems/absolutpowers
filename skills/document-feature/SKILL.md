@@ -179,10 +179,9 @@ NIE polem YAML frontmatter. Powód: konsekwencja i bezpieczeństwo loadera
 metadane w ciele jednolicie. Pola: `last-updated`, `last-commit`. Przyszłe
 tooling/AI wykryje drift (ile commitów w module od `last-commit`).
 
-### Uwaga parity (Codex)
+### Uwaga harness
 
-Mirror tego skilla w `codex/` ma identyczne ciało, BEZ pól `allowed-tools` i
-`argument-hint` we frontmatter (Codex ich nie obsługuje).
+Jedno drzewo skilli (od 5.0.0). Pola `allowed-tools`/`argument-hint` są Claude-only i inertne na innych harnessach.
 
 ---
 

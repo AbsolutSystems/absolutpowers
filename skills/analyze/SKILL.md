@@ -324,3 +324,17 @@ Jeśli w trakcie audytu zauważysz, że masz zamiar:
 <!-- CLAUDE-ONLY: Opcjonalna delegacja do subagenta -->
 > **Claude-only (opcjonalne):** Budowę macierzy (Kroki 1–3) można zdelegować do subagenta dla czystego, izolowanego odczytu artefaktów — szczególnie przy dużych orchestrated tasks z wieloma fazami. Rdzeń logiki (klasy rozjazdów, werdykt, zapis raportu) zawsze wykonuje główna sesja. Skill działa w pełni bez delegacji i działa też na Codex.
 <!-- /CLAUDE-ONLY -->
+
+## Terminal state
+
+Stan terminalny: raport `absolutpowers/reviews/analyze-{slug}.md` z werdyktem
+**CONSISTENT** lub **INCONSISTENT**. Skill audytuje i routuje — nie fixuje.
+
+| Werdykt | Typowy następny krok |
+|---------|----------------------|
+| CONSISTENT | kontynuuj merge / `@ship` / close |
+| INCONSISTENT (brak tasków) | `@generate-tasks` |
+| INCONSISTENT (brak kodu) | `@implement` |
+| INCONSISTENT (jakość kodu) | nie ten skill — `@review` |
+
+On-demand: nie jest ogniwem łańcucha gate'ów.

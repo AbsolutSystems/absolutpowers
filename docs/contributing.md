@@ -19,10 +19,14 @@ absolut-ai-skills/
 ├── commands/                        # slash commands — top-level, Claude-only
 │   └── triada-review.md
 │
-├── references/                      # mapowania per-harness, czytane warunkowo
+├── references/                      # mapowania per-harness + shared contracts
 │   ├── codex-tools.md
-│   ├── pi-tools.md                  # np. dispatch subagentów, degradacja review gate'ów na Pi
-│   └── grok-tools.md                # Grok: spawn_subagent + degradacja gate'ów
+│   ├── pi-tools.md
+│   ├── grok-tools.md
+│   ├── harness-dispatch.md          # jak odpalać gate/workery na Claude/Codex/Pi/Grok
+│   ├── project-memory.md            # wspólny kontrakt project-memory
+│   ├── tdd-anti-patterns.md
+│   └── fork-policy.md               # kanoniczne ścieżki vs vendored
 │
 ├── hooks/                           # slim hook Claude (SessionStart)
 │   ├── hooks.json
@@ -145,6 +149,21 @@ Agent(subagent_type="review-plan", prompt="Review planning document: ./absolutpo
 
 AI agent przeczyta tę instrukcję i użyje narzędzia Agent z odpowiednimi parametrami. Na Codex/Pi
 ta sama sekcja jest inertna (zwykła proza) — patrz `references/pi-tools.md` po wzorzec degradacji.
+
+## Checklist nowego / zmienianego skilla
+
+Przed PR-em na skill (lub agent/command, który zmienia kontrakt pipeline):
+
+1. **`description`** — TRIGGER when + **NIE wyzwalaj na** (kolizje z sąsiednimi skillami).
+2. **Hard boundary** — jeśli skill jest audit-only / design-only / no-push: jawna sekcja.
+3. **`## Terminal state`** — co oddaje + następny krok / close (dla skilli pipeline i fan-out).
+4. **`vs X` / disambiguation** — gdy overlap z innym skillem jest realny.
+5. **Brak martwych ścieżek** — zero odniesień do usuniętych mirrorów `claude/`/`codex/`, usuniętych skilli (`harvest`, …).
+6. **Single-tree** — nie dodawaj luster per harness; różnice → `references/{harness}-tools.md`.
+7. **Długie szablony** — jeśli SKILL.md rośnie >~400–500 linii, wyciągnij formaty do `skills/{name}/references/` i zostaw pointer + reguły w SKILL.md.
+8. **Shared contracts** — project-memory → `references/project-memory.md`; gate dispatch → `references/harness-dispatch.md`; dual copies → `references/fork-policy.md`.
+9. **Wersja** — bump SemVer we **wszystkich** manifestach (`.claude-plugin`, `.codex-plugin`, `.grok-plugin`) + wpis w README changelog.
+10. **Docs** — README tabela skilli / `hooks/session-context.md` skill map przy nowym skilu user-facing.
 
 ## Dodawanie nowego skilla
 

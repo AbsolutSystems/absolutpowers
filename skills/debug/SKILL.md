@@ -6,6 +6,8 @@ description: >
   TRIGGER when: bug report, error message, test failure, "nie dziala", unexpected behavior,
   stack trace, CI failure, regression, crash, exception, "why does X return Y",
   flaky test, performance degradation, "something broke", "doesn't work".
+  NIE wyzwalaj na: mgliste wieloelementowe zgłoszenie klienta (to `problem-discuss`);
+  nowy feature bez buga (to `feature-discuss`); review jakości brancha (to `review`).
 allowed-tools: Read, Glob, Grep, Edit, Write, Bash, Agent
 argument-hint: "[opis buga lub błąd]"
 ---
@@ -55,90 +57,12 @@ When reading `project-memory.md`, use only entries with `Status: active` as inve
 
 ## Project Memory
 
-Debugging often uncovers high-value lessons, but most raw notes should NOT become permanent memory.
+**Read** `references/project-memory.md` for read rules, formats, and promotion.
+Debugging often yields high-value lessons — only durable traps belong in memory.
+Source label: `debug / {bug or CI context}`.
 
-Create a memory candidate only when ALL of these are true:
-- the investigation was non-trivial
-- it uncovered a recurring trap, workaround, or warning sign
-- the lesson is likely to help future debugging or implementation in the same codebase
-
-Do NOT create memory entries for:
-- temporary hypotheses that were disproven
-- one-off incident timelines
-- environment states that are unlikely to recur
-- details that belong only in the current bug report or commit history
-
-When a durable lesson is worth capturing, use:
-- candidate path: `./absolutpowers/memory-candidates/memory-candidates-YYYY-MM-DD-{slug}.md`
-- permanent memory path: `./absolutpowers/project-memory.md`
-
-`project-memory.md` should be grouped by module, but each entry must also include explicit affected paths:
-
-```markdown
-## infra/ci
-
-### Signing identity missing inside nested build step
-- Added: 2026-02-20
-- Source: debug / CI release failure
-- Last verified: 2026-02-20
-- Status: active
-- Problem: workflow secret exists, but nested script cannot see it
-- Symptoms: signing fails only in CI, env looks correct in top-level workflow
-- Root cause: env var was never passed into the nested build invocation
-- Resolution: forward the variable explicitly through the wrapper script
-- Warning signs:
-  - secret shows as set in workflow logs
-  - nested process prints env as missing
-- Affected paths:
-  - `.github/workflows/release.yml`
-  - `scripts/build-release.sh`
-```
-
-### Write the LESSON generally — keep specifics as the example
-
-Memory must transfer to NEW places, not only where it was found. So:
-- **Problem / Root cause / Warning signs** = the general CLASS of problem — a portable rule that applies to another module/file of the same nature. Capture the *mechanism*, not "file X line Y".
-- **Affected paths + this incident** = the concrete EXAMPLE (where it first showed up), not the lesson itself.
-
-Test: would someone working in a DIFFERENT module recognize this trap from the Warning signs alone? If not, it is too narrow — generalize the mechanism, keep one concrete example. Do not overshoot into uselessly vague ("be careful with config") either. Target: **general rule + portable warning signs + one concrete example.**
-
-Candidate file template:
-
-```markdown
-# Memory Candidate: [Short title]
-
-## Status
-Candidate — YYYY-MM-DD
-
-## Metadata
-- Added: YYYY-MM-DD
-- Source: debug / [bug / failing test / CI issue]
-- Status: candidate
-
-## Module
-`path/to/module`
-
-## Problem
-...
-
-## Symptoms
-...
-
-## Root Cause
-...
-
-## Resolution
-...
-
-## Warning Signs
-- ...
-
-## Affected Paths
-- `path/to/file`
-
-## Why This May Matter Again
-...
-```
+At end of session: if a durable lesson exists, create a candidate (or promote simple
+lessons after approval). See `references/project-memory.md` → Promotion rules.
 
 ## Overview
 
@@ -458,6 +382,8 @@ If systematic investigation reveals issue is truly environmental, timing-depende
 
 ## Supporting Techniques
 
+Canonical AbsolutPowers debug path (see `references/fork-policy.md`). Vendored `systematic-debugging` is the MIT library sibling — prefer techniques in **this** directory.
+
 Available in this directory:
 
 - **`root-cause-tracing.md`** — Trace bugs backward through call stack to find original trigger
@@ -466,12 +392,17 @@ Available in this directory:
 
 ## Memory Capture at the End
 
-After the debugging session is complete:
-- If you did NOT uncover a durable, reusable lesson: do nothing
-- If you DID uncover one: create `./absolutpowers/memory-candidates/memory-candidates-YYYY-MM-DD-{slug}.md`
-- In your final response, explicitly ask the user whether to promote that candidate into `./absolutpowers/project-memory.md`
+Follow `references/project-memory.md`. If a durable lesson was found: write candidate
+and ask about promotion; if none, do nothing.
 
-Promotion rules:
-- Promotion requires explicit user approval
-- Update an existing matching memory entry instead of duplicating it
-- After successful promotion, delete the candidate file
+## Terminal state
+
+Stan terminalny zależy od rozmiaru fixa (Phase 4 Step 0):
+
+| Wynik | Oddaje | Dalej |
+|-------|--------|-------|
+| Small fix inline | root cause + fix + tests green | opcjonalnie `@review` jeśli branch feature; done dla hotfixu |
+| Large / 3+ failed | `planning-fix-{slug}.md` | `@generate-tasks` na tym pliku → pipeline |
+| Routed from problem-discuss | potwierdzony/obalony root cause | jak wyżej; zaktualizuj understanding w odpowiedzi |
+
+Nie kończ sesji na „quick patch" bez Phase 1. Iron Law obowiązuje do końca.

@@ -5,12 +5,13 @@ description: >
   NIEOCZYWISTYCH procedur (wzorzec występuje ≥3 razy w kodzie, z dowodem
   `file:line`) i proponuje je jako reużywalne learned-skille specyficzne dla
   tego projektu. Prezentuje listę kandydatów naraz (batch), zapisuje WYŁĄCZNIE
-  zaznaczone przez użytkownika do `.claude/skills/learned/{name}/SKILL.md`.
+  zaznaczone przez użytkownika do learned path per harness (patrz tabela wyjść).
   Pomija kolizje ze statycznymi skillami. Odpalany ad-hoc, świadomie.
   TRIGGER when: "przeskanuj projekt pod skille", "wyciągnij reużywalne procedury",
   "zbuduj learned-skille z codebase", "try-learn-skill", "extract project skills",
   "jakie powtarzalne procedury ma ten projekt".
-allowed-tools: Read, Glob, Grep, Bash(git:*), Write(**/.claude/skills/learned/**/*.md)
+  NIE wyzwalaj na: pasywne patterns/rules/CLAUDE (to `update-ai-context`); docs modułu (to `document-feature`/`document-module`).
+allowed-tools: Read, Glob, Grep, Bash(git:*), Write(**/.claude/skills/learned/**/*.md), Write(**/.agents/skills/learned/**/*.md), Write(**/.grok/skills/learned/**/*.md), Write(**/.pi/skills/learned/**/*.md)
 argument-hint: "[opcjonalnie: ścieżka zawężająca skan (domyślnie cały codebase); opcjonalnie próg N (domyślnie 3)]"
 ---
 
@@ -35,8 +36,22 @@ NIE zapisywać, i proponuj tylko te, które przejdą i próg powtarzalności, i 
 nieoczywistości. "Nic nie spełnia progu" to poprawny, uczciwy wynik.
 
 **To NIE jest implementacja.** Nie piszesz kodu produktu. Zapisujesz co najwyżej
-pliki `SKILL.md` w `.claude/skills/learned/` — i to WYŁĄCZNIE te, które
+pliki `SKILL.md` w **learned path aktywnego harnessu** — i to WYŁĄCZNIE te, które
 użytkownik zaznaczy w batch approval (patrz KROK 5).
+
+## Ścieżki wyjścia per harness
+
+Ustal harness z kontekstu sesji (narzędzia / env / jak załadowano plugin). Zapisz learned-skille tylko do **jednej** ścieżki:
+
+| Harness | Learned path (w TARGET projekcie) |
+|---------|-------------------------------------|
+| Claude Code | `.claude/skills/learned/{name}/SKILL.md` |
+| Codex | `.agents/skills/learned/{name}/SKILL.md` |
+| Grok | `.grok/skills/learned/{name}/SKILL.md` |
+| Pi | `.pi/skills/learned/{name}/SKILL.md` |
+
+Jeśli harness niejasny — domyślnie `.claude/skills/learned/` i **powiedz to użytkownikowi**.
+Glob istniejących learned: wszystkie powyższe wzorce przy collision-check.
 
 ## Wejście
 
@@ -132,9 +147,8 @@ Dla każdego wzorca, który przeszedł oba progi:
   preboot…): jeśli statyczny skill już pokrywa ten zakres → **SKIP**, zaraportuj
   "to już robi skill X", nie proponuj.
 - **Porównanie z istniejącymi learned-skillami**
-  (`Glob: .claude/skills/learned/**/SKILL.md`): podobny istnieje → kandydat
-  **UPDATE** (merge/refine, `occurrences` = liczba znalezionych wystąpień,
-  odśwież `last-updated`). Brak → kandydat **NEW**.
+  (`Glob` po ścieżkach z tabeli harness + legacy `.claude/…`): podobny istnieje →
+  kandydat **UPDATE**; brak → **NEW**.
 
 Zbuduj z ocalałych wzorców **listę kandydatów** do batch approval.
 
@@ -162,11 +176,12 @@ może skorygować treść/trigger kandydata przed zapisem.
 
 Dla każdego zaznaczonego:
 ```
-{target-project}/.claude/skills/learned/{name}/SKILL.md
+{target-project}/{learned-root}/learned/{name}/SKILL.md
 ```
+(`{learned-root}` z tabeli harness, np. `.claude/skills`, `.agents/skills`, …)
 - Utwórz katalog jeśli nie istnieje.
-- `name` z prefiksem `learned-`, kebab-case: `learned-{descriptive-kebab}`.
-- **Write celuje w `.claude/` TARGET projektu** (gdzie odpalono skill), NIE w repo AbsolutPowers.
+- `name` z prefiksem `learned-`, kebab-case.
+- **Write w TARGET projekcie**, NIE w repo AbsolutPowers.
 - Wygeneruj treść wg szablonu niżej.
 
 ---
@@ -221,10 +236,9 @@ Egzekwuj precyzyjny, wąski trigger w `description`. Learned-skill ładuje się
 przez auto-detekcję — zbyt szeroki trigger powoduje retrieval-collision. Trigger
 celuje w konkretną klasę zadań, nie ogólne słowa.
 
-### Uwaga parity (Codex/Pi)
-Na Codex/Pi generuj learned-skille BEZ pól `allowed-tools`/`argument-hint` we
-frontmatter (nieobsługiwane) — reszta szablonu (w tym `learned-meta` w ciele)
-identyczna.
+### Frontmatter per harness
+- **Claude:** możesz dołączyć `allowed-tools` / `argument-hint`.
+- **Codex / Pi / Grok:** generuj learned-skille **BEZ** tych pól — reszta szablonu (w tym `learned-meta`) identyczna.
 
 ---
 
@@ -243,4 +257,4 @@ identyczna.
   przez użytkownika; brak ścieżki cichego zapisu SKILL.md.
 - **Brak kandydatów = poprawny wynik:** gdy nic nie przejdzie progów, raportuj i
   kończ bez zapisu — nie forsuj ekstrakcji.
-- **Write tylko do `.claude/skills/learned/`** target-projektu.
+- **Write tylko do learned path aktywnego harnessu** w target-projekcie (tabela wyżej).

@@ -9,6 +9,8 @@ description: >
   TRIGGER when: planning doc exists and user wants implementation plan,
   "rozpisz taski", "break this into tasks", review report needs fix tasks,
   after feature-discuss produces planning-*.md, "what are the steps".
+  NIE wyzwalaj na: dyskusję/design feature'a (to `feature-discuss`); wykonywanie tasków (to `implement`);
+  audyt spójności AC↔task↔kod (to `analyze`); review jakości kodu (to `review`).
 allowed-tools: Read, Glob, Grep, Bash(find:*), Bash(wc:*), Bash(cat:*), Bash(head:*), Bash(tail:*), Bash(tree:*), Write(**/absolutpowers/feature/**), Agent
 argument-hint: "[ścieżka do planning-*.md lub review-*.md]"
 ---
@@ -164,275 +166,18 @@ If the planning doc contains a `## Acceptance Criteria` section, apply these rul
 
 ## Tasks Document Structure
 
+**Read** `skills/generate-tasks/references/task-formats.md` (plugin-relative path) **before writing** any tasks file. It contains:
+
+- `single-file` Project Context + task template (Status / Traces to / Test-first / Produces / Consumes / …)
+- `orchestrated` main index, phase file, Context Contract, `implementation-context.md`, size/staleness rules
+- Produces/Consumes ↔ Context Contract aggregation rule
+- Final verification task template (`99-final-verification` / final Task N)
+
 Always include `## Mode` near the top of the main tasks file with either `single-file` or `orchestrated`.
-
-### `single-file` structure
-
-Use the existing sequential task format below.
-
-### Section 1: Project Context
-Concise, factual overview for agent orientation:
-
-```markdown
-## Project Context
-
-**Source doc:** `./absolutpowers/feature/planning-{slug}.md` or `./absolutpowers/reviews/YYYY-MM-DD-{branch-slug}.md` or `./absolutpowers/feature/{epic-slug}/planning-phase-N-{subslug}.md`
-
-**Epic context (if applicable):** `./absolutpowers/feature/{epic-slug}/planning-main.md`
-
-**Stack:** [languages, frameworks, key libraries]
-
-**Structure:**
-- `src/controllers/` - HTTP handlers
-- `src/services/` - Business logic
-- `src/repos/` - Data access
-- [other relevant paths]
-
-**Patterns:**
-- [Pattern name]: [one-line description]
-- [Pattern name]: [one-line description]
-
-**Conventions:**
-- Files: [naming convention]
-- Functions: [naming convention]
-- Tests: [location pattern, naming]
-
-**Global Constraints:**
-- [cross-task requirement copied verbatim from the planning doc: exact versions, naming, copy rules that bind every task in this plan]
-- Per Artykuł N: [one-line reference when a `constitution.md` article binds this feature — cite the article number only, never copy the article's text]
-
-> Global Constraints (GC) are spec-derived and scoped to THIS plan — distinct from `constitution.md` (ratified project-wide pryncypia, loaded separately in Step 1 as binding context) and from `rules.md` (project lint/formatting rules). Copying constitution article text into GC instead of citing `Per Artykuł N` is a plan error.
-
-**Verification commands:**
-- Backend build/test: `[command]`
-- Frontend build/typecheck: `[command]`
-- Lint / formatter check: `[command]`
-
-**Reference implementations:**
-- `path/to/SimilarService.ts` - [what to reference]
-- `path/to/SimilarController.ts` - [what to reference]
-```
-
-### Section 2: Implementation Tasks
-
-Sequential tasks the agent executes in order. Each task:
-
-```markdown
-### Task [N]: [Action-Oriented Title]
-**Status:** pending
-**Traces to:** AC-N, AC-M
-**Test-first:** yes | no ([short reason when no])
-**Produces:** [exact symbol/signature this task exports for later tasks to consume, e.g. `ArchiveService.archive(content: Buffer, filename: string, timestamp: Date): Promise<ArchiveResult>`; `none` if nothing downstream depends on it]
-**Consumes:** [exact symbol/signature from an earlier task this task depends on, e.g. `SftpClient` from Task 2; `none` if independent]
-
-**Create:**
-- `full/path/to/NewFile.ts`
-- `full/path/to/NewFile.spec.ts`
-
-**Modify:**
-- `full/path/to/ExistingFile.ts`
-
-**Description:**
-[2-3 sentences: what to do and why it connects to previous/next task]
-
-**Requirements:**
-- Implement method `methodName(param: Type): ReturnType`
-- Use pattern from `path/to/Reference.ts`
-- Handle errors with [specific exception type]
-- Log at [level] using [logger pattern]
-- [other specific requirements]
-
-**Tests:**
-- Test success case: [description]
-- Test failure case: [description]
-- Test edge case: [description]
-
-**Implementation decisions / remarks:**
-- [to be completed after task completion]
-
-**Example:**
-```[language]
-// Show key code snippet, signature, or config
-```
-```
-
-**Status values:**
-- `pending` - task not yet started
-- `in-progress` - task started in a session; encountering it at session start means a previous session was interrupted mid-task
-- `completed` - task finished and verified
-
-The agent sets `pending` → `in-progress` when it STARTS a task, and `in-progress` → `completed` only after implementation and verification. A tasks doc fresh from generate-tasks contains only `pending`.
-
----
-
-### `orchestrated` structure
-
-The main `tasks-{slug}.md` file is an index for the orchestrator, not the full implementation prompt. It must point to every phase file.
-
-```markdown
-# Tasks: [Feature Name]
-
-## Status
-pending
-
-## Source
-- Planning doc: `./absolutpowers/feature/planning-{slug}.md`  <!-- for epic phases: ./absolutpowers/feature/{epic-slug}/planning-phase-N-{subslug}.md -->
-- Epic context (if applicable): `./absolutpowers/feature/{epic-slug}/planning-main.md`
-
-## Mode
-orchestrated
-
-## Project Context
-**Stack:** [languages, frameworks, key libraries]
-**Global Constraints:** [spec-derived requirements binding every phase/task in this plan — copied verbatim from the planning doc; cite binding `constitution.md` articles as `Per Artykuł N`, never copy article text. Distinct from `constitution.md` (project pryncypia) and `rules.md` (lint) — see the single-file `## Project Context` template above for the full demarcation note.]
-**Verification commands:** [canonical commands]
-**Shared implementation context:** `./absolutpowers/feature/tasks-{slug}/implementation-context.md`
-
-## Phase Overview
-
-### Phase 1: [Action-Oriented Title]
-**Status:** pending
-**File:** `./absolutpowers/feature/tasks-{slug}/01-{phase-slug}.md`
-**Depends on:** none
-**Write scope:** `path/glob`, `path/File.ext`
-**Risk:** low | medium | high
-
-### Phase 2: [Action-Oriented Title]
-**Status:** pending
-**File:** `./absolutpowers/feature/tasks-{slug}/02-{phase-slug}.md`
-**Depends on:** Phase 1
-**Write scope:** `path/glob`, `path/File.ext`
-**Risk:** low | medium | high
-
-## Final Verification
-**Status:** pending
-**File:** `./absolutpowers/feature/tasks-{slug}/99-final-verification.md`
-
-## Orchestrator Notes
-- Orchestrator updates statuses in this file (`pending` → `in-progress` when a phase starts, → `completed` after phase verification and review).
-- Workers update only their phase file and `implementation-context.md`.
-- Do not mark a phase completed until phase verification and `phase-review` pass.
-- Each phase file contains a Context Contract. Workers validate Requires before starting; `phase-review` checks Provides on completion.
-```
-
-Each phase file must follow this structure:
-
-```markdown
-# Phase N: [Action-Oriented Title]
-
-## Status
-pending
-
-## Parent
-`./absolutpowers/feature/tasks-{slug}.md`
-
-## Shared Context
-Read before starting:
-- `./absolutpowers/feature/tasks-{slug}/implementation-context.md`
-
-## Context Contract
-
-### Requires (from previous phases)
-- [concrete item: file path, symbol, or `implementation-context.md` section that must exist before this phase starts]
-- [for Phase 1: "None (first phase)."]
-
-### Provides (for later phases)
-- [concrete item this phase commits to producing]
-- [e.g., "Service `OrderService` at `src/services/OrderService.ts` with method `create(dto): Order`"]
-
-## Read Scope
-- `path/to/reference/File.ext`
-
-## Write Scope
-- `path/to/change/File.ext`
-- `path/to/change/**/*Test.ext`
-
-## Objective
-[2-4 concrete sentences describing what this phase must produce.]
-
-## Tasks
-
-### Task 1: [Action]
-**Status:** pending
-**Traces to:** AC-N, AC-M
-**Test-first:** yes | no ([short reason when no])
-**Produces:** [exact symbol/signature this task exports; `none` if nothing downstream depends on it]
-**Consumes:** [exact symbol/signature from an earlier task in THIS phase; `none` if independent]
-
-**Requirements:**
-- [specific requirement]
-
-**Tests:**
-- [specific test]
-
-## Phase Verification
-Run:
-- `[focused command for this phase]`
-
-## Completion Criteria
-- All phase tasks are completed.
-- All changes are within Write Scope unless explicitly justified.
-- Phase verification commands pass.
-- `implementation-context.md` is updated with only durable handoff facts.
-- All items listed in `## Context Contract -> Provides` are fulfilled.
-
-## Implementation Decisions / Remarks
-- [to be completed after phase completion]
-```
-
-Each Requires item must reference a concrete file, symbol, or `implementation-context.md` section — not vague descriptions. Each Provides item must be verifiable: a file path, a symbol name, or a specific section in `implementation-context.md`.
-
-**Produces/Consumes ↔ Context Contract aggregation rule:** task-level `**Produces:**`/`**Consumes:**` and phase-level `Context Contract → Provides` are two levels of one mechanism, not a duplication. Phase `Provides` = the union of task `Produces` entries that cross the phase boundary (a later phase needs them) — nothing else. Do NOT repeat within-phase: when a `Produces` signature is consumed by another task inside the SAME phase, it stays in that task's `Consumes` field only and is never promoted to phase `Provides`. In `single-file` mode there are no phases: `Produces`/`Consumes` work task↔task with no rollup — do not look for a phase `Provides` section in single-file output. `Produces`/`Consumes` signatures are a separate field from the `AC-N` tokens embedded in test names (see AC Traceability above) — the two do not collide and both apply independently to the same task.
-
-Create `implementation-context.md` with this structure:
-
-```markdown
-# Implementation Context: [Feature Name]
-
-## Purpose
-Short handoff for phase workers. Keep this file concise. Add only facts that future phases need.
-HARD BUDGET: max 10 lines per phase entry across all sections combined; whole file target ≤150 lines.
-Every later worker reads this file — its size is paid on every phase.
-
-## Completed Phases
-- None yet.
-
-## Created / Changed API
-- None yet.
-
-## Decisions Made
-- None yet.
-
-## Test Utilities / Fixtures
-- None yet.
-
-## Constraints For Next Phases
-- None yet.
-
-## Verification History
-- None yet.
-```
-
-Rules for `implementation-context.md`:
-- It is a handoff contract, not a work log.
-- Include only facts that later phases need.
-- Do not paste full diffs, temporary debugging hypotheses, or obvious restatements of the phase file.
-- Keep entries short and link concrete files, symbols, commands, or decisions.
-
-**Size limits:**
-- Maximum ~50 lines of content (excluding section headers and `## Purpose`).
-- Each entry: max 2 lines. Longer entries belong in the phase file, not here.
-- When a phase completes and its entries are not needed by remaining phases, compress to one-liners or remove.
-
-**Staleness:**
-- Before adding a new entry, check if existing entries became irrelevant given completed phases. Remove or compress stale ones.
-- `## Completed Phases` entries are exempt — they serve as audit trail.
-
-The final verification phase file `99-final-verification.md` must contain the same concrete project commands required by the main tasks file. It is completed by the implement orchestrator after all implementation phases pass.
 
 ## Task Guidelines
 
-**Approach — Test-first marker:**
+**Approach — Test-first marker:** (anti-patterns: `references/tdd-anti-patterns.md`)
 - Every implementation task gets a `**Test-first:**` field decided HERE, at generation time — the planner owns this decision, not the implementer mid-implementation.
 - `Test-first: yes` for: business logic, data transformations, validation, pure functions, bug-fix regression tasks.
 - `Test-first: no ([reason])` for: configuration, simple CRUD wiring, UI scaffolding, docs — the reason is mandatory, one short phrase.
@@ -637,7 +382,7 @@ Fix any gap found here before running Review Gate — cheaper to catch now than 
 
 ## Review Gate — Automatyczna weryfikacja tasków
 
-> **Harness dispatch (dotyczy każdego `Agent(subagent_type=...)` niżej):** Claude → zarejestrowani agenci działają wprost; **Codex → `references/codex-tools.md`** (brak rejestru typów — dispatch generic przez `spawn_agent` z ciałem `agents/{name}.md`, albo review inline z advisory verdictem; nie literalny `Agent(subagent_type=...)`); Pi → `references/pi-tools.md`; **Grok → `references/grok-tools.md`** (użyj `spawn_subagent` z `subagent_type: "general-purpose"` i treścią `agents/{name}.md` jako instrukcjami, albo inline z jawnym disclaimerem; nigdy literalny `Agent(...)`).
+> **Harness dispatch:** before any gate/worker dispatch, read `references/harness-dispatch.md` (and the matching `references/{harness}-tools.md`).
 
 Po zapisaniu tasks doc, uruchom subagenta `review-tasks` żeby zweryfikować jakość planu implementacji. Dla `orchestrated` podaj mu main tasks file i poinformuj, że ma przeczytać wszystkie referenced phase files oraz `implementation-context.md`:
 

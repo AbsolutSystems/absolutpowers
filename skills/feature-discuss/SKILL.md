@@ -11,6 +11,8 @@ description: >
   "should we build", architecture decision for new functionality, "omowmy etap",
   "zaplanuj faze", "przeczytaj glowny planing", existing planning-main.md,
   gap routed from problem-discuss ("sprawa N to gap", path to problem-*.md).
+  NIE wyzwalaj na: implementację (to `implement`/`generate-tasks`); triage zgłoszenia klienta (to `problem-discuss`);
+  debug errora (to `debug`); sam review kodu (to `review`).
 allowed-tools: Read, Glob, Grep, Bash(find:*), Bash(wc:*), Bash(cat:*), Bash(head:*), Bash(tail:*), Bash(tree:*), Bash(mkdir:*), Bash(companion-scripts/start-server.sh:*), Bash(companion-scripts/stop-server.sh:*), Write(**/absolutpowers/feature/**/*.md), Write(**/docs/adr/*.md), Write(**/.superpowers/brainstorm/**/*.html), Agent
 argument-hint: "[opis feature'a, LUB ścieżka do planning-main.md + numer/nazwa fazy]"
 ---
@@ -52,68 +54,18 @@ Companion to **opcjonalny mechanizm przekrojowy** — dostępny z poziomu każde
 
 **Przypomnienie:** dodaj `.superpowers/` do `.gitignore` projektu (tam lądują ekrany).
 
-### Companion Protocol (konkretne kroki — używaj tego)
+### Companion Protocol (skrót)
 
-1. **Oferta (w osobnej wiadomości):**
-   "To pytanie o [np. layout dashboardu / przepływ danych] dobrze zobaczyć wizualnie z interaktywnymi opcjami. Uruchomić Visual Companion (otworzy przeglądarkę)? Możesz potem klikać i komentować."
+Pełny protokół + klasy CSS: **`skills/feature-discuss/visual-companion.md`**.
 
-2. **Po wyraźnym TAK:**
-   Uruchom serwer (użyj narzędzia Bash):
-   ```
-   companion-scripts/start-server.sh --project-dir . --open
-   ```
-   Z outputu JSON zapamiętaj:
-   - `screen_dir` (tu będziesz pisał HTML fragmenty przez Write)
-   - `state_dir` (tu czytasz events)
-   - `url` (podaj użytkownikowi w całości z ?key=...)
+1. Oferta w osobnej wiadomości → czekaj na wyraźne TAK.
+2. `companion-scripts/start-server.sh --project-dir . --open` → zapamiętaj `screen_dir`, `state_dir`, `url`.
+3. Write fragmentów HTML (bez full document) do `screen_dir` (nowy plik co ekran); klasy z visual-companion.md.
+4. Read `{state_dir}/events` + odpowiedź użytkownika w terminalu.
+5. Waiting screen przy powrocie do tekstu; `stop-server.sh` na końcu sesji wizualnej.
+6. Brak Node / błąd → graceful fallback do terminala. Nie renderuj kodu użytkownika. Pełny URL z `?key=...`.
 
-   Jeśli `--open` nie zadziała (headless, remote), podaj URL ręcznie.
-
-3. **Pokazywanie ekranu (gdy decyzja: companion):**
-   - Wygeneruj **fragment HTML** (bez `<html>`, `<head>`, `<body>` — serwer sam wrapuje).
-   - Używaj klas z `visual-companion.md`: `.options` + `.option[data-choice]`, `.cards`, `.mockup`, `.split`, `.pros-cons`, mock- elementy itp.
-   - Nadaj semanticzną nazwę pliku (np. `layout-options.html`, `data-flow-v1.html`).
-   - **Zawsze nowy plik** — nigdy nie nadpisuj.
-   - Użyj narzędzia **Write**:
-     `Write( {screen_dir}/layout-options.html , <div class="options"> ... </div> )`
-   - Powiedz użytkownikowi:
-     "Patrz w przeglądarce: {pełny url}
-     [krótki opis co pokazuje].
-     Kliknij opcję lub napisz w terminalu co myślisz / co zmienić."
-
-4. **Odczyt feedbacku (kolejna tura):**
-   - Przeczytaj `Read( {state_dir}/events )` (jeśli istnieje) — JSON lines z kliknięciami (`data-choice`).
-   - Połącz z tekstową odpowiedzią użytkownika z terminala.
-   - Na podstawie tego: albo nowy ekran (nowy plik w screen_dir), albo przejdź do następnego pytania.
-
-5. **Wracasz do czystego terminala (np. pytania o zakres):**
-   - Wypchnij ekran wyczyszczający:
-     `Write( {screen_dir}/waiting-1.html , <div style="...">Kontynuujemy w terminalu...</div> )`
-   - Użytkownik nie patrzy na stary ekran podczas rozmowy tekstowej.
-
-6. **Zakończenie / czyszczenie:**
-   Gdy nie będzie więcej pytań wizualnych lub na końcu sesji:
-   ```
-   companion-scripts/stop-server.sh {session_dir_lub_state_dir_parent}
-   ```
-   (session_dir to katalog zawierający `content` i `state`).
-
-**Uwagi techniczne:**
-- Serwer automatycznie wrapuje fragmenty w ramkę + helper.js (toggleSelect itp.).
-- Zawsze potwierdzaj, że serwer działa (sprawdź `state_dir/server-info` lub output).
-- Jeśli serwer padnie — restartuj tym samym `--project-dir`.
-- Na Codex/Pi często foreground — skrypt sam to obsługuje.
-- Nie używaj `cat` / heredoc do pisania ekranów — używaj Write.
-
-Pełne klasy CSS i przykłady fragmentów: `skills/feature-discuss/visual-companion.md`. Używaj ich.
-
-**Bezpieczeństwo (twarde):**
-- Companion serwuje **tylko statyczny HTML wygenerowany przez Ciebie**.
-- Nigdy nie renderuj kodu z projektu użytkownika.
-- Brak Node / błąd → graceful fallback do terminala, bez blokowania HARD-GATE.
-- Zawsze podawaj pełny URL z `?key=...`.
-
-Teraz companion jest w pełni wpięty — używaj go aktywnie w Faza 1, 3 i 4 gdy pytanie zyska na wizualizacji.
+**Bezpieczeństwo:** tylko statyczny HTML wygenerowany przez Ciebie; companion serwuje z utwardzonym CSP.
 
 ## Router trybu — ustal to ZANIM zaczniesz rozmowę
 
@@ -439,7 +391,7 @@ Znalezione problemy **napraw inline**, edytując zapisany dokument bezpośrednio
 
 > Dotyczy: standardowych feature'ów oraz **phase doców w Trybie B**. NIE dotyczy: micro-changes, `planning-main.md`, ani stubów faz.
 >
-> **Harness dispatch (dotyczy każdego `Agent(subagent_type=...)` niżej):** Claude → zarejestrowani agenci działają wprost; **Codex → `references/codex-tools.md`** (brak rejestru typów — dispatch generic przez `spawn_agent` z ciałem `agents/{name}.md`, albo review inline z advisory verdictem; nie literalny `Agent(subagent_type=...)`); Pi → `references/pi-tools.md`; **Grok → `references/grok-tools.md`** (użyj `spawn_subagent` z `subagent_type: "general-purpose"` i treścią `agents/{name}.md` jako instrukcjami, albo inline z jawnym disclaimerem; nigdy literalny `Agent(...)`).
+> **Harness dispatch:** read `references/harness-dispatch.md` before dispatching `qa-enrichment` / `review-plan`.
 
 Po zapisaniu planning doc uruchom subagenta `qa-enrichment`:
 
@@ -524,181 +476,13 @@ Accepted
 
 **Nie twórz ADR dla trywialnych decyzji** (nazewnictwo plików, kolejność importów). Tylko decyzje z realnym wpływem na architekturę.
 
-## Format: standardowy planning doc
+## Formaty planning doców
 
-```markdown
-# Feature: [Nazwa]
+**Read** `skills/feature-discuss/references/planning-formats.md` before writing any planning file. It contains the full templates for:
 
-## Status
-Draft — [data]
-
-## Problem
-[Co chcemy rozwiązać i dlaczego]
-
-> **Ważne:** Cel i intencja feature'a MUSZĄ być zapisane tu explicite. Bramka `review-tasks`
-> (kryterium Intent Fidelity) odpala się ze świeżym kontekstem i widzi wyłącznie to, co jest
-> w tym dokumencie — intencja, która żyje tylko w rozmowie, jest dla niej niewidoczna.
-
-## Użytkownicy
-[Kto skorzysta z tego feature'a]
-
-## Oczekiwane zachowanie
-[Jak feature ma działać z perspektywy użytkownika]
-
-## Wybrane rozwiązanie
-[Opis wybranego podejścia technicznego]
-
-### Uzasadnienie
-[Dlaczego to podejście, a nie inne]
-
-### Rozważane alternatywy
-[Krótki opis odrzuconych podejść i powodów]
-
-## Zakres
-
-### In scope
-- [Co wchodzi w zakres]
-
-### Out of scope
-- [Co świadomie wykluczamy]
-
-## Plan implementacji
-1. [Krok 1 — co i gdzie]
-2. [Krok 2 — co i gdzie]
-...
-
-## Pliki do zmodyfikowania / utworzenia
-- `ścieżka/plik` — [co trzeba zrobić]
-
-## Edge cases i ryzyka
-- [Edge case 1]
-- [Ryzyko 1]
-
-## Acceptance Criteria
-
-> Sekcja generowana automatycznie przez qa-enrichment agent — nie wypełniaj ręcznie.
-
-### Happy path
-- AC-1: [opis behawioralny]
-
-### Edge cases
-- AC-N: [scenariusz brzegowy]
-
-### Security
-- AC-N: [wymaganie bezpieczeństwa]
-
-## Pytania otwarte
-- [Kwestie do rozstrzygnięcia później]
-
-## Notatki z dyskusji
-[Kluczowe ustalenia z rozmowy]
-```
-
-## Format: epic main doc (`planning-main.md`)
-
-> LEKKI, kontekstowy. BEZ szczegółowego planu implementacji, BEZ Acceptance Criteria
-> (te mieszkają w phase docach). Main to "mapa" epica i wspólny kontekst.
-
-```markdown
-# Epic: [Nazwa]
-
-## Status
-Draft — [data]
-
-## Problem
-[Co chcemy rozwiązać i dlaczego — na poziomie całości]
-
-## Użytkownicy
-[Kto skorzysta]
-
-## Oczekiwane zachowanie (high-level)
-[Jak całość ma działać — bez schodzenia w szczegóły faz]
-
-## Wspólny kontekst architektoniczny
-[Stack, kluczowe moduły, wzorce, ograniczenia wspólne dla wszystkich faz]
-
-## Wspólne decyzje
-- [Decyzja] → ADR: `./docs/adr/YYYY-MM-DD-{slug}.md`
-
-## Mapa faz
-
-| Faza | Nazwa | Cel | Status | Plan |
-|------|-------|-----|--------|------|
-| 1 | [nazwa] | [cel jednym zdaniem] | Do zaplanowania | `planning-phase-1-{subslug}.md` |
-| 2 | [nazwa] | [cel] | Do zaplanowania | `planning-phase-2-{subslug}.md` |
-| 3 | [nazwa] | [cel] | Do zaplanowania | `planning-phase-3-{subslug}.md` |
-
-> Statusy: `Do zaplanowania` → `Zaplanowana` → `W toku` → `Zrobiona`
-
-## Zależności między fazami
-- Faza 2 zależy od Fazy 1 ([dlaczego])
-- [...]
-
-## Out of scope (całość)
-- [Co świadomie wykluczamy z całego epica]
-
-## Pytania otwarte (przekrojowe)
-- [Kwestie dotyczące całości]
-
-## Notatki z dyskusji
-[Kluczowe ustalenia o podziale na fazy]
-```
-
-## Format: phase doc (`planning-phase-N-{subslug}.md`)
-
-> Pełny format = standardowy planning doc + sekcja kontekstu nadrzędnego na górze.
-> Jako STUB (przy tworzeniu epica) wypełnij tylko: nagłówek, kontekst, cel, zgrubny
-> scope, zależności, status. Resztę zostaw jako `TODO — do zaplanowania w osobnej sesji`.
-
-```markdown
-# Faza [N]: [Nazwa]  (epic: [nazwa epica])
-
-## Kontekst nadrzędny
-> ZACZNIJ od przeczytania `./absolutpowers/feature/{slug}/planning-main.md`.
-- Epic: `planning-main.md`
-- Zależności od innych faz: [np. wymaga Fazy 1 — modelu danych]
-
-## Status
-Do zaplanowania — [data]   <!-- → Draft → Gotowy po zaplanowaniu fazy -->
-
-## Cel fazy
-[Co ta faza dostarcza — jeden, dwa akapity]
-
-## Zakres
-
-### In scope
-- [...]
-
-### Out of scope
-- [Co należy do innych faz / poza epic]
-
-## Wybrane rozwiązanie
-TODO — do zaplanowania w osobnej sesji (Tryb B)
-
-### Uzasadnienie
-TODO
-
-### Rozważane alternatywy
-TODO
-
-## Plan implementacji
-TODO — do zaplanowania w osobnej sesji
-
-## Pliki do zmodyfikowania / utworzenia
-TODO
-
-## Edge cases i ryzyka
-TODO
-
-## Acceptance Criteria
-> Generowane przez qa-enrichment po zaplanowaniu fazy. Nie wypełniaj ręcznie.
-
-## Pytania otwarte
-- [Znane już teraz pytania dot. tej fazy]
-
-## Notatki z dyskusji
-[Uzupełniane w sesji planowania tej fazy]
-```
+- standardowy `planning-{slug}.md` (w tym sekcja AC generowana przez qa-enrichment)
+- epic `planning-main.md` (lekki, bez AC)
+- phase doc / stub `planning-phase-N-{subslug}.md`
 
 ## Zasady zachowania
 
@@ -716,8 +500,13 @@ TODO
 
 ## Terminal state
 
-Stan terminalny tego skilla: planning/phase doc zapisany i **jawnie zaakceptowany** przez użytkownika (design przeszedł HARD-GATE; dla epica: main + stuby zapisane, dla micro-change: opis CO+GDZIE zaakceptowany).
+Stan terminalny tego skilla: design **jawnie zaakceptowany** (HARD-GATE). Artefakt zależy od ścieżki:
 
-Następny krok w pipeline: `@generate-tasks` (gdy design zaakceptowany — rozpisuje spec na sekwencyjne taski; w Trybie B: dla właśnie zaplanowanej fazy).
+| Ścieżka | Co oddaje | Następny krok |
+|---------|-----------|---------------|
+| **Standard / phase (Tryb B)** | planning lub phase doc (+ QA + review-plan PASS) | `@generate-tasks` na tym docu |
+| **Epic main** | `planning-main.md` + stuby faz | nowa sesja feature-discuss (Tryb B) per faza — **nie** generate-tasks na mainie |
+| **Micro-change** | zaakceptowany opis CO+GDZIE (bez planning doc) | implementacja **inline** po zgodzie użytkownika — **pomiń** `@generate-tasks` |
 
-Pipeline NIE jest domknięty na tym etapie — zaakceptowany spec to dopiero początek łańcucha, nie dowieziony feature. Jeśli działasz pod `/goal` (np. „dowieź feature X"), NIE uznawaj celu za osiągnięty po zapisaniu planu: kontynuuj przez `@generate-tasks` → `@implement` aż do skilla terminalnego (`@review`/`@triada-review` lub ship/merge), zanim uznasz cel za osiągnięty.
+Dla standard/phase: pipeline NIE jest domknięty — kontynuuj `@generate-tasks` → `@implement` → `@review`/`@triada-review` → `@ship`.  
+Dla micro-change pod `/goal`: po inline implement + weryfikacji idź do `@review` (lub drobny fix), nie generuj tasków „na siłę”.

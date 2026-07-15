@@ -186,8 +186,9 @@ sequenceDiagram
 `document-feature`/`try-learn-skill`. Pola: `last-updated`, `last-commit`, `source: code-scan`.
 
 ### Uwaga parity (Codex)
-Mirror w `codex/` ma identyczne ciało BEZ `allowed-tools` i `argument-hint`. W KROK 1 czyta `AGENTS.md`
-zamiast `CLAUDE.md`.
+### Uwaga harness
+
+Jedno drzewo skilli (od 5.0.0). Pola `allowed-tools`/`argument-hint` są Claude-only i inertne na innych harnessach. W KROK 1 na Codex/Grok preferuj `AGENTS.md` gdy brak `CLAUDE.md`.
 
 ---
 
