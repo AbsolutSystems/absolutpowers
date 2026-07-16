@@ -170,6 +170,17 @@ Utwórz katalog (`./absolutpowers/feature/` lub `./absolutpowers/feature/{slug}/
 
 ## Proces rozmowy
 
+## Planning guardrails — myślenie przed planowaniem
+
+Stosuj te zasady przez Fazę 0–5, zanim zapiszesz mini-design albo planning doc:
+
+1. **Ujawniaj założenia i niepewności.** Nie wybieraj po cichu między istotnie różnymi interpretacjami. Jeśli niepewność zmienia kontrakt, dane, bezpieczeństwo, migrację, zakres lub koszt rozwiązania — nazwij ją, przedstaw realne warianty z tradeoffami i poproś użytkownika o decyzję. Drobne luki, które nie zmieniają tych granic, rozstrzygnij minimalnym rozsądnym założeniem i zapisz je.
+2. **Rekomenduj najprostsze rozwiązanie.** Nie planuj funkcji, abstrakcji, konfiguracji ani elastyczności, o które użytkownik nie prosił i których nie wymaga potwierdzony kontekst. Gdy istnieje kuszące, bardziej złożone podejście, wskaż je krótko jako alternatywę i uzasadnij, dlaczego go nie wybierasz.
+3. **Planuj chirurgicznie.** Każdy planowany krok i plik musi wynikać bezpośrednio z celu albo z koniecznej zmiany towarzyszącej (testu, migracji, kontraktu lub usunięcia osieroconego elementu stworzonego przez tę zmianę). Nie dodawaj refaktorów, porządków ani poprawek sąsiedniego kodu tylko „przy okazji”; odnotuj je jako osobny follow-up.
+4. **Nie ignoruj realnych granic błędu.** Nie projektuj obsługi czysto hipotetycznych scenariuszy, ale uwzględnij błędy na granicach wejścia danych, integracji, bezpieczeństwa i trwałości danych, jeśli dotyczą feature'a.
+
+Przed zapisem sprawdź: czy każdy element `Plan implementacji` da się powiązać z `In scope`, Acceptance Criteria lub konieczną zmianą towarzyszącą. Jeśli nie — usuń go z planu albo przenieś do `Deliberately not doing` / follow-upu.
+
 ### Wstępne wczytanie kontekstu projektu
 
 Po potwierdzeniu kierunku w Fazie 0, ale **przed klasyfikacją ścieżki, analizą techniczną i mini-designem**, ustal przewidywany obszar zmiany i wczytaj jego context pack:

@@ -4,7 +4,7 @@ AI-assisted development lifecycle — from feature design through implementation
 
 Instead of ad-hoc prompting, AbsolutPowers gives your AI agent a structured workflow. Each skill owns one phase. Skills chain into a pipeline with automated quality gates (Claude Code) that catch problems before they cascade.
 
-As of **5.0.0** the repo is one host-agnostic skill tree under `skills/` — not mirrored per-harness trees — plus a thin manifest/integration per harness (Claude, Codex, Pi, Grok) and a small set of skills vendored under MIT from [obra/superpowers](https://github.com/obra/superpowers) in `skills/vendored/`. Current release: **5.6.0** (static technical-debt audit). See [Repo Structure](#repo-structure-this-repository) and [Attribution](#attribution).
+As of **5.0.0** the repo is one host-agnostic skill tree under `skills/` — not mirrored per-harness trees — plus a thin manifest/integration per harness (Claude, Codex, Pi, Grok) and a small set of skills vendored under MIT from [obra/superpowers](https://github.com/obra/superpowers) in `skills/vendored/`. Current release: **5.6.1** (feature-planning guardrails). See [Repo Structure](#repo-structure-this-repository) and [Attribution](#attribution).
 
 ## Quick Start
 
@@ -233,6 +233,7 @@ Interactive Product Owner / Product Architect session — discusses requirements
 - **When:** starting a feature, brainstorming, "chcę dodać…", "potrzebujemy…"
 - **In → Out:** feature description → accepted Lightweight mini-design + inline work, standard `absolutpowers/feature/planning-{slug}.md`, or epic `planning-main.md` + phase docs (with an ADR when required)
 - **Lightweight task:** one cohesive goal using an existing pattern, with no unresolved product decision or high-risk boundary, that can finish safely in the current session. Qualification is based on risk, uncertainty, and handoff needs regardless of file count. Before proposing its mini-design, the skill reads a scoped context pack (nearest `AGENTS.md`/`CLAUDE.md`, constitution, patterns, rules, relevant ADRs, active path-overlapping project memory, and current code); a missing optional source is skipped without error.
+- **Planning guardrails:** surface assumptions; ask for a decision only when uncertainty changes the contract, data, security, migration, scope, or cost; otherwise record the minimal assumption. Recommend the smallest viable approach, record tempting exclusions under `Deliberately not doing`, and keep every plan step traceable to scope, acceptance criteria, or a necessary accompanying change.
 - After explicit acceptance of the complete mini-design (the same **HARD-GATE**), in-scope implementation runs **inline** with a session-only task list. It creates no planning/tasks doc and skips QA enrichment, `review-plan`, `@generate-tasks`, and `@implement`, but must finish with the promised verification and branch-level `@review` or `@triada-review`.
 - Escalate to a standard feature or epic when the area or solution is uncertain, or work involves migration, a public API/public contract, a security boundary, multiple subsystems, or durable resume/handoff. **Epics** split into a main planning document (default name `planning-main.md`) + per-phase docs in a `feature/{epic-slug}/` subfolder; downstream skills preserve its exact referenced path instead of reconstructing the filename (next step = plan each phase in a new session, not `generate-tasks` on the main).
 - For a standard/phase `review-plan: PASS` and for an epic main roadmap, Explain HTML is **opt-in** and generated only after an affirmative answer. `skip` does not generate a report or link, is not a warning, and does not block the next step; no response does not generate Explain automatically.
@@ -618,6 +619,12 @@ grok plugin install /path/to/absolut-ai-skills --trust
 
 Versioning is SemVer, kept in sync across all manifests
 (`.claude-plugin/plugin.json`, `.codex-plugin/plugin.json`, and `.grok-plugin/plugin.json`).
+
+### 5.6.1 — Feature-planning guardrails
+
+- Added an explicit `feature-discuss` planning filter: disclose material assumptions and tradeoffs, prefer the minimum viable solution, and keep planned changes surgical
+- Added `Deliberately not doing`, assumptions, and decision-to-confirm sections to standard and phase planning templates
+- Version **5.6.1** across all plugin manifests
 
 ### 5.6.0 — Technical Debt Audit
 

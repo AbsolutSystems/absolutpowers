@@ -40,6 +40,17 @@ Draft — [data]
 ### Out of scope
 - [Co świadomie wykluczamy]
 
+### Deliberately not doing
+- [Kusząca funkcja, abstrakcja, konfiguracja lub refaktor wykluczony z tego planu — dlaczego]
+
+## Założenia i decyzje
+
+### Założenia
+- [Minimalne założenie przyjęte dla nieistotnej luki — oraz dlaczego nie wymaga osobnej decyzji]
+
+### Decyzje wymagające potwierdzenia
+- [Tylko nierozstrzygnięte kwestie, które zmieniają kontrakt, dane, bezpieczeństwo, migrację, zakres lub koszt; przed statusem Gotowy muszą zostać rozstrzygnięte]
+
 ## Plan implementacji
 1. [Krok 1 — co i gdzie]
 2. [Krok 2 — co i gdzie]
@@ -155,6 +166,17 @@ Do zaplanowania — [data]   <!-- → Draft → Gotowy po zaplanowaniu fazy -->
 
 ### Out of scope
 - [Co należy do innych faz / poza epic]
+
+### Deliberately not doing
+- [Kusząca funkcja, abstrakcja, konfiguracja lub refaktor wykluczony z fazy — dlaczego]
+
+## Założenia i decyzje
+
+### Założenia
+- [Minimalne założenie przyjęte dla nieistotnej luki]
+
+### Decyzje wymagające potwierdzenia
+- [Istotne nierozstrzygnięte kwestie; przed statusem Gotowy muszą zostać rozstrzygnięte]
 
 ## Wybrane rozwiązanie
 TODO — do zaplanowania w osobnej sesji (Tryb B)
