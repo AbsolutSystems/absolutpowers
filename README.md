@@ -4,7 +4,7 @@ AI-assisted development lifecycle — from feature design through implementation
 
 Instead of ad-hoc prompting, AbsolutPowers gives your AI agent a structured workflow. Each skill owns one phase. Skills chain into a pipeline with automated quality gates (Claude Code) that catch problems before they cascade.
 
-As of **5.0.0** the repo is one host-agnostic skill tree under `skills/` — not mirrored per-harness trees — plus a thin manifest/integration per harness (Claude, Codex, Pi, Grok) and a small set of skills vendored under MIT from [obra/superpowers](https://github.com/obra/superpowers) in `skills/vendored/`. Current release: **5.5.0** (risk-based Lightweight task routing and opt-in Explain). See [Repo Structure](#repo-structure-this-repository) and [Attribution](#attribution).
+As of **5.0.0** the repo is one host-agnostic skill tree under `skills/` — not mirrored per-harness trees — plus a thin manifest/integration per harness (Claude, Codex, Pi, Grok) and a small set of skills vendored under MIT from [obra/superpowers](https://github.com/obra/superpowers) in `skills/vendored/`. Current release: **5.6.0** (static technical-debt audit). See [Repo Structure](#repo-structure-this-repository) and [Attribution](#attribution).
 
 ## Quick Start
 
@@ -120,6 +120,15 @@ Pick by how well the problem is already classified:
   ```
 
   Empty arguments audit the current feature. An explicit feature artifact anchors intent; an empty feature with no changes or scope artifact stops without silently widening to the whole project. Whole-codebase mode discovers logical areas, audits them in module waves, and synthesizes cross-boundary risks; a path keeps local findings inside that module and labels advice requiring other modules separately. Every completed audit writes a new immutable report: feature mode uses `absolutpowers/reviews/qa-review-{feature-slug}-YYYY-MM-DD-HHmmss.md`, whole-codebase mode uses `absolutpowers/reviews/qa-review-codebase-YYYY-MM-DD-HHmmss.md`, and scoped mode uses `absolutpowers/reviews/qa-review-{module-slug}-YYYY-MM-DD-HHmmss.md`. Reports use verdict `ADEQUATE`, `IMPROVEMENTS_RECOMMENDED`, `GAPS_FOUND`, or `MISLEADING_CONFIDENCE` and expose a stable `Actionable Findings` section. Follow findings safely in this order: resolve `FEATURE_DISCUSS`, obtain explicit approval for any `INLINE_FIX`, send `GENERATE_TASKS` findings to `@generate-tasks`, then re-run `@qa-review`. The canonical schema and calibration remain in [`skills/qa-review/references/testing-rubric.md`](skills/qa-review/references/testing-rubric.md).
+- **`tech-debt`** — static, read-only technical-debt audit for the codebase or one module. It turns evidence of architecture, complexity, duplication, coupling, reliability, test, and operability debt into a prioritized backlog with ongoing cost, confidence, bounded effort, and a smallest safe next step. It never executes code or tests, edits files, or treats an unverified dependency/security claim as fact.
+
+  ```text
+  @tech-debt
+  @tech-debt codebase
+  @tech-debt path/to/module
+  ```
+
+  Every completed audit writes one immutable `absolutpowers/reviews/tech-debt-{scope}-YYYY-MM-DD-HHmmss.md` report. It is for accumulated maintainability cost, not a current-branch review (`review` / `triada-review`), deep test-value audit (`qa-review`), or active bug investigation (`debug`). Select a finding and follow its route: `FEATURE_DISCUSS`, `GENERATE_TASKS`, `DEBUG`, or `WATCH`.
 - **`receiving-code-review`** — you **received** PR/review feedback (human or bot) and need to address it: verify against the codebase first, clarify unclear items, push back when wrong, implement one fix at a time. Not for *writing* a review (that's `review` / `triada-review`).
 - **`explain`** — standalone HTML when a **human** needs a fast explanation of a plan or diff. Ephemeral, not durable docs.
 - Also: `constitution` (ratify project principles), `try-learn-skill` / `document-feature` / `document-module` (knowledge capture).
@@ -194,6 +203,7 @@ claude -p "/goal <same condition>" --output-format stream-json --verbose
 | `analyze` | Cross-artifact audit: AC→task→code matrix, 6 divergence classes | slug → `reviews/analyze-{slug}.md` | all |
 | `triada-review` | Multi-agent branch review + synthesis with per-harness dispatch | branch → report in session | all |
 | `qa-review` | Static test-value audit for a feature, module, or whole codebase | scope → immutable `reviews/qa-review-{scope}-{timestamp}.md` | all |
+| `tech-debt` | Static prioritized technical-debt audit for the codebase or a module | scope → immutable `reviews/tech-debt-{scope}-{timestamp}.md` | all |
 | `constitution` | Author/ratify project principles (pryncypia) | topic → `constitution.md` | all |
 | `update-ai-context` | Bootstrap/refresh `CLAUDE.md`, `AGENTS.md`, `patterns.md`, `rules.md` | path → context files | all |
 | `explain` | Standalone HTML onboarding report for a plan or diff | path/diff → `docs/onboarding/*.html` | all |
@@ -363,6 +373,7 @@ Start from where you are, not from the skill list.
 | A fuzzy, multi-item client report | `problem-discuss` | Triage: split, classify, route per item |
 | A branch ready to merge | `review` (solo) / `triada-review` (multi-agent) | Code-quality audit |
 | Doubt: "is the feature consistent / any scope creep?" | `analyze` | AC→task→code traceability audit |
+| Want to prioritize accumulated maintainability cost | `tech-debt` | Evidence-backed technical-debt backlog |
 | Changes ready to commit (feature closeout) | `ship` | Commit message + PR text from artifacts, archives artifacts, local commit (gated) |
 | Want reusable procedures mined from the project | `try-learn-skill` | Codebase scan → invocable project learned-skills (ad-hoc) |
 | PR/review comments to address (not write the review) | `receiving-code-review` | Verify → fix or push back, one item at a time |
@@ -479,6 +490,7 @@ role prompts are orchestrated by the shared `triada-review` skill.
 | `tech-lead-advisor` | triada-review / manual | Goal, architecture, overengineering, readability |
 | `codebase-auditor` | triada-review | Security, correctness, test quality (JSON verdict) |
 | `ui-reviewer` | triada-review | UI states, interactions, a11y, data, UI races, user goal (JSON verdict) |
+| `tech-debt-auditor` | tech-debt | Isolated static audit of one codebase area; returns debt evidence for synthesis |
 
 **Intent Fidelity** (review-tasks #7, `INTENT` category, Claude-only): judges whether the task set as a whole achieves the goal/intent of the planning doc — not just literal per-requirement coverage. Complements `analyze` (in-flight gate vs post-hoc audit). The three triada-review agents have non-overlapping scopes and each also flags `rules.md` violations within its scope.
 
@@ -606,6 +618,13 @@ grok plugin install /path/to/absolut-ai-skills --trust
 
 Versioning is SemVer, kept in sync across all manifests
 (`.claude-plugin/plugin.json`, `.codex-plugin/plugin.json`, and `.grok-plugin/plugin.json`).
+
+### 5.6.0 — Technical Debt Audit
+
+- Added `tech-debt`, an on-demand, static, read-only audit for a whole codebase or a scoped module
+- Added evidence-backed prioritization by ongoing cost, impact, confidence, bounded effort, and smallest safe next step, written as immutable `tech-debt-*.md` reports
+- Added the isolated `tech-debt-auditor` worker and host-agnostic generic-dispatch fallback for Codex, Pi, and Grok
+- Version **5.6.0** across all plugin manifests
 
 ### 5.5.0 — Lightweight task routing
 

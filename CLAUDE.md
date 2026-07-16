@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## What This Is
 
-AbsolutPowers — a Claude Code + Codex + Pi + Grok plugin providing AI-assisted development lifecycle skills: problem intake/triage, feature discussion, task generation, implementation, review, static QA test-value auditing, debugging, project context management, and project constitution. Version 5.5.0. As of 5.0.0 the repo is a single host-agnostic skill tree (see Repository Layout) with thin per-harness manifests/integrations, replacing the earlier two mirrored `claude/`/`codex/` trees; it also introduces `skills/vendored/` — selected skills vendored from [obra/superpowers](https://github.com/obra/superpowers) under MIT (see `VENDORED.md`, `LICENSE-VENDORED`). Grok Build is supported as a first-class harness via `.grok-plugin/` + `references/grok-tools.md`.
+AbsolutPowers — a Claude Code + Codex + Pi + Grok plugin providing AI-assisted development lifecycle skills: problem intake/triage, feature discussion, task generation, implementation, review, static QA test-value and technical-debt auditing, debugging, project context management, and project constitution. Version 5.6.0. As of 5.0.0 the repo is a single host-agnostic skill tree (see Repository Layout) with thin per-harness manifests/integrations, replacing the earlier two mirrored `claude/`/`codex/` trees; it also introduces `skills/vendored/` — selected skills vendored from [obra/superpowers](https://github.com/obra/superpowers) under MIT (see `VENDORED.md`, `LICENSE-VENDORED`). Grok Build is supported as a first-class harness via `.grok-plugin/` + `references/grok-tools.md`.
 
 ## Repository Layout
 
@@ -203,6 +203,23 @@ AC→task→code traceability.
   sequentially/inline and label the result `advisory (not fully isolated)`—never omit scope
   silently. Scoped-module recommendations involving another module stay separately labeled as
   cross-boundary integration/E2E advice.
+
+### Technical Debt Audit (all harnesses, on-demand)
+
+`tech-debt` is a static, read-only codebase or scoped-module audit for evidence-backed
+maintainability cost. It looks for architecture, complexity, duplication, coupling, reliability,
+test, and operability debt, then creates one immutable prioritized backlog report at
+`absolutpowers/reviews/tech-debt-{scope}-YYYY-MM-DD-HHmmss.md`. It is deliberately distinct from
+`review`/`triada-review` (current branch quality), `qa-review` (test-value depth), and `debug`
+(an active defect). It never executes code, edits files, makes unverified dependency freshness or
+security claims, or implements recommendations.
+
+- Public forms: `@tech-debt`, `@tech-debt codebase`, and `@tech-debt path/to/module`.
+- Findings use an evidence anchor, ongoing cost, impact, confidence, bounded effort, and the
+  smallest safe next step; they route to `FEATURE_DISCUSS`, `GENERATE_TASKS`, `DEBUG`, or `WATCH`.
+- For independent areas, Claude dispatches `agents/tech-debt-auditor.md`; Codex, Pi, and Grok
+  dispatch a generic isolated worker using the same body. Without dispatch, the audit is marked
+  `advisory (not fully isolated)` rather than silently reducing scope.
 
 ### Standalone Triada Review (all harnesses)
 

@@ -25,6 +25,7 @@ step; a human (or a headless runner) triggers the transition by invoking the nex
 | Code quality on branch | `@review` or `@triada-review` |
 | AC↔task↔code consistency | `@analyze` (on-demand) |
 | Static test-value audit | `@qa-review [feature [artifact] \| codebase [path]]` (on-demand) |
+| Technical-debt backlog audit | `@tech-debt [codebase \| path]` (on-demand) |
 | Commit + archive feature | `@ship` |
 | Bug / test fail root cause | `@debug` |
 | Project principles | `@constitution` |
@@ -45,6 +46,13 @@ without a report; it never expands into a whole-codebase audit. Reports are immu
 and stable `Actionable Findings`; route decisions first (`FEATURE_DISCUSS`), then separately
 approved `INLINE_FIX`, then `GENERATE_TASKS`, and finally re-run the audit. The canonical finding
 contract and calibration live only in `skills/qa-review/references/testing-rubric.md`.
+
+`@tech-debt` is a read-only, static audit of accumulated maintainability cost—not a current-branch
+review, deep test-value audit, or bug investigation. Use `@tech-debt` / `@tech-debt codebase` for
+the project, or `@tech-debt path/to/module` for a strict scope. It writes one immutable
+`absolutpowers/reviews/tech-debt-{scope}-YYYY-MM-DD-HHmmss.md` backlog with evidence, ongoing
+cost, priority, bounded effort, and a route to `FEATURE_DISCUSS`, `GENERATE_TASKS`, `DEBUG`, or
+`WATCH`; it never implements its recommendations.
 
 If this session was already mid-skill (an active checklist/todo, an implementation phase,
 a pending gate) — return to that checklist and resume instead of starting fresh. This
