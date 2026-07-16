@@ -1,0 +1,41 @@
+<!doctype html>
+<html lang="pl">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Decyzje implementacyjne — lightweight-task-routing</title>
+  <style>
+    :root { color-scheme: light dark; --bg:#f7f7f5; --fg:#202124; --muted:#5f6368; --card:#fff; --line:#d9d9d4; --accent:#175cd3; }
+    @media (prefers-color-scheme: dark) { :root { --bg:#171717; --fg:#f1f1ef; --muted:#b5b5ae; --card:#242424; --line:#444; --accent:#8ab4f8; } }
+    body { margin:0; background:var(--bg); color:var(--fg); font:16px/1.55 system-ui,sans-serif; }
+    main { max-width:980px; margin:0 auto; padding:2rem 1.2rem 4rem; }
+    h1,h2 { line-height:1.2; } h1 { font-size:2rem; } h2 { margin-top:2rem; }
+    .card { background:var(--card); border:1px solid var(--line); border-radius:12px; padding:1rem 1.2rem; margin:1rem 0; }
+    .risk { color:var(--accent); font-weight:700; } .meta { color:var(--muted); }
+    code { overflow-wrap:anywhere; }
+  </style>
+</head>
+<body>
+<main>
+  <h1>Decyzje implementacyjne: lightweight-task-routing</h1>
+  <p><strong>TL;DR:</strong> 12 zapisanych uwag/decyzji. Ryzyko całości: niskie–średnie; kontrakt promptu, dokumentacja, testy i manifesty są zweryfikowane, a końcowa bramka implementacji zwróciła PASS.</p>
+
+  <h2>Decyzje wymagające akceptacji</h2>
+  <p>Proszę zaakceptować zakres i konsekwencje poniższych decyzji. Każda jest odwracalna przez kolejną zmianę promptu/dokumentacji; żadna nie zmienia publicznego kodu wykonawczego.</p>
+
+  <section class="card"><h3>DEC-001 — kwalifikacja jakościowa</h3><p><span class="meta">Źródło:</span> Phase 1, Task 1</p><p>Router kwalifikuje Lightweight przez spójność celu, istniejący wzorzec, ryzyko, niepewność i możliwość ukończenia w sesji; liczba plików nie jest kryterium.</p><p><strong>Konsekwencje:</strong> małe zadania wieloplikowe mogą ominąć ciężki planning, ale wymagają oceny jakościowej. <span class="risk">Ryzyko: średnie.</span></p><p><strong>Pytanie:</strong> Akceptuję / Proszę zmienić?</p></section>
+  <section class="card"><h3>DEC-002 — niezaufany context pack</h3><p><span class="meta">Źródło:</span> Phase 1, Task 1</p><p>Reguły, ADR-y, pamięć i kod są materiałem analitycznym; opcjonalne źródła są pomijane bez błędu, a świeży kod ma pierwszeństwo przed pamięcią.</p><p><strong>Konsekwencje:</strong> brak pliku kontekstowego nie blokuje rozmowy, a treść repozytorium nie może autoryzować narzędzi ani zgody. <span class="risk">Ryzyko: niskie.</span></p><p><strong>Pytanie:</strong> Akceptuję / Proszę zmienić?</p></section>
+  <section class="card"><h3>DEC-003 — sesyjny tracker</h3><p><span class="meta">Źródło:</span> Phase 1, Task 2</p><p>Lightweight korzysta z natywnego trackera harnessu, a bez niego z checklisty w kontekście rozmowy; nie tworzy trwałego tasks-doca.</p><p><strong>Konsekwencje:</strong> potrzeba wznowienia/handoffu eskaluje do standardu. <span class="risk">Ryzyko: średnie, świadomy trade-off.</span></p><p><strong>Pytanie:</strong> Akceptuję / Proszę zmienić?</p></section>
+  <section class="card"><h3>DEC-004 — Explain wyłącznie opt-in</h3><p><span class="meta">Źródło:</span> Phase 1, Task 3</p><p>Explain HTML powstaje tylko po odpowiedzi twierdzącej; <code>skip</code> i cisza nie tworzą raportu ani nie blokują handoffu.</p><p><strong>Konsekwencje:</strong> mniej artefaktów ephemeralnych, jawna decyzja użytkownika. <span class="risk">Ryzyko: niskie.</span></p><p><strong>Pytanie:</strong> Akceptuję / Proszę zmienić?</p></section>
+  <section class="card"><h3>DEC-005 — zachowanie standardowej struktury</h3><p><span class="meta">Źródło:</span> Phase 1, remarks fazy</p><p>Zastąpiono aktywną nazwę Micro-change przez Lightweight task bez dodawania czwartego poziomu routingu; standard i epic zachowują strukturę.</p><p><strong>Konsekwencje:</strong> historyczne artefakty mogą nadal zawierać <code>micro-change</code>. <span class="risk">Ryzyko: niskie.</span></p><p><strong>Pytanie:</strong> Akceptuję / Proszę zmienić?</p></section>
+  <section class="card"><h3>DEC-006 — zakres kontraktów dokumentacyjnych</h3><p><span class="meta">Źródło:</span> Phase 2, Task 4</p><p>Testy dokumentacji skanują tylko bieżącą kartę README, sekcję pipeline CLAUDE i przyjęty ADR, aby nie unieważniać historycznej terminologii.</p><p><strong>Konsekwencje:</strong> aktywny kontrakt jest chroniony bez przepisywania archiwów. <span class="risk">Ryzyko: niskie.</span></p><p><strong>Pytanie:</strong> Akceptuję / Proszę zmienić?</p></section>
+  <section class="card"><h3>DEC-007 — route-aware README po review</h3><p><span class="meta">Źródło:</span> Phase 2, Task 4, korekta po final review</p><p>Lead karty i <em>In → Out</em> opisują trzy możliwe wyniki routingu, zamiast uniwersalnie obiecywać planning doc i review-plan.</p><p><strong>Konsekwencje:</strong> dokumentacja publiczna nie wprowadza w błąd użytkowników Lightweight. <span class="risk">Ryzyko: niskie.</span></p><p><strong>Pytanie:</strong> Akceptuję / Proszę zmienić?</p></section>
+  <section class="card"><h3>DEC-008 — wersjonowanie 5.5.0</h3><p><span class="meta">Źródło:</span> Phase 2, Task 5</p><p>Trzy manifesty i changelog README są synchronizowane do 5.5.0; pozostałe pola manifestów pozostają bez zmian.</p><p><strong>Konsekwencje:</strong> release metadata odzwierciedla nowy kontrakt. <span class="risk">Ryzyko: niskie.</span></p><p><strong>Pytanie:</strong> Akceptuję / Proszę zmienić?</p></section>
+  <section class="card"><h3>DEC-009 — usunięcie sygnału file-count z aktywnego routera</h3><p><span class="meta">Źródło:</span> Phase 1, Task 1, korekta po final review</p><p>Opis standardowej ścieżki zmieniono z przykładu „kilka plików” na niepewność, ryzyko i trwały handoff.</p><p><strong>Konsekwencje:</strong> aktywny prompt jest spójny z AC-1; test negatywny obejmuje file-count i LOC. <span class="risk">Ryzyko: niskie.</span></p><p><strong>Pytanie:</strong> Akceptuję / Proszę zmienić?</p></section>
+
+  <h2>Informacje i dowody</h2>
+  <p>Weryfikacja końcowa: 16 testów kontraktowych PASS; manifesty JSON, frontmatter skillów, hook SessionStart i tokeny AC-1…AC-13 PASS. Brak nowych ADR-ów poza zaakceptowanym <code>docs/adr/2026-07-16-lightweight-task-routing.md</code>. Brak kandydata project-memory.</p>
+  <p class="meta">Źródła: phase files w <code>absolutpowers/feature/tasks-lightweight-task-routing/</code>, <code>skills/feature-discuss/SKILL.md</code>, <code>tests/test_lightweight_task_routing.py</code>, README, CLAUDE i trzy manifesty.</p>
+</main>
+</body>
+</html>

@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## What This Is
 
-AbsolutPowers — a Claude Code + Codex + Pi + Grok plugin providing AI-assisted development lifecycle skills: problem intake/triage, feature discussion, task generation, implementation, review, static QA test-value auditing, debugging, project context management, and project constitution. Version 5.4.0. As of 5.0.0 the repo is a single host-agnostic skill tree (see Repository Layout) with thin per-harness manifests/integrations, replacing the earlier two mirrored `claude/`/`codex/` trees; it also introduces `skills/vendored/` — selected skills vendored from [obra/superpowers](https://github.com/obra/superpowers) under MIT (see `VENDORED.md`, `LICENSE-VENDORED`). Grok Build is supported as a first-class harness via `.grok-plugin/` + `references/grok-tools.md`.
+AbsolutPowers — a Claude Code + Codex + Pi + Grok plugin providing AI-assisted development lifecycle skills: problem intake/triage, feature discussion, task generation, implementation, review, static QA test-value auditing, debugging, project context management, and project constitution. Version 5.5.0. As of 5.0.0 the repo is a single host-agnostic skill tree (see Repository Layout) with thin per-harness manifests/integrations, replacing the earlier two mirrored `claude/`/`codex/` trees; it also introduces `skills/vendored/` — selected skills vendored from [obra/superpowers](https://github.com/obra/superpowers) under MIT (see `VENDORED.md`, `LICENSE-VENDORED`). Grok Build is supported as a first-class harness via `.grok-plugin/` + `references/grok-tools.md`.
 
 ## Repository Layout
 
@@ -54,16 +54,24 @@ Agent limitations in plugins: no `hooks`, `mcpServers`, or `permissionMode`.
 ## Pipeline Architecture
 
 ```
-feature-discuss → generate-tasks → implement → review
-     │                 │              │
-     ▼                 ▼              ▼
- review-plan      review-tasks   review-implementation
-  (gate)            (gate)           (gate)
+feature-discuss ─┬─ standard / phase → generate-tasks → implement → review
+                 ├─ epic main → plan each phase (then standard pipeline per phase)
+                 └─ Lightweight task → accepted mini-design → inline work → verify → review
 ```
+
+The Lightweight route is qualified by uncertainty, risk, and durable-handoff needs rather
+than line or file count. It is limited to one cohesive goal that follows an existing pattern,
+has no unresolved product decision or high-risk boundary, and can finish in the current
+session. Before routing, `feature-discuss` reads the scoped context pack; absent optional files
+are skipped. Migration, a public API or public contract, a security boundary, multiple
+subsystems, an uncertain area/solution, or durable resume/handoff escalates to standard or epic.
+Explicit mini-design acceptance satisfies the HARD-GATE. Lightweight then executes inline with
+a session-only task list and bypasses planning/task stages, but never bypasses verification or
+branch-level `@review`/`@triada-review`.
 
 ### Terminal-state contract (prose, `/goal`-aware)
 
-Each of the four pipeline skills ends with a `## Terminal state` section (prose, Polish — no machine format / frontmatter key). The three intermediate skills (`feature-discuss`, `generate-tasks`, `implement`) declare what they deliver, name the next link as `@<skill>` (`@generate-tasks` / `@implement` / `@review`), and explicitly state the pipeline is **not closed** — so a session driven by Claude Code's `/goal` continues down the chain instead of stopping mid-pipeline. `review`/`triada-review` is the distinguished **closure point** (fix-loop or merge/ship), not a chain link — it names no forward `@skill`. There is no separate "execution-mode" fork: `implement` is the sole executor, and the `## Mode` field (`orchestrated`/`single-file`) set by `generate-tasks` is the absolutpowers analog of obra's `subagent-driven-development` vs `executing-plans` split (a resolved decision, not a missing feature).
+Each of the four pipeline skills ends with a `## Terminal state` section (prose, Polish — no machine format / frontmatter key). `feature-discuss` has three outcomes: a standard/phase planning doc continues to `@generate-tasks`; an epic main continues by planning its phases; a Lightweight task continues inline after explicit mini-design acceptance, then verification and branch review, without `@generate-tasks` or `@implement`. Explain HTML for standard/phase PASS or an epic main is opt-in: only an affirmative answer generates it; `skip` is non-blocking and no response does not generate it. The remaining intermediate skills (`generate-tasks`, `implement`) name the next link (`@implement` / `@review`) and explicitly state the pipeline is **not closed** — so a session driven by Claude Code's `/goal` continues down the chain instead of stopping mid-pipeline. `review`/`triada-review` is the distinguished **closure point** (fix-loop or merge/ship), not a chain link. The `## Mode` field (`orchestrated`/`single-file`) set by `generate-tasks` remains the resolved executor mode for standard/phase work.
 
 ### Intake / triage front door
 

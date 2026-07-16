@@ -4,7 +4,7 @@ AI-assisted development lifecycle — from feature design through implementation
 
 Instead of ad-hoc prompting, AbsolutPowers gives your AI agent a structured workflow. Each skill owns one phase. Skills chain into a pipeline with automated quality gates (Claude Code) that catch problems before they cascade.
 
-As of **5.0.0** the repo is one host-agnostic skill tree under `skills/` — not mirrored per-harness trees — plus a thin manifest/integration per harness (Claude, Codex, Pi, Grok) and a small set of skills vendored under MIT from [obra/superpowers](https://github.com/obra/superpowers) in `skills/vendored/`. Current release: **5.4.0** (static, cross-harness `qa-review` test-value audits). See [Repo Structure](#repo-structure-this-repository) and [Attribution](#attribution).
+As of **5.0.0** the repo is one host-agnostic skill tree under `skills/` — not mirrored per-harness trees — plus a thin manifest/integration per harness (Claude, Codex, Pi, Grok) and a small set of skills vendored under MIT from [obra/superpowers](https://github.com/obra/superpowers) in `skills/vendored/`. Current release: **5.5.0** (risk-based Lightweight task routing and opt-in Explain). See [Repo Structure](#repo-structure-this-repository) and [Attribution](#attribution).
 
 ## Quick Start
 
@@ -72,6 +72,12 @@ Knowledge capture and side tools (`try-learn-skill`, `document-feature`, `docume
 
 Each step writes a file that feeds the next. Review gates between steps (Claude Code) catch issues automatically. Each pipeline skill ends with a **`## Terminal state`** block (what it delivered + next step / close) so `/goal` sessions keep chaining correctly.
 
+`feature-discuss` first routes by uncertainty, risk, and whether the work needs a durable
+handoff. A **Lightweight task** is the same disciplined entry point with a shorter middle:
+after an explicitly accepted mini-design it executes inline in the current session, then still
+requires verification and branch-level `@review` or `@triada-review`. It skips planning/task
+artifacts, not the HARD-GATE or review.
+
 ## The Pipeline
 
 ```
@@ -93,7 +99,7 @@ Pick by how well the problem is already classified:
            └─ problem-discuss   a FUZZY client report (many items: bug? gap? config? data? misunderstanding?)
 ```
 
-**`feature-discuss` — you know you want to build something new.** A single, already-classified feature request. Goes straight into the pipeline: discussion → planning doc + AC → tasks → implement.
+**`feature-discuss` — you know you want to build something new.** A single, already-classified feature request. It routes to a risk-based Lightweight task, a standard feature, or an epic. Standard work follows discussion → planning doc + AC → tasks → implement; Lightweight work follows an accepted mini-design → inline execution → verification → branch review.
 
 **`problem-discuss` — you have a vague report and don't yet know what each item is.** A multi-item client/stakeholder message about an *existing* module where each item could turn out to be a bug, a gap, a config error, a data anomaly, or a misunderstanding. It splits the report, classifies every item, and routes each onward (see [Client report workflow](#client-report-workflow-problem-discuss)). It investigates and routes only — never fixes or plans. **Don't reach for it** for a clean error/stack trace (that's `debug`) or a single known feature idea (that's `feature-discuss`).
 
@@ -212,11 +218,14 @@ Cards below cover the four pipeline skills plus `try-learn-skill`, `ship`, and `
 
 ### `/absolutpowers:feature-discuss`
 
-Interactive Product Owner / Product Architect session — discusses requirements before any code is written. Asks clarifying questions one at a time, analyzes your codebase, proposes 2-3 approaches with tradeoffs, then writes a planning doc + behavioral Acceptance Criteria (AC-1, AC-2, …). Runs the `review-plan` gate before finishing. Reads `constitution.md` as light context if present.
+Interactive Product Owner / Product Architect session — discusses requirements before any code is written. Asks clarifying questions one at a time, analyzes your codebase, and proposes 2-3 approaches with tradeoffs. It then routes an accepted design to Lightweight inline execution, a standard planning doc with behavioral Acceptance Criteria and `review-plan`, or an epic roadmap with per-phase planning. Reads the scoped project context before routing.
 
 - **When:** starting a feature, brainstorming, "chcę dodać…", "potrzebujemy…"
-- **In → Out:** feature description → `absolutpowers/feature/planning-{slug}.md` (optionally `docs/adr/YYYY-MM-DD-{slug}.md`)
-- **Trivial changes** (one-liner, config) skip the planning doc — the skill suggests **inline** implementation after you accept CO+WHERE (HARD-GATE still applies; Terminal state: **skip** `generate-tasks`). **Epics** split into a main planning document (default name `planning-main.md`) + per-phase docs in a `feature/{epic-slug}/` subfolder; downstream skills preserve its exact referenced path instead of reconstructing the filename (next step = plan each phase in a new session, not `generate-tasks` on the main).
+- **In → Out:** feature description → accepted Lightweight mini-design + inline work, standard `absolutpowers/feature/planning-{slug}.md`, or epic `planning-main.md` + phase docs (with an ADR when required)
+- **Lightweight task:** one cohesive goal using an existing pattern, with no unresolved product decision or high-risk boundary, that can finish safely in the current session. Qualification is based on risk, uncertainty, and handoff needs regardless of file count. Before proposing its mini-design, the skill reads a scoped context pack (nearest `AGENTS.md`/`CLAUDE.md`, constitution, patterns, rules, relevant ADRs, active path-overlapping project memory, and current code); a missing optional source is skipped without error.
+- After explicit acceptance of the complete mini-design (the same **HARD-GATE**), in-scope implementation runs **inline** with a session-only task list. It creates no planning/tasks doc and skips QA enrichment, `review-plan`, `@generate-tasks`, and `@implement`, but must finish with the promised verification and branch-level `@review` or `@triada-review`.
+- Escalate to a standard feature or epic when the area or solution is uncertain, or work involves migration, a public API/public contract, a security boundary, multiple subsystems, or durable resume/handoff. **Epics** split into a main planning document (default name `planning-main.md`) + per-phase docs in a `feature/{epic-slug}/` subfolder; downstream skills preserve its exact referenced path instead of reconstructing the filename (next step = plan each phase in a new session, not `generate-tasks` on the main).
+- For a standard/phase `review-plan: PASS` and for an epic main roadmap, Explain HTML is **opt-in** and generated only after an affirmative answer. `skip` does not generate a report or link, is not a warning, and does not block the next step; no response does not generate Explain automatically.
 - **Gap handoff (Mode C):** hand it a `problem-{slug}.md` from `problem-discuss` (item classified as a gap) and it inherits the confirmed evidence — business rule, what's missing, where — instead of re-interviewing from zero. It designs only *how* to fill the gap and stamps `**Źródło:** problem-{slug}.md, Sprawa N` for traceability.
 - Optional **Visual Companion** (browser mockups/options) after explicit approval — see `skills/feature-discuss/visual-companion.md`.
 
@@ -597,6 +606,14 @@ grok plugin install /path/to/absolut-ai-skills --trust
 
 Versioning is SemVer, kept in sync across all manifests
 (`.claude-plugin/plugin.json`, `.codex-plugin/plugin.json`, and `.grok-plugin/plugin.json`).
+
+### 5.5.0 — Lightweight task routing
+
+- Generalized the `feature-discuss` fast path into a risk- and uncertainty-based **Lightweight task** route that may span several files while retaining one cohesive, session-completable goal
+- Added scoped context-pack loading, explicit mini-design acceptance, and session-only task tracking; risky, unclear, cross-system, or durable-handoff work escalates to standard/epic
+- Kept lightweight execution inline while requiring verification and branch review, without creating planning/tasks artifacts or invoking the standard execution stages
+- Made Explain HTML affirmative opt-in after standard/phase review PASS and epic-main creation; `skip` and no response do not generate or block
+- Added static prompt, documentation, and release contract tests and synchronized version **5.5.0** across all plugin manifests
 
 ### 5.4.0 — Static QA Review
 
