@@ -29,9 +29,8 @@ escape_for_json() {
 session_context_escaped=$(escape_for_json "$session_context_content")
 session_context="<EXTREMELY_IMPORTANT>\n${session_context_escaped}\n</EXTREMELY_IMPORTANT>"
 
-# Output context injection as JSON for Claude Code.
-# Claude Code hooks expect hookSpecificOutput.additionalContext (nested).
-# Codex reads AGENTS.md instead — this hook is Claude-only.
+# Output context injection as JSON for Claude Code and Codex.
+# Both harnesses accept hookSpecificOutput.additionalContext (nested).
 #
 # Uses printf instead of heredoc to work around bash 5.3+ heredoc hang.
 printf '{\n  "hookSpecificOutput": {\n    "hookEventName": "SessionStart",\n    "additionalContext": "%s"\n  }\n}\n' "$session_context" | cat

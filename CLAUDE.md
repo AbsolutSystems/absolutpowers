@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## What This Is
 
-AbsolutPowers — a Claude Code + Codex + Pi + Grok plugin providing AI-assisted development lifecycle skills: problem intake/triage, feature discussion, task generation, implementation, review, static QA test-value and technical-debt auditing, debugging, project context management, and project constitution. Version 5.6.2. As of 5.0.0 the repo is a single host-agnostic skill tree (see Repository Layout) with thin per-harness manifests/integrations, replacing the earlier two mirrored `claude/`/`codex/` trees; it also introduces `skills/vendored/` — selected skills vendored from [obra/superpowers](https://github.com/obra/superpowers) under MIT (see `VENDORED.md`, `LICENSE-VENDORED`). Grok Build is supported as a first-class harness via `.grok-plugin/` + `references/grok-tools.md`.
+AbsolutPowers — a Claude Code + Codex + Pi + Grok plugin providing AI-assisted development lifecycle skills: problem intake/triage, feature discussion, task generation, implementation, review, static QA test-value and technical-debt auditing, debugging, project context management, and project constitution. Version 5.6.3. As of 5.0.0 the repo is a single host-agnostic skill tree (see Repository Layout) with thin per-harness manifests/integrations, replacing the earlier two mirrored `claude/`/`codex/` trees; it also introduces `skills/vendored/` — selected skills vendored from [obra/superpowers](https://github.com/obra/superpowers) under MIT (see `VENDORED.md`, `LICENSE-VENDORED`). Grok Build is supported as a first-class harness via `.grok-plugin/` + `references/grok-tools.md`.
 
 ## Repository Layout
 
@@ -13,7 +13,7 @@ One host-agnostic skill tree serves every harness (Claude Code, Codex, Pi, Grok)
 - `skills/{name}/SKILL.md` — single source of truth. Host-agnostic body; Claude-only sections (frontmatter `allowed-tools`/`argument-hint`, agent gate sections) are inert on Codex/Pi.
 - `skills/vendored/{name}/` — vendored obra/superpowers skills with MIT attribution (see `VENDORED.md`, `LICENSE-VENDORED`).
 - `agents/{name}.md` — Claude registers these as named agent types; other harnesses reuse their bodies as generic-agent prompts.
-- `hooks/` — slim Claude SessionStart hook (`hooks.json` + `run-hook.cmd` + `session-start`) plus shared `hooks/session-context.md`.
+- `hooks/` — shared Claude/Codex SessionStart hook (`hooks.json` + `run-hook.cmd` + `session-start`) plus shared `hooks/session-context.md`.
 - `references/{harness}-tools.md` — per-harness primitive mappings, read conditionally. Adding a harness = new integration/manifest + optional reference, zero skill edits (Grok: `.grok-plugin/plugin.json` + `references/grok-tools.md`).
 
 Manifests and marketplaces (all top-level, pointing at repo root):

@@ -4,7 +4,7 @@ AI-assisted development lifecycle — from feature design through implementation
 
 Instead of ad-hoc prompting, AbsolutPowers gives your AI agent a structured workflow. Each skill owns one phase. Skills chain into a pipeline with automated quality gates (Claude Code) that catch problems before they cascade.
 
-As of **5.0.0** the repo is one host-agnostic skill tree under `skills/` — not mirrored per-harness trees — plus a thin manifest/integration per harness (Claude, Codex, Pi, Grok) and a small set of skills vendored under MIT from [obra/superpowers](https://github.com/obra/superpowers) in `skills/vendored/`. Current release: **5.6.2** (command syntax and Codex model-routing fixes). See [Repo Structure](#repo-structure-this-repository) and [Attribution](#attribution).
+As of **5.0.0** the repo is one host-agnostic skill tree under `skills/` — not mirrored per-harness trees — plus a thin manifest/integration per harness (Claude, Codex, Pi, Grok) and a small set of skills vendored under MIT from [obra/superpowers](https://github.com/obra/superpowers) in `skills/vendored/`. Current release: **5.6.3** (shared Claude/Codex SessionStart hook). See [Repo Structure](#repo-structure-this-repository) and [Attribution](#attribution).
 
 ## Quick Start
 
@@ -23,7 +23,7 @@ Restart Claude Code, then type `/absolutpowers:` — autocomplete lists every sk
 
 **Codex**
 
-Open this repo (or a project that vendors it) in Codex → repo marketplace (`.agents/plugins/marketplace.json`) → install `absolutpowers`. Codex reads `AGENTS.md` (a symlink to `CLAUDE.md`) as its bootstrap context; there is no session hook on Codex.
+Open this repo (or a project that vendors it) in Codex → repo marketplace (`.agents/plugins/marketplace.json`) → install `absolutpowers`. Codex reads `AGENTS.md` (a symlink to `CLAUDE.md`) as its bootstrap context and runs the shared `SessionStart` hook from `hooks/hooks.json`.
 
 **Pi**
 
@@ -508,7 +508,7 @@ Every harness shares the exact same `skills/{name}/SKILL.md` — **16 workflow s
 | Review gates | automatic after each step + `phase-review` | degrades: dispatch a generic subagent fed `agents/{name}.md`, or review inline (non-isolation disclaimer + advisory verdict) — see `references/codex-tools.md` | degrades: dispatch a generic subagent fed `agents/{name}.md`, or review inline (non-isolation disclaimer) — see `references/pi-tools.md` | degrades: `spawn_subagent` (general-purpose) with `agents/{name}.md` body, or inline advisory — see `references/grok-tools.md` |
 | Orchestrated implementation | worker subagent per phase | generic `spawn_agent` worker per phase with explicit 5.6 routing; sequential fallback without dispatch | sequential phase files in one session (or dispatched via `pi-subagents` if installed) | sequential or via `spawn_subagent` per phase (see grok-tools) |
 | Skill invocation | `/absolutpowers:skill-name` | `$absolutpowers skill-name` | native Pi skill invocation / `read` the `SKILL.md` | `/feature-discuss`, `/generate-tasks` etc. (plugin-qualified if needed) |
-| Session bootstrap | `hooks/hooks.json` `SessionStart` hook reads `hooks/session-context.md` | reads `AGENTS.md` (symlink to `CLAUDE.md`) | `.pi/extensions/absolutpowers.ts` reads `hooks/session-context.md` at `session_start`/`session_compact` | reads `AGENTS.md` / `CLAUDE.md`; hooks via `.grok/hooks/` or compat; session-context via reference |
+| Session bootstrap | `hooks/hooks.json` `SessionStart` hook reads `hooks/session-context.md` | `AGENTS.md` (symlink to `CLAUDE.md`) plus shared `hooks/hooks.json` `SessionStart` hook | `.pi/extensions/absolutpowers.ts` reads `hooks/session-context.md` at `session_start`/`session_compact` | reads `AGENTS.md` / `CLAUDE.md`; hooks via `.grok/hooks/` or compat; session-context via reference |
 | AI context | `CLAUDE.md` (source) | `AGENTS.md` (symlink to `CLAUDE.md`, not a generated mirror) | `CLAUDE.md` (via the extension's injected context) | `AGENTS.md` / `CLAUDE.md` (primary) |
 
 For Codex orchestrated implementation, the shared Claude tiers are translated explicitly:
@@ -583,7 +583,7 @@ absolut-ai-skills/
 │   ├── project-memory.md              # shared memory capture contract
 │   ├── tdd-anti-patterns.md
 │   └── fork-policy.md                 # which copy is canonical when dual assets exist
-├── hooks/                             # slim Claude SessionStart hook
+├── hooks/                             # shared Claude/Codex SessionStart hook
 │   ├── hooks.json
 │   ├── run-hook.cmd
 │   ├── session-start
@@ -626,6 +626,12 @@ grok plugin install /path/to/absolut-ai-skills --trust
 
 Versioning is SemVer, kept in sync across all manifests
 (`.claude-plugin/plugin.json`, `.codex-plugin/plugin.json`, and `.grok-plugin/plugin.json`).
+
+### 5.6.3 — Shared Claude/Codex SessionStart hook
+
+- Made the SessionStart hook work in both Claude Code and Codex using the appropriate plugin-root environment variable
+- Added `resume` handling for Codex session restarts
+- Version **5.6.3** across all plugin manifests
 
 ### 5.6.2 — Harness syntax and Codex model routing
 
@@ -714,7 +720,7 @@ Jeden breaking release domykający całą migrację hybrydową obry/superpowers,
 - **Breaking structural change (major):** collapsed the two mirrored trees (`claude/`, `codex/`) into **one host-agnostic skill tree** at `skills/{name}/SKILL.md` — a single body serves every harness; Claude-only frontmatter (`allowed-tools`, `argument-hint`) and agent-gate sections are tolerated and inert on Codex/Pi. Adopts the obra/superpowers pattern: thin per-harness manifest/integration on top of one shared tree, per-harness differences isolated to `references/{harness}-tools.md` (read conditionally), zero skill duplication
 - **New harness: Pi.** `.pi/extensions/absolutpowers.ts` registers `skills/` and re-injects the shared `hooks/session-context.md` bootstrap at `session_start`/`session_compact`; `references/pi-tools.md` maps skill actions (subagent dispatch, review gates, task tracking) to Pi primitives, including a two-tier degradation path for AbsolutPowers' registered review-gate agents (dispatch a generic subagent fed the target `agents/{name}.md`, or review inline with an explicit non-isolation disclaimer)
 - **New `skills/vendored/`** — seven no-fusion skills vendored verbatim (MIT) from [obra/superpowers](https://github.com/obra/superpowers) `v6.1.1`: `using-git-worktrees`, `systematic-debugging`, `verification-before-completion`, `dispatching-parallel-agents`, `finishing-a-development-branch`, `executing-plans`, `subagent-driven-development`. Plus a vendored, telemetry-hard-removed visual companion for `feature-discuss` (not yet wired in). Full provenance (source path, pinned SHA, local modifications) in `VENDORED.md`; full license text in `LICENSE-VENDORED`
-- **New slim Claude hook:** `hooks/hooks.json` (`SessionStart`, vendored mechanism from obra/superpowers) drives `hooks/run-hook.cmd` → `hooks/session-start`, which re-injects `hooks/session-context.md` — the pipeline chain, the `in-progress` return-to-checklist rule, and the two guardian skills (`debug`/`systematic-debugging`, `verification-before-completion`) — at startup, `clear`, and after `compact`. The same `session-context.md` is the single source the Pi extension reads too
+- **New shared SessionStart hook:** `hooks/hooks.json` (`SessionStart`, vendored mechanism from obra/superpowers) drives `hooks/run-hook.cmd` → `hooks/session-start`, which re-injects `hooks/session-context.md` — the pipeline chain, the `in-progress` return-to-checklist rule, and the two guardian skills (`debug`/`systematic-debugging`, `verification-before-completion`) — at startup, resume, `clear`, and after `compact` for Claude and Codex. The same `session-context.md` is the single source the Pi extension reads too
 - **Manifests and marketplaces moved to repo root:** `.claude-plugin/plugin.json`, `.codex-plugin/plugin.json`, `.claude-plugin/marketplace.json` (`source: "."`), `.agents/plugins/marketplace.json` (`source.path: "."`) — no longer nested under `claude/`/`codex/`. `AGENTS.md` is now a symlink to `CLAUDE.md` (not a hand-maintained mirror in this repo) — the Codex bootstrap channel
 - **Removed:** both former per-harness mirror trees, the drift-detection helper script (there is nothing left to drift between), and the CLAUDE.md→AGENTS.md sync helper script (both its top-level copy and the one duplicated inside the former Codex tree). The former Codex-tree `tech-lead-advisor` skill (a shadow of the Claude-only `tech-lead-agent`) is gone with it — Codex loses that standalone trigger, an accepted regression since registered agents/gates are Claude-only by design
 - **Factual correction:** "Codex lacks plugin-level subagent support" was imprecise and is retired. The precise statement: Codex and Pi lack **registered agent type definitions** (no mechanism to install `agents/*.md` as a named subagent identity), but subagent *dispatch* exists on both (Codex `multi_agent=true` → `spawn_agent`/`wait_agent`; Pi's optional `pi-subagents`) — so the execution pattern is portable even though AbsolutPowers' specific registered-agent review gates are Claude-only. See `CLAUDE.md` → "Review Gates (Claude only)" and `references/pi-tools.md`
@@ -831,7 +837,7 @@ priorities. Full provenance table (source path, pinned SHA, per-file local modif
   (`skills/feature-discuss/visual-companion.md` + `companion-scripts/`) with all remote-telemetry
   code paths hard-removed — not just disabled — so no external request is possible; not yet wired
   into `feature-discuss/SKILL.md` (a future fusion phase, out of scope here)
-- **`hooks/`** — the slim Claude `SessionStart` hook mechanism (`hooks.json`, `run-hook.cmd`,
+- **`hooks/`** — the shared Claude/Codex `SessionStart` hook mechanism (`hooks.json`, `run-hook.cmd`,
   `session-start`) is vendored from the same source; the content it injects
   (`hooks/session-context.md`) is entirely AbsolutPowers' own
 
