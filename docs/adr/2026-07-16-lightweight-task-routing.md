@@ -39,9 +39,9 @@ HARD-GATE rządzi akceptacją designu, a nie obecnością ciężkiego planning d
    Po zgodzie na wykonanie zapisuje ADR, jeśli
    zapadła znacząca decyzja architektoniczna, a pracę śledzi wewnętrzną task-listą
    harnessu lub checklistą sesji. Nie tworzy planning ani tasks doca i nie uruchamia
-   QA enrichmentu, review-plan, `generate-tasks` ani `@implement`; wykonuje pracę inline
+   QA enrichmentu, review-plan, `generate-tasks` ani `implement`; wykonuje pracę inline
    w bieżącej sesji, po czym obowiązkowo weryfikuje zmianę i przekazuje cały branch do
-   `@review` albo `@triada-review`.
+   `review` albo `triada-review` w składni aktywnego harnessu.
 5. Każde odkryte ryzyko migracji, publicznego API lub kontraktu, security boundary,
    wielu podsystemów,
    niejasnego rozwiązania lub potrzeby trwałego wznowienia eskaluje zadanie do standardu

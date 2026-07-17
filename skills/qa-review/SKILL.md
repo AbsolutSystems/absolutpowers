@@ -206,7 +206,9 @@ Use this stable report schema:
 ## Next Actions
 1. Resolve `FEATURE_DISCUSS` decisions, if any.
 2. Obtain explicit approval for selected `INLINE_FIX` recommendations, if any; this audit applies none.
-3. Run `generate-tasks` for `GENERATE_TASKS` findings when decisions are settled.
+3. When decisions are settled, emit one full, copy-pasteable native `generate-tasks` command for
+   the QA report and the selected `GENERATE_TASKS` finding IDs, following
+   `references/harness-command-contract.md`.
 4. Re-run `qa-review` after approved work to create a separate timestamped audit trail.
 ```
 

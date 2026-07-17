@@ -106,7 +106,7 @@ Add an explicit entry path for selected QA findings whose expected behavior or t
 
 **Example:**
 ```text
-@feature-discuss absolutpowers/reviews/qa-review-auth-2026-07-15-101530.md QA-003 QA-007
+Render the native `feature-discuss` command for `absolutpowers/reviews/qa-review-auth-2026-07-15-101530.md QA-003 QA-007` using `references/harness-command-contract.md`.
 ```
 
 ## Phase Verification

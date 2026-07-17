@@ -73,9 +73,10 @@ callers. If unused, propose remove (YAGNI) instead of expanding scope.
 4. Complex (logic, refactors)
 5. Test each fix; avoid silent multi-fix commits without evidence
 
-For **3+ non-trivial** items that map to a feature still in pipeline: prefer
-`generate-tasks` in the active harness syntax on a short fix list or on
-`absolutpowers/reviews/….md` rather than ad-hoc thrash — then `implement`.
+For **3+ non-trivial** items that map to a feature still in pipeline: prefer a complete,
+copy-pasteable native `generate-tasks` command on a short fix list or on
+`absolutpowers/reviews/….md` rather than ad-hoc thrash — then emit a complete native
+`implement` command. Follow `references/harness-command-contract.md` for both handoffs.
 
 ## Push back when
 
@@ -101,8 +102,10 @@ gh api repos/{owner}/{repo}/pulls/{pr}/comments/{id}/replies -f body='...'
 |-----------|--------|
 | You are writing the review | `review` / `triada-review` |
 | You received feedback to address | **this skill** |
-| Feedback is large structured report | `generate-tasks` on the report → `implement` |
-| Root-cause bug buried in feedback | `debug` |
+| Feedback is large structured report | emit one full native `generate-tasks` command on the report, then one full native `implement` command |
+| Root-cause bug buried in feedback | emit one full native `debug` command with the relevant report/context |
+
+For every route rendered to the user, follow `references/harness-command-contract.md`.
 
 ## Terminal state
 
@@ -110,5 +113,6 @@ Stan terminalny: każdy zaakceptowany punkt review jest albo **zafiskowany i
 zweryfikowany testem/dowodem**, albo **odparty z uzasadnieniem** (i ustalone z
 użytkownikiem). Nie zostawiaj pół-zaimplementowanej listy.
 
-Następny krok (jeśli to domknięcie feature'a): `review` ponownie jeśli diff
-duży, potem `ship`. Komendy wyrenderuj w składni aktywnego harnessu.
+Następny krok (jeśli to domknięcie feature'a): wypisz pełną natywną komendę `review` ponownie
+jeśli diff duży, potem pełną natywną komendę `ship`. Stosuj
+`references/harness-command-contract.md` dla każdej komendy.

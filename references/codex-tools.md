@@ -15,6 +15,9 @@ When a skill asks for a next-step command, Codex must render it as
 `$absolutpowers skill-name [args]`. Do not emit Claude's `/absolutpowers:skill-name`
 syntax and never emit the legacy `@skill-name` form. In shared skill prose, bare names such
 as `implement` or `review` identify the skill; this mapping supplies the executable prefix.
+The result must be one standalone copy-pasteable line containing the skill, every path, and
+every argument. A sentence such as “run `implement` on the tasks file” is not a command. Follow
+`references/harness-command-contract.md` for the shared output contract.
 
 ## Codex model routing
 

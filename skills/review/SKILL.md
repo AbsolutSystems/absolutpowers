@@ -210,8 +210,9 @@ Opcjonalnie: `analyze {slug}` jeśli feature ma planning/tasks (traceability).
 
 **3+ problemy:**
 ```
-Dużo do poprawki. Sugeruję wygenerować taski:
-uruchom `generate-tasks` na `absolutpowers/reviews/YYYY-MM-DD-{branch-slug}.md` w składni aktywnego harnessu
+Dużo do poprawki. Sugeruję wygenerować taski. Wypisz jedną pełną, copy-paste'owalną komendę
+`generate-tasks` z `absolutpowers/reviews/YYYY-MM-DD-{branch-slug}.md` w składni aktywnego
+harnessu zgodnie z `references/harness-command-contract.md`.
 ```
 
 ## Ważne

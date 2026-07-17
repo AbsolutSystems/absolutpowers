@@ -7,12 +7,12 @@ When the same logical asset exists in more than one place, this file names the
 
 | Asset | Canonical | Secondary | Notes |
 |-------|-----------|-----------|--------|
-| Debugging process (main skill) | `skills/debug/SKILL.md` | `skills/vendored/systematic-debugging/` | Session auto-trigger uses **`@debug` only**. Vendored copy is the MIT library + techniques; `debug` is AbsolutPowers process (handoff from `problem-discuss`, large-fix → `planning-fix-*`, project-memory). |
+| Debugging process (main skill) | `skills/debug/SKILL.md` | `skills/vendored/systematic-debugging/` | Session auto-trigger uses **`debug` only**. Vendored copy is the MIT library + techniques; `debug` is AbsolutPowers process (handoff from `problem-discuss`, large-fix → `planning-fix-*`, project-memory). |
 | Debug techniques (`root-cause-tracing.md`, `defense-in-depth.md`, `condition-based-waiting*`) | `skills/debug/` | vendored `systematic-debugging/` may diverge | **Prefer `skills/debug/`**. When porting from upstream, merge into `skills/debug/` then optionally refresh vendored. Do not silently edit only one side. |
 | Orchestrated scripts (`review-package`, `sdd-workspace`) | `skills/implement/scripts/` | `skills/vendored/subagent-driven-development/scripts/` | **Prefer implement fork** (AbsolutPowers path conventions, `AP_TASKS_DIR`). Vendored scripts stay for upstream diffability. |
 | Visual companion | `skills/feature-discuss/companion-scripts/` + `visual-companion.md` | obra brainstorming (vendor clone) | Feature-discuss is canonical; telemetry/CSP hardened. |
-| Closeout / ship | `@ship` | vendored `finishing-a-development-branch` | Prefer **`@ship`**. Vendored skill is optional legacy path for worktree merge menus; see banner in that skill. |
-| Plan execution | `@implement` (`## Mode`) | vendored `executing-plans` / `subagent-driven-development` | Prefer AbsolutPowers pipeline. Vendored SDD is reference / partial tooling source. |
+| Closeout / ship | `ship` in active harness syntax | vendored `finishing-a-development-branch` | Prefer the native `ship` command rendered by `references/harness-command-contract.md`. Vendored skill is optional legacy path for worktree merge menus; see banner in that skill. |
+| Plan execution | `implement` in active harness syntax (`## Mode`) | vendored `executing-plans` / `subagent-driven-development` | Prefer AbsolutPowers pipeline and render the command natively. Vendored SDD is reference / partial tooling source. |
 
 ## Rules for editors
 

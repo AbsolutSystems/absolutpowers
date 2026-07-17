@@ -173,5 +173,7 @@ Return the report path, verdict, counts by priority/category, and the recommende
 ## Terminal state
 
 The terminal state is a single immutable technical-debt backlog report, or a clear no-report stop
-for invalid scope. `tech-debt` is on-demand and read-only. Select an item, then invoke
-`feature-discuss`, `generate-tasks`, or `debug` as routed; do not implement from this audit.
+for invalid scope. `tech-debt` is on-demand and read-only. Select an item, then emit one full,
+copy-pasteable native command for `feature-discuss`, `generate-tasks`, or `debug` as routed,
+including the report path and finding context required by that route. Follow
+`references/harness-command-contract.md`; do not implement from this audit.

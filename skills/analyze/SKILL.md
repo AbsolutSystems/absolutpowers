@@ -330,11 +330,16 @@ Jeśli w trakcie audytu zauważysz, że masz zamiar:
 Stan terminalny: raport `absolutpowers/reviews/analyze-{slug}.md` z werdyktem
 **CONSISTENT** lub **INCONSISTENT**. Skill audytuje i routuje — nie fixuje.
 
+Jeśli routing wymaga dalszego skilla, wypisz jedną pełną, copy-paste'owalną komendę w składni
+aktywnego harnessu, z właściwym planning docem, tasks-docem lub identyfikatorem audytu. Stosuj
+`references/harness-command-contract.md`; nie wypisuj samej nazwy skilla ani opisu typu „uruchom
+generate-tasks”.
+
 | Werdykt | Typowy następny krok |
 |---------|----------------------|
-| CONSISTENT | kontynuuj merge / `ship` / close |
-| INCONSISTENT (brak tasków) | `generate-tasks` |
-| INCONSISTENT (brak kodu) | `implement` |
-| INCONSISTENT (jakość kodu) | nie ten skill — `review` |
+| CONSISTENT | kontynuuj merge / wypisz pełną natywną komendę `ship` / close |
+| INCONSISTENT (brak tasków) | wypisz pełną natywną komendę `generate-tasks` na właściwym planning docu |
+| INCONSISTENT (brak kodu) | wypisz pełną natywną komendę `implement` na właściwym tasks-docu |
+| INCONSISTENT (jakość kodu) | nie ten skill — wypisz pełną natywną komendę `review` |
 
 On-demand: nie jest ogniwem łańcucha gate'ów.

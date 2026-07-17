@@ -50,9 +50,9 @@ Place a single optional QA suggestion after implementation PASS and before the e
 
 **Requirements:**
 - Define `shouldSuggestQAReview(signals) -> boolean` as true when at least one signal exists: orchestrated mode; security/public API/migration/integration/multi-module boundary; new critical flow; substantial test rewrite; test-related gate warning; or difficult-to-verify AC.
-- When true, suggest `@qa-review feature [optional planning/tasks artifact]` once after PASS and explain that it statically evaluates test value without rerunning tests.
+- When true, suggest one native `qa-review feature [optional planning/tasks artifact]` command once after PASS and explain that it statically evaluates test value without rerunning tests.
 - When false, emit no QA nudge; do not make small routine changes noisier.
-- State explicitly that the nudge never auto-invokes QA review, never gates completion, and never replaces `@review`/`@triada-review`.
+- State explicitly that the nudge never auto-invokes QA review, never gates completion, and never replaces `review`/`triada-review`.
 - Preserve the existing terminal state and closeout ordering `review -> ship -> merge`.
 
 **Tests:**

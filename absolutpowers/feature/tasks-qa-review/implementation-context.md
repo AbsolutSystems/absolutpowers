@@ -14,11 +14,11 @@ Every later worker reads this file — its size is paid on every phase.
 
 ## Created / Changed API
 - `skills/qa-review/references/testing-rubric.md` owns the exact `QAFinding` schema, calibration, and verdict mapping.
-- `@qa-review [feature [artifact] | codebase [path]]` writes one immutable timestamped report under `absolutpowers/reviews/` when scope is viable.
+- The native `qa-review [feature [artifact] | codebase [path]]` command writes one immutable timestamped report under `absolutpowers/reviews/` when scope is viable.
 - `agents/qa-reviewer.md` returns one read-only, scope-bound `QAWorkerResult` for root-session synthesis.
 - `dispatchQAReviewer(scopePackage) -> QAWorkerResult` maps Claude registered-role, Codex/Grok generic-agent, Pi `pi-subagents`, and sequential-inline fallback paths.
-- `@generate-tasks qa-review-{scope}-{timestamp}.md` emits `tasks-fix-qa-{scope}-{timestamp}.md` from `GENERATE_TASKS` findings only, or no document when none qualify.
-- `@feature-discuss qa-review-{scope}-{timestamp}.md QA-NNN...` accepts only `FEATURE_DISCUSS` IDs and traces the accepted IDs into the planning doc.
+- The native `generate-tasks qa-review-{scope}-{timestamp}.md` command emits `tasks-fix-qa-{scope}-{timestamp}.md` from `GENERATE_TASKS` findings only, or no document when none qualify.
+- The native `feature-discuss qa-review-{scope}-{timestamp}.md QA-NNN...` command accepts only `FEATURE_DISCUSS` IDs and traces the accepted IDs into the planning doc.
 - `shouldSuggestQAReview(signals) -> boolean` emits one optional static-audit nudge only for an enumerated elevated test-risk signal.
 
 ## Decisions Made

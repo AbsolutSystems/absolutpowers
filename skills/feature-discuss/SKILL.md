@@ -439,8 +439,10 @@ Epic zapisany:
   ./absolutpowers/feature/{slug}/planning-phase-2-{subslug}.md  (stub)
   ...
 
-Następny krok: wyczyść kontekst i odpal feature-discuss wskazując main + fazę, np.:
-  "Przeczytaj absolutpowers/feature/{slug}/planning-main.md i omówmy Fazę 1"
+Następny krok: wyczyść kontekst i wypisz jedną pełną komendę `feature-discuss` w natywnej
+składni aktywnego harnessu, z `absolutpowers/feature/{slug}/planning-main.md` oraz argumentem
+`"Omów Fazę 1: {nazwa}"`. Przestrzegaj `references/harness-command-contract.md`; nie podawaj
+samego opisu ani bare skill name.
 Zaplanuję wtedy tę jedną fazę do końca (QA + review, a Explain tylko po jawnym opt-in).
 ```
 
@@ -495,9 +497,9 @@ Agent(prompt="Generate an HTML onboarding report for the planning document: {śc
 
 W Trybie B po PASS **zaktualizuj status fazy w `planning-main.md`** (`Do zaplanowania` → `Zaplanowana`). Dopisz link onboardingowy tylko wtedy, gdy HTML został faktycznie utworzony; po `skip` albo braku odpowiedzi zapisz status bez linku do raportu.
 
-Gdy raport powstał, poinformuj: "Faza {N} zaplanowana i zweryfikowana. Raport: `docs/onboarding/{nazwa}-YYYY-MM-DD.html`. Następny krok: uruchom `generate-tasks` na `{ścieżka phase doc}` w składni aktywnego harnessu lub zaplanuj kolejną fazę." Bez raportu pomiń zdanie i link o raporcie, zachowując ten sam następny krok.
+Gdy raport powstał, poinformuj: "Faza {N} zaplanowana i zweryfikowana. Raport: `docs/onboarding/{nazwa}-YYYY-MM-DD.html`. Następny krok: wypisz jedną pełną natywną komendę `generate-tasks` na `{ścieżka phase doc}` zgodnie z `references/harness-command-contract.md` lub zaplanuj kolejną fazę." Bez raportu pomiń zdanie i link o raporcie, zachowując ten sam następny krok.
 
-Dla standardowego feature'a poinformuj o review PASS, warunkowo o utworzonym Explain i zawsze o następnym kroku `generate-tasks`. Komendę wyrenderuj w składni aktywnego harnessu z kontekstu sesji; nie używaj prefiksu `@`.
+Dla standardowego feature'a poinformuj o review PASS, warunkowo o utworzonym Explain i zawsze wypisz jedną pełną komendę `generate-tasks` w składni aktywnego harnessu. Nie zastępuj jej opisem i nie używaj prefiksu `@`; stosuj `references/harness-command-contract.md`.
 
 **Jeśli VERDICT: REJECTED:**
 - Napraw WYŁĄCZNIE pozycje `[BLOCKER]` (adresując każdą). Pozycje `[WARN]` pokaż użytkownikowi — popraw, jeśli poprawka jest tania, ale nie blokuj na nich pętli.
@@ -584,9 +586,10 @@ Stan terminalny tego skilla: design **jawnie zaakceptowany** (HARD-GATE). Artefa
 
 | Ścieżka | Co oddaje | Następny krok |
 |---------|-----------|---------------|
-| **Standard / phase (Tryb B)** | planning lub phase doc (+ QA + review-plan PASS) | `generate-tasks` na tym docu |
-| **Epic main** | `planning-main.md` + stuby faz | nowa sesja feature-discuss (Tryb B) per faza — **nie** generate-tasks na mainie |
-| **Lightweight task** | zaakceptowany mini-design (bez planning/tasks doc) | implementacja **inline** po zgodzie użytkownika — **pomiń** `generate-tasks` i `implement` |
+| **Standard / phase (Tryb B)** | planning lub phase doc (+ QA + review-plan PASS) | wypisz pełną natywną komendę `generate-tasks` na tym docu |
+| **Epic main** | `planning-main.md` + stuby faz | wypisz pełną natywną komendę `feature-discuss` z mainem i fazą — **nie** generate-tasks na mainie |
+| **Lightweight task** | zaakceptowany mini-design (bez planning/tasks doc) | implementacja **inline** po zgodzie użytkownika, potem wypisz pełną natywną komendę `review` lub `triada-review` — **pomiń** `generate-tasks` i `implement` |
 
-Dla standard/phase: pipeline NIE jest domknięty — kontynuuj `generate-tasks` → `implement` → `review`/`triada-review` → `ship`.
+Dla standard/phase: pipeline NIE jest domknięty — wypisuj kolejne pełne natywne komendy zgodnie z
+`references/harness-command-contract.md`: `generate-tasks` → `implement` → `review`/`triada-review` → `ship`.
 Dla Lightweight task pod `/goal`: po inline implementacji i weryfikacji idź do `review` lub `triada-review`, nie generuj tasków „na siłę”.

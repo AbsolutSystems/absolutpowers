@@ -444,15 +444,20 @@ After reporting completion, select exactly one branch.
 > Docs/learned: ad-hoc (`document-feature`, `try-learn-skill`).
 
 **Epic phase with another actionable phase:** print the current review step plus one concrete
-continuation command. Example when the next phase is still a stub:
+continuation command. Before emitting it, read and follow
+`references/harness-command-contract.md`. The continuation must be one standalone,
+copy-pasteable command line in the active harness syntax; never substitute a prose description
+or a bare skill name.
 
-> Faza {N} epica jest zaimplementowana. Najpierw uruchom `review` lub `triada-review`
+> Faza {N} epica jest zaimplementowana. Najpierw wypisz jedną pełną natywną komendę `review`
+> lub `triada-review`
 > dla bieżących zmian. Po czystym review epic nadal jest w toku — nie uruchamiaj jeszcze
 > `ship` jako closeoutu epica. Następny krok:
-> `feature-discuss` na `{epic-main-path}` z argumentem "Omów Fazę {N+1}: {nazwa}"`.
+> `feature-discuss` z `{epic-main-path}` oraz argumentem `"Omów Fazę {N+1}: {nazwa}"` — wygeneruj tę jedną linię w składni aktywnego harnessu.
 
-If durable state routes to `generate-tasks` or `implement`, substitute that exact command and
-artifact path instead. Mention the current phase and the selected next phase by number and name.
+If durable state routes to `generate-tasks` or `implement`, output the corresponding native
+command with its complete artifact path instead. Mention the current phase and the selected next
+phase by number and name.
 Do not suggest `ship` in this branch; it becomes appropriate only after all epic phases are
 implemented and reviewed.
 
@@ -460,8 +465,8 @@ These handoffs are best-effort guidance. Do not auto-invoke them from this skill
 
 Structural scenarios:
 - `epicPhaseWithUnplannedSiblingContinuesDiscussion`: a completed phase whose next row is
-  `Do zaplanowania` prints review first, then an exact `feature-discuss {epic-main-path} + phase`
-  command in the active harness syntax, with no `ship` suggestion.
+  `Do zaplanowania` prints review first, then one complete native command for the
+  `feature-discuss` route, with no `ship` suggestion.
 - `epicParentPathIsReferenceDriven`: a nonstandard parent filename referenced by tasks/phase docs
   is updated and used in the handoff; no `planning-main.md` path is synthesized.
 - `epicPhaseWithPreparedSiblingUsesDurableState`: a ready phase doc or existing incomplete tasks
@@ -479,9 +484,12 @@ Structural scenarios:
 
 Stan terminalny tego skilla: wszystkie taski **bieżącego tasks-doca** zaimplementowane i zweryfikowane, final verification wykonana, końcowa bramka `review-implementation` zwróciła PASS (albo świadomy override), a raport decyzji implementacyjnych został wygenerowany. Przy niepustych remarks wymagany jest dodatkowo zapisany human acceptance w `## Decision Review`. Kod bieżącego zakresu jest napisany — ale jeszcze nie zrewidowany jako całość ani nie zmergowany.
 
-Następny krok zawsze zaczyna się od `review` (solo) lub `triada-review` (multi-agent) dla bieżących zmian. Dalej:
-- **standalone feature / ostatnia faza epica:** opcjonalnie `analyze {slug}`, potem `ship`; kolejność: review → ship → merge;
-- **faza epica z kolejną fazą:** po czystym review wróć do epica zgodnie ze stanem następnej fazy (`feature-discuss` na wykrytym `{epic-main-path}` + faza, `generate-tasks` na gotowym phase docu albo `implement` na istniejącym tasks-docu). Nie sugeruj `ship`, dopóki wszystkie fazy epica nie są zaimplementowane i zrewidowane.
+Następny krok zawsze zaczyna się od wypisania jednej pełnej, copy-paste'owalnej natywnej komendy
+`review` (solo) lub `triada-review` (multi-agent) dla bieżących zmian. Stosuj
+`references/harness-command-contract.md`. Dalej:
+- **standalone feature / ostatnia faza epica:** opcjonalnie wypisz pełną natywną komendę
+  `analyze {slug}`, potem pełną natywną komendę `ship`; kolejność: review → ship → merge;
+- **faza epica z kolejną fazą:** po czystym review wróć do epica zgodnie ze stanem następnej fazy, emitując jedną pełną natywną komendę dla `feature-discuss`, `generate-tasks` albo `implement` z właściwym artefaktem. Nie sugeruj `ship`, dopóki wszystkie fazy epica nie są zaimplementowane i zrewidowane.
 
 Docs/learned pozostają ad-hoc (`document-feature`, `try-learn-skill`).
 

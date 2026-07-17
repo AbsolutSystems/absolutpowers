@@ -272,7 +272,7 @@ and enables downstream Intent Fidelity / AC Fulfillment checks}
 ```
 
 After writing `planning-fix-{slug}.md`, nudge:
-uruchom `generate-tasks` na `absolutpowers/feature/planning-fix-{slug}.md` w składni aktywnego harnessu
+Wypisz jedną pełną, copy-paste'owalną komendę `generate-tasks` z `absolutpowers/feature/planning-fix-{slug}.md` w składni aktywnego harnessu zgodnie z `references/harness-command-contract.md`.
 
 Do NOT implement the fix inline. Stop here and let the pipeline take over.
 
@@ -323,7 +323,7 @@ Do NOT implement the fix inline. Stop here and let the pipeline take over.
    - failed hypotheses and what each revealed (valuable context for generate-tasks)
    - architectural question / pivot decision
 
-   Nudge: uruchom `generate-tasks` na `absolutpowers/feature/planning-fix-{slug}.md` w składni aktywnego harnessu
+   Nudge: wypisz jedną pełną, copy-paste'owalną komendę `generate-tasks` z `absolutpowers/feature/planning-fix-{slug}.md` w składni aktywnego harnessu zgodnie z `references/harness-command-contract.md`.
 
    This is automatically a **Large** fix (3+ failed attempts = architectural scope). Do NOT
    attempt Fix #4 inline. The pipeline with its gates is the correct path forward.
@@ -401,8 +401,8 @@ Stan terminalny zależy od rozmiaru fixa (Phase 4 Step 0):
 
 | Wynik | Oddaje | Dalej |
 |-------|--------|-------|
-| Small fix inline | root cause + fix + tests green | opcjonalnie `review` jeśli branch feature; done dla hotfixu |
-| Large / 3+ failed | `planning-fix-{slug}.md` | `generate-tasks` na tym pliku → pipeline |
+| Small fix inline | root cause + fix + tests green | opcjonalnie wypisz pełną natywną komendę `review` jeśli branch feature; done dla hotfixu |
+| Large / 3+ failed | `planning-fix-{slug}.md` | wypisz pełną natywną komendę `generate-tasks` na tym pliku zgodnie z `references/harness-command-contract.md` |
 | Routed from problem-discuss | potwierdzony/obalony root cause | jak wyżej; zaktualizuj understanding w odpowiedzi |
 
 Nie kończ sesji na „quick patch" bez Phase 1. Iron Law obowiązuje do końca.

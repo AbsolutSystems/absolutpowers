@@ -4,7 +4,7 @@ AI-assisted development lifecycle — from feature design through implementation
 
 Instead of ad-hoc prompting, AbsolutPowers gives your AI agent a structured workflow. Each skill owns one phase. Skills chain into a pipeline with automated quality gates (Claude Code) that catch problems before they cascade.
 
-As of **5.0.0** the repo is one host-agnostic skill tree under `skills/` — not mirrored per-harness trees — plus a thin manifest/integration per harness (Claude, Codex, Pi, Grok) and a small set of skills vendored under MIT from [obra/superpowers](https://github.com/obra/superpowers) in `skills/vendored/`. Current release: **5.6.3** (shared Claude/Codex SessionStart hook). See [Repo Structure](#repo-structure-this-repository) and [Attribution](#attribution).
+As of **5.0.0** the repo is one host-agnostic skill tree under `skills/` — not mirrored per-harness trees — plus a thin manifest/integration per harness (Claude, Codex, Pi, Grok) and a small set of skills vendored under MIT from [obra/superpowers](https://github.com/obra/superpowers) in `skills/vendored/`. Current release: **5.6.4** (native command handoff contract). See [Repo Structure](#repo-structure-this-repository) and [Attribution](#attribution).
 
 ## Quick Start
 
@@ -626,6 +626,13 @@ grok plugin install /path/to/absolut-ai-skills --trust
 
 Versioning is SemVer, kept in sync across all manifests
 (`.claude-plugin/plugin.json`, `.codex-plugin/plugin.json`, and `.grok-plugin/plugin.json`).
+
+### 5.6.4 — Native command handoff contract
+
+- Added one shared contract for standalone, copy-pasteable next-step commands in each harness's native syntax
+- Fixed bare skill names, prose-only handoffs, and legacy `@skill @path` examples across canonical skills and active references
+- Added regression coverage for command handoffs and audited all routing skills
+- Version **5.6.4** across all plugin manifests
 
 ### 5.6.3 — Shared Claude/Codex SessionStart hook
 

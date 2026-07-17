@@ -115,8 +115,8 @@ class FeatureDiscussPromptContractTest(unittest.TestCase):
             r"nie uruchamiaj.*QA enrichment",
             r"nie uruchamiaj.*review-plan",
             r"nie uruchamiaj.*generate-tasks",
-            r"nie uruchamiaj.*@implement",
-            r"zweryfikuj zmianę.*@review.*@triada-review",
+            r"nie uruchamiaj.*implement",
+            r"zweryfikuj zmianę.*review.*triada-review",
         )
 
     def test_session_checklist_fallback_and_handoff_escalation_AC9(self) -> None:
@@ -147,7 +147,7 @@ class FeatureDiscussPromptContractTest(unittest.TestCase):
         self.assertPromptContains(
             r"`skip`.*nie tworzy.*raportu.*nie jest ostrzeżeniem.*nie blokuje",
             r"brak odpowiedzi.*nie uruchamia.*automatycznie",
-            r"skip.*@generate-tasks",
+            r"skip.*generate-tasks",
             r"skip.*planowania kolejnej fazy",
         )
 
@@ -203,7 +203,7 @@ class LightweightDocumentationContractTest(unittest.TestCase):
             r"HARD-GATE",
             r"inline",
             r"weryfikac|verification",
-            r"branch(?:-level)? review|review brancha|@review.*@triada-review",
+            r"branch(?:-level)? review|review brancha|review.*triada-review",
         )
         self.assertNotIn(
             "then writes a planning doc + behavioral Acceptance Criteria",
@@ -243,19 +243,19 @@ MANIFEST_PATHS = (
 
 
 class ManifestVersionContractTest(unittest.TestCase):
-    def test_all_plugin_manifests_are_version_5_5_0(self) -> None:
+    def test_all_plugin_manifests_are_version_5_6_3(self) -> None:
         versions = {
             json.loads(read_repo_text(path))["version"] for path in MANIFEST_PATHS
         }
-        self.assertEqual({"5.5.0"}, versions)
+        self.assertEqual({"5.6.4"}, versions)
 
-    def test_readme_changelog_places_5_5_0_before_5_4_0(self) -> None:
+    def test_readme_changelog_places_5_6_3_before_5_6_2(self) -> None:
         readme = read_repo_text("README.md")
-        heading = "### 5.5.0 — Lightweight task routing"
+        heading = "### 5.6.4 — Native command handoff contract"
         self.assertEqual(1, readme.count(heading))
         self.assertLess(
             readme.index(heading),
-            readme.index("### 5.4.0 — Static QA Review"),
+            readme.index("### 5.6.2 — Harness syntax and Codex model routing"),
         )
 
     def test_manifest_json_files_parse(self) -> None:

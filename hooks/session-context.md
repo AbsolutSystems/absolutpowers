@@ -8,6 +8,11 @@ harness syntax below; never use `@skill-name` as a command prefix:
 - Pi: native skill invocation or the corresponding `SKILL.md` read action
 - Grok Build: `/skill-name [args]`
 
+Mandatory handoff contract: whenever a next step invokes a skill or passes a path, output one
+standalone copy-pasteable command line with the native prefix and all arguments. Do not replace
+it with prose, a bare skill name, or `@` before the skill/path. The full contract and examples
+are in `references/harness-command-contract.md`.
+
 In the shared pipeline description, skill names are written without a prefix:
 
 `feature-discuss` -> `generate-tasks` -> `implement` -> `review` / `triada-review`

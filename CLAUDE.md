@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## What This Is
 
-AbsolutPowers — a Claude Code + Codex + Pi + Grok plugin providing AI-assisted development lifecycle skills: problem intake/triage, feature discussion, task generation, implementation, review, static QA test-value and technical-debt auditing, debugging, project context management, and project constitution. Version 5.6.3. As of 5.0.0 the repo is a single host-agnostic skill tree (see Repository Layout) with thin per-harness manifests/integrations, replacing the earlier two mirrored `claude/`/`codex/` trees; it also introduces `skills/vendored/` — selected skills vendored from [obra/superpowers](https://github.com/obra/superpowers) under MIT (see `VENDORED.md`, `LICENSE-VENDORED`). Grok Build is supported as a first-class harness via `.grok-plugin/` + `references/grok-tools.md`.
+AbsolutPowers — a Claude Code + Codex + Pi + Grok plugin providing AI-assisted development lifecycle skills: problem intake/triage, feature discussion, task generation, implementation, review, static QA test-value and technical-debt auditing, debugging, project context management, and project constitution. Version 5.6.4. As of 5.0.0 the repo is a single host-agnostic skill tree (see Repository Layout) with thin per-harness manifests/integrations, replacing the earlier two mirrored `claude/`/`codex/` trees; it also introduces `skills/vendored/` — selected skills vendored from [obra/superpowers](https://github.com/obra/superpowers) under MIT (see `VENDORED.md`, `LICENSE-VENDORED`). Grok Build is supported as a first-class harness via `.grok-plugin/` + `references/grok-tools.md`.
 
 ## Repository Layout
 
@@ -30,6 +30,12 @@ harness's native syntax. Never use `@skill-name` as a command prefix:
 - Codex: `$absolutpowers skill-name [args]`
 - Pi: the native skill invocation or the corresponding `SKILL.md` read action
 - Grok Build: `/skill-name [args]` (qualified if the harness requires it)
+
+Every executable handoff must be one standalone, copy-pasteable command line containing the
+skill invocation and all paths/arguments. A prose instruction such as “run `implement` on the
+tasks file” or a bare `implement path` is not a command. Follow
+`references/harness-command-contract.md`; a status sentence may precede the line but must not
+replace it.
 
 In shared prose, refer to a skill by its bare name (`feature-discuss`, `review`, etc.) and
 apply the mapping above when rendering the final next-step command. A leading `@` may still
