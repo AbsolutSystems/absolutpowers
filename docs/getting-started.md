@@ -28,6 +28,9 @@ Hook `SessionStart` (`hooks/hooks.json`) automatycznie wstrzykuje dyscyplinę pi
 
 Otwórz dowolne repozytorium w Codex. Repo AbsolutPowers Skills eksponuje marketplace w `.agents/plugins/marketplace.json`. Zainstaluj plugin `absolutpowers` z repo marketplace. Codex czyta `AGENTS.md` (symlink do `CLAUDE.md`) jako bootstrap — nie ma tu hooka sesyjnego.
 
+Komendy następnego kroku w Codex zapisuj jako `$absolutpowers skill-name [args]`. Nie używaj
+`@skill-name` ani Claude'owego `/absolutpowers:skill-name`.
+
 ### Pi
 
 Do lokalnego developmentu uruchom Pi z tym checkoutem jako tymczasowym pakietem:
@@ -135,7 +138,7 @@ Na końcu zobaczysz `VERDICT: PASS` albo listę poprawek (skill naprawia sam, do
 ### Generowanie tasków
 
 ```bash
-/absolutpowers:generate-tasks @absolutpowers/feature/planning-csv-export.md
+/absolutpowers:generate-tasks absolutpowers/feature/planning-csv-export.md
 ```
 
 Skill czyta plan, analizuje kod, i generuje sekwencyjne taski z:
@@ -165,7 +168,7 @@ Potem automatyczny review gate sprawdza jakość tasków.
 ### Implementacja
 
 ```bash
-/absolutpowers:implement @absolutpowers/feature/tasks-csv-export.md
+/absolutpowers:implement absolutpowers/feature/tasks-csv-export.md
 ```
 
 Skill realizuje taski po kolei z podejściem TDD:
@@ -217,7 +220,7 @@ Skill wymusza systematyczne podejście:
 Gdy chcesz szybko przekazać człowiekowi kontekst po planowaniu, implementacji albo review, użyj:
 
 ```bash
-/absolutpowers:explain @absolutpowers/feature/tasks-csv-export.md
+/absolutpowers:explain absolutpowers/feature/tasks-csv-export.md
 ```
 
 W Codex użyj odpowiedniego skilla `explain` z pluginu `absolutpowers`. Wynikiem jest samodzielny plik HTML w `./docs/onboarding/`, z oddzieleniem faktów zweryfikowanych od założeń oraz sekcją pytań i decyzji dla człowieka.

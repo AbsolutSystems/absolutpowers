@@ -4,7 +4,7 @@ AI-assisted development lifecycle — from feature design through implementation
 
 Instead of ad-hoc prompting, AbsolutPowers gives your AI agent a structured workflow. Each skill owns one phase. Skills chain into a pipeline with automated quality gates (Claude Code) that catch problems before they cascade.
 
-As of **5.0.0** the repo is one host-agnostic skill tree under `skills/` — not mirrored per-harness trees — plus a thin manifest/integration per harness (Claude, Codex, Pi, Grok) and a small set of skills vendored under MIT from [obra/superpowers](https://github.com/obra/superpowers) in `skills/vendored/`. Current release: **5.6.1** (feature-planning guardrails). See [Repo Structure](#repo-structure-this-repository) and [Attribution](#attribution).
+As of **5.0.0** the repo is one host-agnostic skill tree under `skills/` — not mirrored per-harness trees — plus a thin manifest/integration per harness (Claude, Codex, Pi, Grok) and a small set of skills vendored under MIT from [obra/superpowers](https://github.com/obra/superpowers) in `skills/vendored/`. Current release: **5.6.2** (command syntax and Codex model-routing fixes). See [Repo Structure](#repo-structure-this-repository) and [Attribution](#attribution).
 
 ## Quick Start
 
@@ -62,10 +62,10 @@ Creates `CLAUDE.md`, `AGENTS.md`, `absolutpowers/patterns.md`, `absolutpowers/ru
 
 ```bash
 /absolutpowers:feature-discuss "system powiadomień push dla użytkowników"   # WHAT  → planning doc + AC
-/absolutpowers:generate-tasks @absolutpowers/feature/planning-push-notifications.md  # HOW → tasks
-/absolutpowers:implement @absolutpowers/feature/tasks-push-notifications.md  # BUILD+TEST
+/absolutpowers:generate-tasks absolutpowers/feature/planning-push-notifications.md  # HOW → tasks
+/absolutpowers:implement absolutpowers/feature/tasks-push-notifications.md  # BUILD+TEST
 /absolutpowers:review                                                        # AUDIT
-/absolutpowers:ship @absolutpowers/feature/tasks-push-notifications.md        # CLOSE (commit + PR text + archive artifacts)
+/absolutpowers:ship absolutpowers/feature/tasks-push-notifications.md        # CLOSE (commit + PR text + archive artifacts)
 ```
 
 Knowledge capture and side tools (`try-learn-skill`, `document-feature`, `document-module`, `receiving-code-review`, `analyze`, `qa-review`) are separate and on-demand — run them when useful, they are not pipeline gates.
@@ -75,7 +75,7 @@ Each step writes a file that feeds the next. Review gates between steps (Claude 
 `feature-discuss` first routes by uncertainty, risk, and whether the work needs a durable
 handoff. A **Lightweight task** is the same disciplined entry point with a shorter middle:
 after an explicitly accepted mini-design it executes inline in the current session, then still
-requires verification and branch-level `@review` or `@triada-review`. It skips planning/task
+requires verification and branch-level `review` or `triada-review`. It skips planning/task
 artifacts, not the HARD-GATE or review.
 
 ## The Pipeline
@@ -113,19 +113,19 @@ Pick by how well the problem is already classified:
 - **`qa-review`** — static, read-only test-value audit: it identifies missing scenarios, misleading tests, weak doubles, wrong test levels, and integration/E2E gaps without executing tests, measuring coverage, or editing code. It complements `review` (solo branch quality), `triada-review` (multi-perspective branch quality), and `analyze` (AC→task→code traceability); it never becomes a mandatory gate.
 
   ```text
-  @qa-review
-  @qa-review feature absolutpowers/feature/planning-auth.md
-  @qa-review codebase
-  @qa-review codebase skills/generate-tasks
+  qa-review
+  qa-review feature absolutpowers/feature/planning-auth.md
+  qa-review codebase
+  qa-review codebase skills/generate-tasks
   ```
 
-  Empty arguments audit the current feature. An explicit feature artifact anchors intent; an empty feature with no changes or scope artifact stops without silently widening to the whole project. Whole-codebase mode discovers logical areas, audits them in module waves, and synthesizes cross-boundary risks; a path keeps local findings inside that module and labels advice requiring other modules separately. Every completed audit writes a new immutable report: feature mode uses `absolutpowers/reviews/qa-review-{feature-slug}-YYYY-MM-DD-HHmmss.md`, whole-codebase mode uses `absolutpowers/reviews/qa-review-codebase-YYYY-MM-DD-HHmmss.md`, and scoped mode uses `absolutpowers/reviews/qa-review-{module-slug}-YYYY-MM-DD-HHmmss.md`. Reports use verdict `ADEQUATE`, `IMPROVEMENTS_RECOMMENDED`, `GAPS_FOUND`, or `MISLEADING_CONFIDENCE` and expose a stable `Actionable Findings` section. Follow findings safely in this order: resolve `FEATURE_DISCUSS`, obtain explicit approval for any `INLINE_FIX`, send `GENERATE_TASKS` findings to `@generate-tasks`, then re-run `@qa-review`. The canonical schema and calibration remain in [`skills/qa-review/references/testing-rubric.md`](skills/qa-review/references/testing-rubric.md).
+  Empty arguments audit the current feature. An explicit feature artifact anchors intent; an empty feature with no changes or scope artifact stops without silently widening to the whole project. Whole-codebase mode discovers logical areas, audits them in module waves, and synthesizes cross-boundary risks; a path keeps local findings inside that module and labels advice requiring other modules separately. Every completed audit writes a new immutable report: feature mode uses `absolutpowers/reviews/qa-review-{feature-slug}-YYYY-MM-DD-HHmmss.md`, whole-codebase mode uses `absolutpowers/reviews/qa-review-codebase-YYYY-MM-DD-HHmmss.md`, and scoped mode uses `absolutpowers/reviews/qa-review-{module-slug}-YYYY-MM-DD-HHmmss.md`. Reports use verdict `ADEQUATE`, `IMPROVEMENTS_RECOMMENDED`, `GAPS_FOUND`, or `MISLEADING_CONFIDENCE` and expose a stable `Actionable Findings` section. Follow findings safely in this order: resolve `FEATURE_DISCUSS`, obtain explicit approval for any `INLINE_FIX`, send `GENERATE_TASKS` findings to `generate-tasks`, then re-run `qa-review`. Render executable commands in the active harness syntax; never use `@skill` as a prefix. The canonical schema and calibration remain in [`skills/qa-review/references/testing-rubric.md`](skills/qa-review/references/testing-rubric.md).
 - **`tech-debt`** — static, read-only technical-debt audit for the codebase or one module. It turns evidence of architecture, complexity, duplication, coupling, reliability, test, and operability debt into a prioritized backlog with ongoing cost, confidence, bounded effort, and a smallest safe next step. It never executes code or tests, edits files, or treats an unverified dependency/security claim as fact.
 
   ```text
-  @tech-debt
-  @tech-debt codebase
-  @tech-debt path/to/module
+  tech-debt
+  tech-debt codebase
+  tech-debt path/to/module
   ```
 
   Every completed audit writes one immutable `absolutpowers/reviews/tech-debt-{scope}-YYYY-MM-DD-HHmmss.md` report. It is for accumulated maintainability cost, not a current-branch review (`review` / `triada-review`), deep test-value audit (`qa-review`), or active bug investigation (`debug`). Select a finding and follow its route: `FEATURE_DISCUSS`, `GENERATE_TASKS`, `DEBUG`, or `WATCH`.
@@ -234,7 +234,7 @@ Interactive Product Owner / Product Architect session — discusses requirements
 - **In → Out:** feature description → accepted Lightweight mini-design + inline work, standard `absolutpowers/feature/planning-{slug}.md`, or epic `planning-main.md` + phase docs (with an ADR when required)
 - **Lightweight task:** one cohesive goal using an existing pattern, with no unresolved product decision or high-risk boundary, that can finish safely in the current session. Qualification is based on risk, uncertainty, and handoff needs regardless of file count. Before proposing its mini-design, the skill reads a scoped context pack (nearest `AGENTS.md`/`CLAUDE.md`, constitution, patterns, rules, relevant ADRs, active path-overlapping project memory, and current code); a missing optional source is skipped without error.
 - **Planning guardrails:** surface assumptions; ask for a decision only when uncertainty changes the contract, data, security, migration, scope, or cost; otherwise record the minimal assumption. Recommend the smallest viable approach, record tempting exclusions under `Deliberately not doing`, and keep every plan step traceable to scope, acceptance criteria, or a necessary accompanying change.
-- After explicit acceptance of the complete mini-design (the same **HARD-GATE**), in-scope implementation runs **inline** with a session-only task list. It creates no planning/tasks doc and skips QA enrichment, `review-plan`, `@generate-tasks`, and `@implement`, but must finish with the promised verification and branch-level `@review` or `@triada-review`.
+- After explicit acceptance of the complete mini-design (the same **HARD-GATE**), in-scope implementation runs **inline** with a session-only task list. It creates no planning/tasks doc and skips QA enrichment, `review-plan`, `generate-tasks`, and `implement`, but must finish with the promised verification and branch-level `review` or `triada-review`.
 - Escalate to a standard feature or epic when the area or solution is uncertain, or work involves migration, a public API/public contract, a security boundary, multiple subsystems, or durable resume/handoff. **Epics** split into a main planning document (default name `planning-main.md`) + per-phase docs in a `feature/{epic-slug}/` subfolder; downstream skills preserve its exact referenced path instead of reconstructing the filename (next step = plan each phase in a new session, not `generate-tasks` on the main).
 - For a standard/phase `review-plan: PASS` and for an epic main roadmap, Explain HTML is **opt-in** and generated only after an affirmative answer. `skip` does not generate a report or link, is not a warning, and does not block the next step; no response does not generate Explain automatically.
 - **Gap handoff (Mode C):** hand it a `problem-{slug}.md` from `problem-discuss` (item classified as a gap) and it inherits the confirmed evidence — business rule, what's missing, where — instead of re-interviewing from zero. It designs only *how* to fill the gap and stamps `**Źródło:** problem-{slug}.md, Sprawa N` for traceability.
@@ -256,8 +256,8 @@ Reads a planning doc (or a review report, or a `planning-fix-` doc from `debug`)
 - **In → Out:** path to a planning doc / review report → `absolutpowers/feature/tasks-{slug}.md` (+ `tasks-{slug}/` for larger features)
 
 ```bash
-/absolutpowers:generate-tasks @absolutpowers/feature/planning-push-notifications.md
-/absolutpowers:generate-tasks @absolutpowers/reviews/2026-04-21-feature-auth.md   # review → fix tasks
+/absolutpowers:generate-tasks absolutpowers/feature/planning-push-notifications.md
+/absolutpowers:generate-tasks absolutpowers/reviews/2026-04-21-feature-auth.md   # review → fix tasks
 ```
 
 ---
@@ -268,10 +268,10 @@ Senior engineer executing tasks sequentially, following each task's `Test-first:
 
 - **When:** after `generate-tasks`
 - **In → Out:** path to a tasks file → implementation code + tests, updated tasks file
-- **After PASS:** next is `@review` / `@triada-review`. A standalone feature or final epic phase can then go through optional `@analyze` and `@ship`; an epic with remaining phases instead gets a state-aware handoff to the next phase (`@feature-discuss` / `@generate-tasks` / `@implement`) and defers epic closeout.
+- **After PASS:** next is `review` / `triada-review`. A standalone feature or final epic phase can then go through optional `analyze` and `ship`; an epic with remaining phases instead gets a state-aware handoff to the next phase (`feature-discuss` / `generate-tasks` / `implement`) and defers epic closeout. Render executable commands in the active harness syntax; never use `@skill` as a prefix.
 
 ```bash
-/absolutpowers:implement @absolutpowers/feature/tasks-push-notifications.md
+/absolutpowers:implement absolutpowers/feature/tasks-push-notifications.md
 ```
 
 ---
@@ -356,7 +356,7 @@ Feature closeout — turns the pipeline artifacts (planning = intent, tasks = sc
 - **Hard boundary:** never changes code or task statuses, never pushes, never opens a PR on its own (`gh pr create` only on explicit request, after `gh auth status`), never creates issues. Nothing is staged or committed before the human gate.
 
 ```bash
-/absolutpowers:ship @absolutpowers/feature/tasks-push-notifications.md
+/absolutpowers:ship absolutpowers/feature/tasks-push-notifications.md
 /absolutpowers:ship            # autodetect slug from current branch
 ```
 
@@ -409,7 +409,7 @@ problem-discuss (fuzzy report → split into items → classify per item → rou
 ```bash
 /absolutpowers:problem-discuss "Klient zgłosił: 1) dlaczego user X dostaje maile (obraz.png), 2) po korekcie nie widzę 2 maili (culinar1.pdf)"
 # then, for a confirmed-bug item:
-/absolutpowers:debug @absolutpowers/problem/problem-slug.md "Sprawa 2"
+/absolutpowers:debug absolutpowers/problem/problem-slug.md "Sprawa 2"
 ```
 
 ## Key Concepts
@@ -506,10 +506,17 @@ Every harness shares the exact same `skills/{name}/SKILL.md` — **16 workflow s
 | Subagent dispatch primitive | `Agent(subagent_type=...)` against a registered type | available (`multi_agent=true` → `spawn_agent`/`wait_agent`), but nothing registered to dispatch *to* for gates | available via optional `pi-subagents` package | `spawn_subagent` (with `subagent_type: "general-purpose"` etc.) |
 | Multi-agent review | shared `triada-review`: parallel registered agents | shared `triada-review`: parallel generic `spawn_agent` | shared `triada-review`: `pi-subagents` when installed, otherwise inline advisory | shared `triada-review`: parallel generic `spawn_subagent` |
 | Review gates | automatic after each step + `phase-review` | degrades: dispatch a generic subagent fed `agents/{name}.md`, or review inline (non-isolation disclaimer + advisory verdict) — see `references/codex-tools.md` | degrades: dispatch a generic subagent fed `agents/{name}.md`, or review inline (non-isolation disclaimer) — see `references/pi-tools.md` | degrades: `spawn_subagent` (general-purpose) with `agents/{name}.md` body, or inline advisory — see `references/grok-tools.md` |
-| Orchestrated implementation | worker subagent per phase | sequential phase files in one session | sequential phase files in one session (or dispatched via `pi-subagents` if installed) | sequential or via `spawn_subagent` per phase (see grok-tools) |
+| Orchestrated implementation | worker subagent per phase | generic `spawn_agent` worker per phase with explicit 5.6 routing; sequential fallback without dispatch | sequential phase files in one session (or dispatched via `pi-subagents` if installed) | sequential or via `spawn_subagent` per phase (see grok-tools) |
 | Skill invocation | `/absolutpowers:skill-name` | `$absolutpowers skill-name` | native Pi skill invocation / `read` the `SKILL.md` | `/feature-discuss`, `/generate-tasks` etc. (plugin-qualified if needed) |
 | Session bootstrap | `hooks/hooks.json` `SessionStart` hook reads `hooks/session-context.md` | reads `AGENTS.md` (symlink to `CLAUDE.md`) | `.pi/extensions/absolutpowers.ts` reads `hooks/session-context.md` at `session_start`/`session_compact` | reads `AGENTS.md` / `CLAUDE.md`; hooks via `.grok/hooks/` or compat; session-context via reference |
 | AI context | `CLAUDE.md` (source) | `AGENTS.md` (symlink to `CLAUDE.md`, not a generated mirror) | `CLAUDE.md` (via the extension's injected context) | `AGENTS.md` / `CLAUDE.md` (primary) |
+
+For Codex orchestrated implementation, the shared Claude tiers are translated explicitly:
+`haiku` → `gpt-5.6-luna`/`medium`, `sonnet` → `gpt-5.6-luna`/`high`, and `opus` →
+`gpt-5.6-terra`/`high`. The final implementation review uses Sol with `high`; reserve
+`xhigh` for an explicit escalation when the failure cost justifies the extra reasoning-token
+usage;
+Codex should not silently hand off implementation to `gpt-5.5`.
 
 ## Project Structure (in your repo)
 
@@ -564,7 +571,7 @@ absolut-ai-skills/
 │       ├── systematic-debugging/      # library; canonical process = skills/debug
 │       ├── verification-before-completion/
 │       ├── dispatching-parallel-agents/
-│       ├── finishing-a-development-branch/  # prefer @ship for AbsolutPowers closeout
+│       ├── finishing-a-development-branch/  # prefer ship for AbsolutPowers closeout
 │       ├── executing-plans/
 │       └── subagent-driven-development/
 ├── agents/                            # 9 role prompts; registered by Claude, reused as prompts elsewhere
@@ -620,6 +627,13 @@ grok plugin install /path/to/absolut-ai-skills --trust
 Versioning is SemVer, kept in sync across all manifests
 (`.claude-plugin/plugin.json`, `.codex-plugin/plugin.json`, and `.grok-plugin/plugin.json`).
 
+### 5.6.2 — Harness syntax and Codex model routing
+
+- Documented native next-step command syntax per harness; `@skill` is never an executable command prefix
+- Added explicit Codex 5.6 routing: Luna `medium`/`high` for mechanical/standard work, Terra `high` for high-risk work, and Sol `high` for the final implementation review
+- Reserved `xhigh` for explicit escalation instead of using it as the default reasoning level
+- Version **5.6.2** across all plugin manifests
+
 ### 5.6.1 — Feature-planning guardrails
 
 - Added an explicit `feature-discuss` planning filter: disclose material assumptions and tradeoffs, prefer the minimum viable solution, and keep planned changes surgical
@@ -659,10 +673,10 @@ Versioning is SemVer, kept in sync across all manifests
 ### 5.2.0 — Tech-lead skill audit: contracts, modularization, multi-harness hygiene
 - **Contract hygiene:** removed stale `codex/` mirror notes (single-tree era); `feature-discuss` Terminal state branches **standard / epic main / micro-change** (micro-change skips `generate-tasks`); `NIE wyzwalaj` on core skills; Terminal state on `problem-discuss`, `debug`, `analyze`
 - **Shared references:** `references/project-memory.md`, `harness-dispatch.md`, `tdd-anti-patterns.md`, `fork-policy.md`; large templates extracted to `skills/{name}/references/` (`feature-discuss`, `generate-tasks`, `implement`) so main `SKILL.md` files stay operable mid-context
-- **Canonical paths:** session auto-trigger is **`@debug` only** (not vendored `systematic-debugging`); vendored `finishing-a-development-branch` banners to prefer **`@ship`**; `debug/FORK.md` + implement `scripts/README.md`
+- **Canonical paths:** session auto-trigger is **`debug` only** (not vendored `systematic-debugging`); vendored `finishing-a-development-branch` banners to prefer **`ship`**; `debug/FORK.md` + implement `scripts/README.md`
 - **`try-learn-skill` multi-harness** write paths: `.claude` / `.agents` / `.grok` / `.pi` `…/skills/learned/`
 - **New skill `receiving-code-review`** — verify-first handling of incoming PR feedback (15 workflow skills total + preboot)
-- **DX:** skill map in `hooks/session-context.md`; skill authoring checklist in `docs/contributing.md`; optional `@analyze` after implement PASS; README skills/platform/repo sections updated for 5.2.0
+- **DX:** skill map in `hooks/session-context.md`; skill authoring checklist in `docs/contributing.md`; optional `analyze` after implement PASS; README skills/platform/repo sections updated for 5.2.0
 - Version **5.2.0** across all plugin manifests (`.claude-plugin`, `.codex-plugin`, `.grok-plugin`)
 
 ### 5.1.4 — Visual Companion wired + vendored cross-ref cleanup
@@ -680,7 +694,7 @@ Versioning is SemVer, kept in sync across all manifests
 
 ### 5.1.1 — `ship` terminal-state + spójne framowanie closeout (review 5.x)
 - **`ship` gets a `## Terminal state` block** — it was the only pipeline-adjacent skill without one. Declares ship as the **mechanical closeout after `review`** (local commit + artifact archiving, then push/merge = the human's move), explicitly **not a gate/chain link**. Resolves the review finding that ship's role was framed two incompatible ways across docs
-- **Consistent closeout framing:** `hooks/session-context.md` (injected every session) now names `@ship` as the post-`review` closeout instead of omitting it; `docs/getting-started.md` FAQ no longer contradicts its own skills table (both now show `review` → `ship` closeout); README "6 core pipeline skills" relabeled (try-learn/ship are covered in depth but aren't pipeline-gate skills). Convention settled: four gated pipeline skills with `review` as the `/goal` closure point, `ship` as the closeout after
+- **Consistent closeout framing:** `hooks/session-context.md` (injected every session) now names `ship` as the post-`review` closeout instead of omitting it; `docs/getting-started.md` FAQ no longer contradicts its own skills table (both now show `review` → `ship` closeout); README "6 core pipeline skills" relabeled (try-learn/ship are covered in depth but aren't pipeline-gate skills). Convention settled: four gated pipeline skills with `review` as the `/goal` closure point, `ship` as the closeout after
 - Outcome of a full solo review of the whole 5.x delta vs 3.13.0 (report in `absolutpowers/reviews/2026-07-14-release-5x-vs-3130.md`): executable/config surfaces (`.pi` extension, hook chain, forked scripts, vendored companion) all clean, no HIGH/MED code findings
 
 ### 5.1.0 — `try-learn-skill` → codebase-scan; `harvest` removed, archiving folded into `ship`

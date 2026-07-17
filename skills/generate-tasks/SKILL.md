@@ -111,7 +111,7 @@ Read the document provided as argument. Understand what needs to be implemented:
 For a QA review report, validate routing before planning:
 
 1. Build the selected set from `Route: GENERATE_TASKS` findings only; every generated implementation task must retain its source QA finding ID.
-2. Build an explicit skipped summary for every `FEATURE_DISCUSS` finding (`reason: expected behaviour or design is unresolved; next workflow: @feature-discuss with the report path and finding ID`) and every `INLINE_FIX` finding (`reason: requires separate explicit approval; next workflow: obtain approval and apply through a direct fix workflow`). Never silently include either route in task scope.
+2. Build an explicit skipped summary for every `FEATURE_DISCUSS` finding (`reason: expected behaviour or design is unresolved; next workflow: feature-discuss with the report path and finding ID`) and every `INLINE_FIX` finding (`reason: requires separate explicit approval; next workflow: obtain approval and apply through a direct fix workflow`). Never silently include either route in task scope.
 3. Show the selected IDs and skipped/routing summary to the user when returning the tasks document.
 4. If the selected set is empty, write no tasks document. Return only the explicit skipped summary with each finding ID, reason, and correct next workflow.
 
@@ -408,8 +408,8 @@ Agent(subagent_type="review-tasks", prompt="Review tasks document: ./absolutpowe
 > Jeśli taski pochodzą z fazy epica: podaj pełną ścieżkę w podfolderze (`./absolutpowers/feature/{epic-slug}/tasks-{slug}.md`) i dodaj do promptu notkę: "This is one phase of an epic — cross-phase dependencies are declared in the phase Context Contract (Requires) and in the exact parent planning document recorded as `Epic context`; treat them as a contract, not as missing context." Dzięki temu review nie odrzuci planu za artefakty, które dostarczą wcześniejsze fazy.
 
 **Jeśli VERDICT: PASS:**
-- Poinformuj użytkownika: "Taski przeszły review. Następny krok: `/absolutpowers:implement @absolutpowers/feature/tasks-{slug}.md`"
-- (OPCJONALNIE, bez bramki) Możesz też uruchomić `/absolutpowers:analyze {slug}` jako audyt spójności AC→task(→kod) przed `implement` — weryfikuje, czy wszystkie AC mają pokrycie w taskach. Nie jest wymagany; `implement` jest głównym następnym krokiem.
+- Poinformuj użytkownika: "Taski przeszły review. Następny krok: uruchom `implement` na `absolutpowers/feature/tasks-{slug}.md`. Wyrenderuj komendę w składni aktywnego harnessu; nie używaj prefiksu `@`."
+- (OPCJONALNIE, bez bramki) Możesz też uruchomić `analyze {slug}` w składni aktywnego harnessu jako audyt spójności AC→task(→kod) przed `implement` — weryfikuje, czy wszystkie AC mają pokrycie w taskach. Nie jest wymagany; `implement` jest głównym następnym krokiem.
 
 **Jeśli VERDICT: REJECTED (1. raz):**
 - Wyświetl użytkownikowi listę problemów z review
@@ -435,6 +435,6 @@ Agent(subagent_type="review-tasks", prompt="Re-review tasks document: ./absolutp
 
 Stan terminalny tego skilla: zweryfikowany tasks-doc (`review-tasks` PASS) z ustawionym polem `## Mode` (`orchestrated` lub `single-file`) — plan gotowy do wykonania, nie sam kod.
 
-Następny krok w pipeline: `@implement` (wykonuje tasks-doc; `Mode` decyduje jak — patrz „Execution Handoff" wyżej, `implement` jest jedynym egzekutorem).
+Następny krok w pipeline: `implement` (wykonuje tasks-doc; `Mode` decyduje jak — patrz „Execution Handoff" wyżej, `implement` jest jedynym egzekutorem). Komendę wyrenderuj w składni aktywnego harnessu; nigdy nie używaj `@implement`.
 
-Pipeline NIE jest domknięty na tym etapie — zweryfikowany plan to nie zaimplementowany feature. Jeśli działasz pod `/goal` (np. „dowieź feature X"), NIE uznawaj celu za osiągnięty po przejściu review-tasks: kontynuuj przez `@implement` aż do skilla terminalnego (`@review`/`@triada-review` lub ship/merge), zanim uznasz cel za osiągnięty.
+Pipeline NIE jest domknięty na tym etapie — zweryfikowany plan to nie zaimplementowany feature. Jeśli działasz pod `/goal` (np. „dowieź feature X"), NIE uznawaj celu za osiągnięty po przejściu review-tasks: kontynuuj przez `implement` aż do skilla terminalnego (`review`/`triada-review` lub ship/merge), zanim uznasz cel za osiągnięty.

@@ -332,9 +332,9 @@ Stan terminalny: raport `absolutpowers/reviews/analyze-{slug}.md` z werdyktem
 
 | Werdykt | Typowy następny krok |
 |---------|----------------------|
-| CONSISTENT | kontynuuj merge / `@ship` / close |
-| INCONSISTENT (brak tasków) | `@generate-tasks` |
-| INCONSISTENT (brak kodu) | `@implement` |
-| INCONSISTENT (jakość kodu) | nie ten skill — `@review` |
+| CONSISTENT | kontynuuj merge / `ship` / close |
+| INCONSISTENT (brak tasków) | `generate-tasks` |
+| INCONSISTENT (brak kodu) | `implement` |
+| INCONSISTENT (jakość kodu) | nie ten skill — `review` |
 
 On-demand: nie jest ogniwem łańcucha gate'ów.

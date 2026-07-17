@@ -6,9 +6,9 @@ description: Use when implementation is complete, all tests pass, and you need t
 _Vendored from [obra/superpowers](https://github.com/obra/superpowers) `skills/finishing-a-development-branch` @ `d884ae0` (tag v6.1.1, MIT license — see [`LICENSE-VENDORED`](../../../LICENSE-VENDORED))._
 
 > **AbsolutPowers preference:** for feature closeout (commit message, PR text,
-> archive of `planning-*`/`tasks-*`) use **`@ship`**. This vendored skill is the
-> optional **legacy / worktree merge menu** path from obra. Prefer `@ship` after
-> `@review`; use this skill only when you explicitly want the 4-option merge/PR/
+> archive of `planning-*`/`tasks-*`) use **`ship`** in the active harness syntax. This
+> vendored skill is the optional **legacy / worktree merge menu** path from obra. Prefer
+> `ship` after `review`; use this skill only when you explicitly want the 4-option merge/PR/
 > keep/discard menu (e.g. worktree cleanup). See `references/fork-policy.md`.
 
 # Finishing a Development Branch

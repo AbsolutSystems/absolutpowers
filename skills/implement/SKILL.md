@@ -78,16 +78,16 @@ collapse it into a standalone feature at closeout:
    inside this invocation.
 3. Before printing the final handoff, inspect the sibling's phase doc and tasks artifact (if any)
    so the suggested workflow reflects durable state:
-   - phase status `Do zaplanowania` or a stub/TODO doc → `@feature-discuss` with
+   - phase status `Do zaplanowania` or a stub/TODO doc → `feature-discuss` with
      `{epic-main-path}` and that phase;
-   - full phase doc ready, but no tasks doc → `@generate-tasks` on the phase doc;
-   - tasks doc exists with pending/in-progress work → `@implement` on that tasks doc;
+   - full phase doc ready, but no tasks doc → `generate-tasks` on the phase doc;
+   - tasks doc exists with pending/in-progress work → `implement` on that tasks doc;
    - phase marked `Zrobiona` → skip it and evaluate the next row.
 4. If the current phase cannot be matched, or dependencies make the next phase ambiguous, report
    the mismatch instead of guessing a phase.
 
-This continuation lookup is routing only. The current phase still requires `@review` or
-`@triada-review` before moving to the sibling phase.
+This continuation lookup is routing only. The current phase still requires `review` or
+`triada-review` before moving to the sibling phase.
 
 #### Durable phase status in the epic planning document
 
@@ -106,7 +106,7 @@ Treat the current row in `## Mapa faz` as cross-session state, not decorative do
   explicitly. Do not claim that the epic roadmap is synchronized and do not guess the next phase.
 
 `Zrobiona` means the phase passed the implement skill's complete tasks + final verification +
-implementation-gate contract. The separate branch-level `@review`/`@triada-review` remains required.
+implementation-gate contract. The separate branch-level `review`/`triada-review` remains required.
 
 ## Project Memory
 
@@ -296,7 +296,7 @@ After `review-implementation` PASS/override and before the completion handoff, *
 
 It aggregates every `## Implementation Decisions / Remarks` entry, writes a human-readable HTML
 report, persists `## Decision Review` in the main tasks doc, and requires human acceptance when
-remarks are non-empty. Do not suggest the next phase, `@ship`, or branch review while that
+remarks are non-empty. Do not suggest the next phase, `ship`, or branch review while that
 checkpoint is `pending-human-review` or `changes-requested`.
 
 ---
@@ -415,11 +415,11 @@ For `true`, print exactly one best-effort suggestion using the most relevant sig
 available planning/tasks artifact when useful:
 
 ```text
-QA review (optional): elevated test-risk signal `<signal>`; run `@qa-review feature [optional planning/tasks artifact]` to statically evaluate test value without rerunning tests.
+QA review (optional): elevated test-risk signal `<signal>`; run `qa-review feature [optional planning/tasks artifact]` to statically evaluate test value without rerunning tests.
 ```
 
 For `false`, emit no QA-review nudge. This nudge never auto-invokes or dispatches QA review,
-never gates implementation completion, and never replaces `@review` or `@triada-review` as the
+never gates implementation completion, and never replaces `review` or `triada-review` as the
 pipeline closure point. It does not change the closeout order selected below: a standalone/last
 phase uses `review -> ship -> merge`; an epic in progress uses `review current phase -> continue epic`.
 
@@ -437,34 +437,35 @@ After reporting completion, select exactly one branch.
 
 **Standalone feature or last unfinished epic phase:** optionally suggest:
 
-> Po PASS bramki implementacji: (1) `@review` lub `@triada-review`, (2) opcjonalnie
-> `@analyze {slug}` (traceability AC→task→kod — on-demand, nie gate), (3) po czystym
-> review: `/absolutpowers:ship @absolutpowers/feature/tasks-{slug}.md`.
-> Docs/learned: ad-hoc (`@document-feature`, `@try-learn-skill`).
+> Po PASS bramki implementacji: (1) `review` lub `triada-review`, (2) opcjonalnie
+> `analyze {slug}` (traceability AC→task→kod — on-demand, nie gate), (3) po czystym
+> review: `ship` na `absolutpowers/feature/tasks-{slug}.md`.
+> Każdą komendę wyrenderuj w składni aktywnego harnessu; nie używaj prefiksu `@`.
+> Docs/learned: ad-hoc (`document-feature`, `try-learn-skill`).
 
 **Epic phase with another actionable phase:** print the current review step plus one concrete
 continuation command. Example when the next phase is still a stub:
 
-> Faza {N} epica jest zaimplementowana. Najpierw uruchom `@review` lub `@triada-review`
+> Faza {N} epica jest zaimplementowana. Najpierw uruchom `review` lub `triada-review`
 > dla bieżących zmian. Po czystym review epic nadal jest w toku — nie uruchamiaj jeszcze
-> `@ship` jako closeoutu epica. Następny krok:
-> `@feature-discuss @{epic-main-path} "Omów Fazę {N+1}: {nazwa}"`.
+> `ship` jako closeoutu epica. Następny krok:
+> `feature-discuss` na `{epic-main-path}` z argumentem "Omów Fazę {N+1}: {nazwa}"`.
 
-If durable state routes to `@generate-tasks` or `@implement`, substitute that exact command and
+If durable state routes to `generate-tasks` or `implement`, substitute that exact command and
 artifact path instead. Mention the current phase and the selected next phase by number and name.
-Do not suggest `@ship` in this branch; it becomes appropriate only after all epic phases are
+Do not suggest `ship` in this branch; it becomes appropriate only after all epic phases are
 implemented and reviewed.
 
 These handoffs are best-effort guidance. Do not auto-invoke them from this skill.
 
 Structural scenarios:
 - `epicPhaseWithUnplannedSiblingContinuesDiscussion`: a completed phase whose next row is
-  `Do zaplanowania` prints review first, then an exact `@feature-discuss {epic-main-path} + phase`
-  command, with no `@ship` suggestion.
+  `Do zaplanowania` prints review first, then an exact `feature-discuss {epic-main-path} + phase`
+  command in the active harness syntax, with no `ship` suggestion.
 - `epicParentPathIsReferenceDriven`: a nonstandard parent filename referenced by tasks/phase docs
   is updated and used in the handoff; no `planning-main.md` path is synthesized.
 - `epicPhaseWithPreparedSiblingUsesDurableState`: a ready phase doc or existing incomplete tasks
-  doc routes to `@generate-tasks` or `@implement` respectively, without restarting discussion.
+  doc routes to `generate-tasks` or `implement` respectively, without restarting discussion.
 - `finalEpicPhaseAllowsCloseout`: when no unfinished sibling remains, the handoff uses the normal
   `review -> optional analyze -> ship` branch.
 - `epicPhaseStatusSurvivesContextReset`: starting implementation writes `W toku`; only successful
@@ -478,11 +479,11 @@ Structural scenarios:
 
 Stan terminalny tego skilla: wszystkie taski **bieżącego tasks-doca** zaimplementowane i zweryfikowane, final verification wykonana, końcowa bramka `review-implementation` zwróciła PASS (albo świadomy override), a raport decyzji implementacyjnych został wygenerowany. Przy niepustych remarks wymagany jest dodatkowo zapisany human acceptance w `## Decision Review`. Kod bieżącego zakresu jest napisany — ale jeszcze nie zrewidowany jako całość ani nie zmergowany.
 
-Następny krok zawsze zaczyna się od `@review` (solo) lub `@triada-review` (multi-agent) dla bieżących zmian. Dalej:
-- **standalone feature / ostatnia faza epica:** opcjonalnie `@analyze {slug}`, potem `@ship`; kolejność: review → ship → merge;
-- **faza epica z kolejną fazą:** po czystym review wróć do epica zgodnie ze stanem następnej fazy (`@feature-discuss` na wykrytym `{epic-main-path}` + faza, `@generate-tasks` na gotowym phase docu albo `@implement` na istniejącym tasks-docu). Nie sugeruj `@ship`, dopóki wszystkie fazy epica nie są zaimplementowane i zrewidowane.
+Następny krok zawsze zaczyna się od `review` (solo) lub `triada-review` (multi-agent) dla bieżących zmian. Dalej:
+- **standalone feature / ostatnia faza epica:** opcjonalnie `analyze {slug}`, potem `ship`; kolejność: review → ship → merge;
+- **faza epica z kolejną fazą:** po czystym review wróć do epica zgodnie ze stanem następnej fazy (`feature-discuss` na wykrytym `{epic-main-path}` + faza, `generate-tasks` na gotowym phase docu albo `implement` na istniejącym tasks-docu). Nie sugeruj `ship`, dopóki wszystkie fazy epica nie są zaimplementowane i zrewidowane.
 
-Docs/learned pozostają ad-hoc (`@document-feature`, `@try-learn-skill`).
+Docs/learned pozostają ad-hoc (`document-feature`, `try-learn-skill`).
 
 Pipeline NIE jest domknięty na tym etapie — final gate PASS oznacza „kod bieżącego zakresu zaimplementowany i zweryfikowany wewnętrznie", nie „feature/epic dowieziony i zmergowany". Jeśli działasz pod `/goal` (np. „dowieź feature X"), NIE uznawaj celu za osiągnięty po tym skillu: dokończ review bieżącej zmiany, wszystkie pozostałe fazy epica (jeśli istnieją), a dopiero potem closeout/merge.
 

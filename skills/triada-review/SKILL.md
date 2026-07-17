@@ -405,4 +405,4 @@ Spełnione / brak naruszeń w sprawdzonych obszarach:
 
 Skill kończy się po syntezie wszystkich aktywnych perspektyw i zwróceniu jednego
 werdyktu. To punkt domknięcia review: przy `approve` / `approve_with_comments`
-można przejść do `@ship`; przy `request_changes` / `block` wróć do pętli poprawek.
+można przejść do `ship`; przy `request_changes` / `block` wróć do pętli poprawek. Komendę wyrenderuj w składni aktywnego harnessu.

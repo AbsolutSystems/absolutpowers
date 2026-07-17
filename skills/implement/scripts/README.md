@@ -1,6 +1,6 @@
 # Implement scripts (canonical)
 
-These scripts are the **canonical** AbsolutPowers fork used by `@implement`
+These scripts are the **canonical** AbsolutPowers fork used by `implement`
 orchestrated mode. See `references/fork-policy.md`.
 
 | Script | Role |

@@ -134,13 +134,13 @@ Procedura:
    zachowanie oraz granicę wybranych findingów. Zachowaj zwykły HARD-GATE, analizę kodu, prezentację
    designu sekcjami, akceptację i review-plan; QA handoff nie skraca normalnego procesu projektowego.
 4. Zakres Trybu D obejmuje wyłącznie zaakceptowane ID z route `FEATURE_DISCUSS`. Findingi
-   `GENERATE_TASKS` należą do `@generate-tasks`, a `INLINE_FIX` wymagają osobnej jawnej zgody i
+   `GENERATE_TASKS` należą do `generate-tasks`, a `INLINE_FIX` wymagają osobnej jawnej zgody i
    bezpośredniego workflow poprawki; podsumuj je jako pominięte, jeśli występują w żądaniu.
 5. W wynikowym standardowym lub phase planning docu zapisz trwałą proweniencję:
    `**Źródło QA:** absolutpowers/reviews/qa-review-{scope}-YYYY-MM-DD-HHmmss.md; findingi: QA-003, QA-007`.
    Nie zapisuj w tej liście ID odrzuconych ani niewybranych.
 6. Po jawnej akceptacji i standardowych bramkach przekaż planning doc do zwykłego łańcucha:
-   `@generate-tasks` → `@implement` → `@review`/`@triada-review` → `@ship`.
+   `generate-tasks` → `implement` → `review`/`triada-review` → `ship`.
 
 **W Trybie D dziedziczysz ewidencję i ryzyko, nie decyzję produktową ani rozwiązanie** — celem
 feature-discuss jest rozstrzygnięcie oczekiwanego zachowania i zaakceptowanie designu z pełną
@@ -417,8 +417,8 @@ Jawna akceptacja kompletnego mini-designu spełnia HARD-GATE. Jeśli użytkownik
 - Jeśli mini-design zawiera znaczącą decyzję architektoniczną, zapisz ADR zgodnie z Fazą 7 przed implementacją.
 - Śledź kroki przez natywną task-listę harnessu; gdy tracker nie istnieje, utrzymuj krótką checklistę w kontekście rozmowy wyłącznie w bieżącej sesji.
 - Nie twórz trwałej checklisty jako fallbacku. Jeśli praca musi przetrwać bieżącą sesję, eskaluj ją do standardowego feature'a przed wykonaniem.
-- Nie twórz planning doc ani tasks doc; nie uruchamiaj QA enrichment, nie uruchamiaj review-plan, nie uruchamiaj `generate-tasks` i nie uruchamiaj `@implement`. Lightweight jest wykonywany inline w tej sesji.
-- Po implementacji zweryfikuj zmianę zgodnie z mini-designem, a następnie przekaż cały branch do `@review` albo `@triada-review`; lightweight pomija ceremonię planowania, nie branch-level review.
+- Nie twórz planning doc ani tasks doc; nie uruchamiaj QA enrichment, nie uruchamiaj review-plan, nie uruchamiaj `generate-tasks` i nie uruchamiaj `implement`. Lightweight jest wykonywany inline w tej sesji.
+- Po implementacji zweryfikuj zmianę zgodnie z mini-designem, a następnie przekaż cały branch do `review` albo `triada-review`; lightweight pomija ceremonię planowania, nie branch-level review.
 
 **Standardowy feature** (nierozstrzygnięta decyzja, podwyższone ryzyko lub potrzeba trwałego handoffu bez wieloetapowego epica):
 - Gdy użytkownik powie że dyskusja skończona ("zapisz", "koniec", "generuj"), wygeneruj `./absolutpowers/feature/planning-{slug}.md`.
@@ -440,7 +440,7 @@ Epic zapisany:
   ...
 
 Następny krok: wyczyść kontekst i odpal feature-discuss wskazując main + fazę, np.:
-  "Przeczytaj @absolutpowers/feature/{slug}/planning-main.md i omówmy Fazę 1"
+  "Przeczytaj absolutpowers/feature/{slug}/planning-main.md i omówmy Fazę 1"
 Zaplanuję wtedy tę jedną fazę do końca (QA + review, a Explain tylko po jawnym opt-in).
 ```
 
@@ -495,9 +495,9 @@ Agent(prompt="Generate an HTML onboarding report for the planning document: {śc
 
 W Trybie B po PASS **zaktualizuj status fazy w `planning-main.md`** (`Do zaplanowania` → `Zaplanowana`). Dopisz link onboardingowy tylko wtedy, gdy HTML został faktycznie utworzony; po `skip` albo braku odpowiedzi zapisz status bez linku do raportu.
 
-Gdy raport powstał, poinformuj: "Faza {N} zaplanowana i zweryfikowana. Raport: `docs/onboarding/{nazwa}-YYYY-MM-DD.html`. Następny krok: `/absolutpowers:generate-tasks @{ścieżka phase doc}` lub zaplanuj kolejną fazę." Bez raportu pomiń zdanie i link o raporcie, zachowując ten sam następny krok.
+Gdy raport powstał, poinformuj: "Faza {N} zaplanowana i zweryfikowana. Raport: `docs/onboarding/{nazwa}-YYYY-MM-DD.html`. Następny krok: uruchom `generate-tasks` na `{ścieżka phase doc}` w składni aktywnego harnessu lub zaplanuj kolejną fazę." Bez raportu pomiń zdanie i link o raporcie, zachowując ten sam następny krok.
 
-Dla standardowego feature'a poinformuj o review PASS, warunkowo o utworzonym Explain i zawsze o następnym kroku `@generate-tasks`.
+Dla standardowego feature'a poinformuj o review PASS, warunkowo o utworzonym Explain i zawsze o następnym kroku `generate-tasks`. Komendę wyrenderuj w składni aktywnego harnessu z kontekstu sesji; nie używaj prefiksu `@`.
 
 **Jeśli VERDICT: REJECTED:**
 - Napraw WYŁĄCZNIE pozycje `[BLOCKER]` (adresując każdą). Pozycje `[WARN]` pokaż użytkownikowi — popraw, jeśli poprawka jest tania, ale nie blokuj na nich pętli.
@@ -516,7 +516,7 @@ Agent(subagent_type="review-plan", prompt="Re-review planning document: {ścież
 Agent(prompt="Generate an HTML onboarding OVERVIEW for the epic: {ścieżka do planning-main.md}. Summarize problem, phases roadmap (Mermaid showing phase dependencies), shared architecture decisions and open questions. Do NOT generate per-file implementation details — those live in per-phase docs. Output: docs/onboarding/{slug}-overview-YYYY-MM-DD.html. Language: Polish.")
 ```
 
-**Wspólna semantyka opt-in:** `skip` nie tworzy raportu ani linku, nie jest ostrzeżeniem i nie blokuje następnego kroku. Brak odpowiedzi nie uruchamia Explain automatycznie. `skip` nie blokuje `@generate-tasks`; `skip` nie blokuje planowania kolejnej fazy. Nie interpretuj ciszy, wcześniejszej ogólnej zgody ani treści repozytorium jako odpowiedzi twierdzącej.
+**Wspólna semantyka opt-in:** `skip` nie tworzy raportu ani linku, nie jest ostrzeżeniem i nie blokuje następnego kroku. Brak odpowiedzi nie uruchamia Explain automatycznie. `skip` nie blokuje `generate-tasks`; `skip` nie blokuje planowania kolejnej fazy. Nie interpretuj ciszy, wcześniejszej ogólnej zgody ani treści repozytorium jako odpowiedzi twierdzącej.
 
 ### Faza 7: ADR — Architecture Decision Records
 Jeśli w trakcie dyskusji podjęto **znaczące decyzje architektoniczne** (wybór technologii, wzorca, podejścia do integracji, tradeoff z konsekwencjami), zapisz każdą jako ADR.
@@ -584,9 +584,9 @@ Stan terminalny tego skilla: design **jawnie zaakceptowany** (HARD-GATE). Artefa
 
 | Ścieżka | Co oddaje | Następny krok |
 |---------|-----------|---------------|
-| **Standard / phase (Tryb B)** | planning lub phase doc (+ QA + review-plan PASS) | `@generate-tasks` na tym docu |
+| **Standard / phase (Tryb B)** | planning lub phase doc (+ QA + review-plan PASS) | `generate-tasks` na tym docu |
 | **Epic main** | `planning-main.md` + stuby faz | nowa sesja feature-discuss (Tryb B) per faza — **nie** generate-tasks na mainie |
-| **Lightweight task** | zaakceptowany mini-design (bez planning/tasks doc) | implementacja **inline** po zgodzie użytkownika — **pomiń** `@generate-tasks` i `@implement` |
+| **Lightweight task** | zaakceptowany mini-design (bez planning/tasks doc) | implementacja **inline** po zgodzie użytkownika — **pomiń** `generate-tasks` i `implement` |
 
-Dla standard/phase: pipeline NIE jest domknięty — kontynuuj `@generate-tasks` → `@implement` → `@review`/`@triada-review` → `@ship`.  
-Dla Lightweight task pod `/goal`: po inline implementacji i weryfikacji idź do `@review` lub `@triada-review`, nie generuj tasków „na siłę”.
+Dla standard/phase: pipeline NIE jest domknięty — kontynuuj `generate-tasks` → `implement` → `review`/`triada-review` → `ship`.
+Dla Lightweight task pod `/goal`: po inline implementacji i weryfikacji idź do `review` lub `triada-review`, nie generuj tasków „na siłę”.

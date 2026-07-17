@@ -74,8 +74,8 @@ callers. If unused, propose remove (YAGNI) instead of expanding scope.
 5. Test each fix; avoid silent multi-fix commits without evidence
 
 For **3+ non-trivial** items that map to a feature still in pipeline: prefer
-`/absolutpowers:generate-tasks` on a short fix list or on
-`absolutpowers/reviews/….md` rather than ad-hoc thrash — then `@implement`.
+`generate-tasks` in the active harness syntax on a short fix list or on
+`absolutpowers/reviews/….md` rather than ad-hoc thrash — then `implement`.
 
 ## Push back when
 
@@ -99,10 +99,10 @@ gh api repos/{owner}/{repo}/pulls/{pr}/comments/{id}/replies -f body='...'
 
 | Situation | Skill |
 |-----------|--------|
-| You are writing the review | `@review` / `@triada-review` |
+| You are writing the review | `review` / `triada-review` |
 | You received feedback to address | **this skill** |
-| Feedback is large structured report | `@generate-tasks` on the report → `@implement` |
-| Root-cause bug buried in feedback | `@debug` |
+| Feedback is large structured report | `generate-tasks` on the report → `implement` |
+| Root-cause bug buried in feedback | `debug` |
 
 ## Terminal state
 
@@ -110,5 +110,5 @@ Stan terminalny: każdy zaakceptowany punkt review jest albo **zafiskowany i
 zweryfikowany testem/dowodem**, albo **odparty z uzasadnieniem** (i ustalone z
 użytkownikiem). Nie zostawiaj pół-zaimplementowanej listy.
 
-Następny krok (jeśli to domknięcie feature'a): `@review` ponownie jeśli diff
-duży, potem `@ship`.
+Następny krok (jeśli to domknięcie feature'a): `review` ponownie jeśli diff
+duży, potem `ship`. Komendy wyrenderuj w składni aktywnego harnessu.

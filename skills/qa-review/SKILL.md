@@ -42,9 +42,9 @@ If any later instruction conflicts with this boundary, this boundary wins.
 The public workflow is exactly:
 
 ```text
-@qa-review
-@qa-review feature [artifact]
-@qa-review codebase [path]
+qa-review
+qa-review feature [artifact]
+qa-review codebase [path]
 ```
 
 Parsing rules:
@@ -206,8 +206,8 @@ Use this stable report schema:
 ## Next Actions
 1. Resolve `FEATURE_DISCUSS` decisions, if any.
 2. Obtain explicit approval for selected `INLINE_FIX` recommendations, if any; this audit applies none.
-3. Run `@generate-tasks` for `GENERATE_TASKS` findings when decisions are settled.
-4. Re-run `@qa-review` after approved work to create a separate timestamped audit trail.
+3. Run `generate-tasks` for `GENERATE_TASKS` findings when decisions are settled.
+4. Re-run `qa-review` after approved work to create a separate timestamped audit trail.
 ```
 
 All named sections are mandatory. `Actionable Findings` is the stable downstream interface; preserve field labels and finding IDs. The `Next Actions` order is decision-first, then inline approval, task generation, and finally re-audit. Include only applicable identifiers under each step, but keep this safe ordering.
@@ -231,4 +231,4 @@ The terminal state is either:
 - a single immutable `absolutpowers/reviews/qa-review-*.md` report with a rubric-derived verdict and safe routing; or
 - a clear no-report stop because feature scope could not be established or the requested scope was invalid/inaccessible.
 
-`qa-review` is an on-demand audit, not a pipeline gate and not an implementation step. A report may be handed explicitly to `@feature-discuss` or `@generate-tasks`; code changes require a separate authorized workflow.
+`qa-review` is an on-demand audit, not a pipeline gate and not an implementation step. A report may be handed explicitly to `feature-discuss` or `generate-tasks`; code changes require a separate authorized workflow.

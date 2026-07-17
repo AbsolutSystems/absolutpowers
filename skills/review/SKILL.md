@@ -204,14 +204,14 @@ Na końcu raportu (zarówno w konsoli jak i w pliku), zaproponuj następne kroki
 
 **0-2 problemy (drobne):**
 ```
-Drobne fixy — napraw ręcznie, potem @ship (commit/archiwizacja) i merge.
-Opcjonalnie: @analyze {slug} jeśli feature ma planning/tasks (traceability).
+Drobne fixy — napraw ręcznie, potem `ship` (commit/archiwizacja) i merge.
+Opcjonalnie: `analyze {slug}` jeśli feature ma planning/tasks (traceability).
 ```
 
 **3+ problemy:**
 ```
 Dużo do poprawki. Sugeruję wygenerować taski:
-/absolutpowers:generate-tasks @absolutpowers/reviews/YYYY-MM-DD-{branch-slug}.md
+uruchom `generate-tasks` na `absolutpowers/reviews/YYYY-MM-DD-{branch-slug}.md` w składni aktywnego harnessu
 ```
 
 ## Ważne

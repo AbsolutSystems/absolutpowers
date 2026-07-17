@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## What This Is
 
-AbsolutPowers — a Claude Code + Codex + Pi + Grok plugin providing AI-assisted development lifecycle skills: problem intake/triage, feature discussion, task generation, implementation, review, static QA test-value and technical-debt auditing, debugging, project context management, and project constitution. Version 5.6.1. As of 5.0.0 the repo is a single host-agnostic skill tree (see Repository Layout) with thin per-harness manifests/integrations, replacing the earlier two mirrored `claude/`/`codex/` trees; it also introduces `skills/vendored/` — selected skills vendored from [obra/superpowers](https://github.com/obra/superpowers) under MIT (see `VENDORED.md`, `LICENSE-VENDORED`). Grok Build is supported as a first-class harness via `.grok-plugin/` + `references/grok-tools.md`.
+AbsolutPowers — a Claude Code + Codex + Pi + Grok plugin providing AI-assisted development lifecycle skills: problem intake/triage, feature discussion, task generation, implementation, review, static QA test-value and technical-debt auditing, debugging, project context management, and project constitution. Version 5.6.2. As of 5.0.0 the repo is a single host-agnostic skill tree (see Repository Layout) with thin per-harness manifests/integrations, replacing the earlier two mirrored `claude/`/`codex/` trees; it also introduces `skills/vendored/` — selected skills vendored from [obra/superpowers](https://github.com/obra/superpowers) under MIT (see `VENDORED.md`, `LICENSE-VENDORED`). Grok Build is supported as a first-class harness via `.grok-plugin/` + `references/grok-tools.md`.
 
 ## Repository Layout
 
@@ -20,6 +20,21 @@ Manifests and marketplaces (all top-level, pointing at repo root):
 - `.claude-plugin/plugin.json` — Claude manifest; `.claude-plugin/marketplace.json` → `source: "."`.
 - `.codex-plugin/plugin.json` — Codex manifest; `.agents/plugins/marketplace.json` → `source.path: "."`.
 - `AGENTS.md` — symlink to `CLAUDE.md` (bootstrap for harnesses that read AGENTS.md, e.g. Codex).
+
+## Harness command syntax
+
+When giving the user an executable command for another skill, render it using the active
+harness's native syntax. Never use `@skill-name` as a command prefix:
+
+- Claude Code: `/absolutpowers:skill-name [args]`
+- Codex: `$absolutpowers skill-name [args]`
+- Pi: the native skill invocation or the corresponding `SKILL.md` read action
+- Grok Build: `/skill-name [args]` (qualified if the harness requires it)
+
+In shared prose, refer to a skill by its bare name (`feature-discuss`, `review`, etc.) and
+apply the mapping above when rendering the final next-step command. A leading `@` may still
+be valid in unrelated contexts (for example an email address or a source-code annotation),
+but it is never valid for an AbsolutPowers skill command.
 
 ## Skill and Agent File Format
 
@@ -67,11 +82,11 @@ are skipped. Migration, a public API or public contract, a security boundary, mu
 subsystems, an uncertain area/solution, or durable resume/handoff escalates to standard or epic.
 Explicit mini-design acceptance satisfies the HARD-GATE. Lightweight then executes inline with
 a session-only task list and bypasses planning/task stages, but never bypasses verification or
-branch-level `@review`/`@triada-review`.
+branch-level `review`/`triada-review`.
 
 ### Terminal-state contract (prose, `/goal`-aware)
 
-Each of the four pipeline skills ends with a `## Terminal state` section (prose, Polish — no machine format / frontmatter key). `feature-discuss` has three outcomes: a standard/phase planning doc continues to `@generate-tasks`; an epic main continues by planning its phases; a Lightweight task continues inline after explicit mini-design acceptance, then verification and branch review, without `@generate-tasks` or `@implement`. Explain HTML for standard/phase PASS or an epic main is opt-in: only an affirmative answer generates it; `skip` is non-blocking and no response does not generate it. The remaining intermediate skills (`generate-tasks`, `implement`) name the next link (`@implement` / `@review`) and explicitly state the pipeline is **not closed** — so a session driven by Claude Code's `/goal` continues down the chain instead of stopping mid-pipeline. `review`/`triada-review` is the distinguished **closure point** (fix-loop or merge/ship), not a chain link. The `## Mode` field (`orchestrated`/`single-file`) set by `generate-tasks` remains the resolved executor mode for standard/phase work.
+Each of the four pipeline skills ends with a `## Terminal state` section (prose, Polish — no machine format / frontmatter key). `feature-discuss` has three outcomes: a standard/phase planning doc continues to `generate-tasks`; an epic main continues by planning its phases; a Lightweight task continues inline after explicit mini-design acceptance, then verification and branch review, without `generate-tasks` or `implement`. Explain HTML for standard/phase PASS or an epic main is opt-in: only an affirmative answer generates it; `skip` is non-blocking and no response does not generate it. The remaining intermediate skills (`generate-tasks`, `implement`) name the next link (`implement` / `review`) and explicitly state the pipeline is **not closed** — so a session driven by Claude Code's `/goal` continues down the chain instead of stopping mid-pipeline. `review`/`triada-review` is the distinguished **closure point** (fix-loop or merge/ship), not a chain link. The `## Mode` field (`orchestrated`/`single-file`) set by `generate-tasks` remains the resolved executor mode for standard/phase work.
 
 ### Intake / triage front door
 
@@ -82,7 +97,7 @@ of 6 buckets, and fans out a route per item:
 
 ```
 problem-discuss (no gate — investigative, like debug)
-  ├─ potwierdzony bug          → debug @absolutpowers/problem/problem-{slug}.md "Sprawa N"
+  ├─ potwierdzony bug          → debug absolutpowers/problem/problem-{slug}.md "Sprawa N"
   ├─ nie zaimplementowane (gap) → feature-discuss → generate-tasks → implement
   ├─ błąd konfiguracji / dane   → fix bezpośredni
   └─ nieporozumienie            → close
@@ -96,8 +111,8 @@ triggers do not collide.
 `debug` reads `problem-{slug}.md` (when routed from `problem-discuss`) as the starting point for
 Phase 1 — confirms/deepens the evidence instead of re-deriving from scratch. For large root-cause
 fixes (multi-layer, migration, public API, security boundary, or 3+ failed attempts), `debug`
-writes `absolutpowers/feature/planning-fix-{slug}.md` and nudges to
-`/absolutpowers:generate-tasks` instead of implementing inline.
+writes `absolutpowers/feature/planning-fix-{slug}.md` and nudges to `generate-tasks` using the
+active harness command syntax instead of implementing inline.
 
 For larger features, `implement` orchestrates via subagents:
 
@@ -154,7 +169,7 @@ Ownership contract:
 - `implement` orchestrator updates phase status in parent tasks file
 - `phase-review` is read-only, returns VERDICT only
 
-`implementation-worker` returns one of four `PHASE_RESULT` values — `DONE`, `DONE_WITH_CONCERNS`, `NEEDS_CONTEXT`, `BLOCKED` — instead of the older 3-state `COMPLETED`/`BLOCKED`/`FAILED`; the orchestrator (Step O3) branches on each independently, escalating (context → model → decomposition → human) only for `BLOCKED`. Every subagent dispatch (`implementation-worker`, `phase-review`, `review-implementation`) carries an explicit `model=` sized per role — transcription-tier `haiku`/standard `sonnet`/most-capable `opus` for the worker (by phase `Risk:` and code completeness), diff-scaled for `phase-review`, always `opus` for the final `review-implementation` gate. Progress is durable across three files: the phase file (full spec), `implementation-context.md` (narrow handoff), and a git-anchored `progress.md` ledger (one line per phase, `Faza N: complete (commits base7..head7, review clean)`) that Step O1 treats as authoritative on resume over the human-facing status table. Before dispatching each `phase-review`/`review-implementation` call, the orchestrator generates a `review-package` (forked from vendored `subagent-driven-development`) and passes its path in the prompt so reviewers read one file instead of running their own diff.
+`implementation-worker` returns one of four `PHASE_RESULT` values — `DONE`, `DONE_WITH_CONCERNS`, `NEEDS_CONTEXT`, `BLOCKED` — instead of the older 3-state `COMPLETED`/`BLOCKED`/`FAILED`; the orchestrator (Step O3) branches on each independently, escalating (context → model → decomposition → human) only for `BLOCKED`. Every subagent dispatch (`implementation-worker`, `phase-review`, `review-implementation`) carries an explicit `model=` sized per role — transcription-tier `haiku`/standard `sonnet`/most-capable `opus` for the worker (by phase `Risk:` and code completeness), diff-scaled for `phase-review`, always `opus` for the final `review-implementation` gate. On Codex, translate those Claude tiers to `gpt-5.6-luna`/`medium`, `gpt-5.6-luna`/`high`, and `gpt-5.6-terra`/`high` respectively; use Sol/high for the final implementation gate, reserve `xhigh` for explicit escalation, and do not silently use `gpt-5.5`. Progress is durable across three files: the phase file (full spec), `implementation-context.md` (narrow handoff), and a git-anchored `progress.md` ledger (one line per phase, `Faza N: complete (commits base7..head7, review clean)`) that Step O1 treats as authoritative on resume over the human-facing status table. Before dispatching each `phase-review`/`review-implementation` call, the orchestrator generates a `review-package` (forked from vendored `subagent-driven-development`) and passes its path in the prompt so reviewers read one file instead of running their own diff.
 
 ### Cross-artifact Audit: `analyze`
 
@@ -184,8 +199,8 @@ runs tests, measures coverage, edits code, or acts as a mandatory pipeline gate.
 deliberate: `review`/`triada-review` assess branch quality, while `analyze` checks
 AC→task→code traceability.
 
-- Public forms: `@qa-review`, `@qa-review feature [artifact]`, and
-  `@qa-review codebase [path]`. Feature mode with no changes and no scope-defining artifact stops
+- Public forms: `qa-review`, `qa-review feature [artifact]`, and
+  `qa-review codebase [path]`. Feature mode with no changes and no scope-defining artifact stops
   without a report and never widens to codebase mode.
 - Completed audits create one immutable
   `absolutpowers/reviews/qa-review-{scope}-YYYY-MM-DD-HHmmss.md` with verdict
@@ -214,7 +229,7 @@ test, and operability debt, then creates one immutable prioritized backlog repor
 (an active defect). It never executes code, edits files, makes unverified dependency freshness or
 security claims, or implements recommendations.
 
-- Public forms: `@tech-debt`, `@tech-debt codebase`, and `@tech-debt path/to/module`.
+- Public forms: `tech-debt`, `tech-debt codebase`, and `tech-debt path/to/module`.
 - Findings use an evidence anchor, ongoing cost, impact, confidence, bounded effort, and the
   smallest safe next step; they route to `FEATURE_DISCUSS`, `GENERATE_TASKS`, `DEBUG`, or `WATCH`.
 - For independent areas, Claude dispatches `agents/tech-debt-auditor.md`; Codex, Pi, and Grok

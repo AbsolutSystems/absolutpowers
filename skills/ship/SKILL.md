@@ -195,7 +195,7 @@ cichej archiwizacji: żaden `mv`/`git mv` nie wykonuje się przed tą akceptacj�
 
 Stan terminalny tego skilla: lokalny commit domykający feature (message + artefakty zarchiwizowane do `archives/{slug}/`), gotowy opis PR w bloku do skopiowania.
 
-`ship` jest **mechanicznym closeoutem PO `review`**, nie ogniwem łańcucha gate'ów — NIE wskazuje kolejnego `@skilla`. Za nim zostają już tylko ruchy użytkownika poza tym skillem: `git push` i merge/otwarcie PR (ship nie pushuje i nie tworzy PR z własnej inicjatywy). To realny, końcowy punkt pipeline po stronie narzędzia — dalej decyduje człowiek.
+`ship` jest **mechanicznym closeoutem PO `review`**, nie ogniwem łańcucha gate'ów — NIE wskazuje kolejnego skilla. Za nim zostają już tylko ruchy użytkownika poza tym skillem: `git push` i merge/otwarcie PR (ship nie pushuje i nie tworzy PR z własnej inicjatywy). To realny, końcowy punkt pipeline po stronie narzędzia — dalej decyduje człowiek.
 
 Jeśli działasz pod `/goal` typu „dowieziony feature": właściwym punktem, w którym cel może być uznany za osiągnięty, jest czysty `review` + merge (patrz `review` → Terminal state). `ship` domyka stronę commitową między nimi; sam commit lokalny to jeszcze nie zmergowany feature.
 

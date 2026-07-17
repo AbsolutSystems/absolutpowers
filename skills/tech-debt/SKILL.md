@@ -42,9 +42,9 @@ debt backlog, not a branch review, a bug hunt, a security audit, or implementati
 Accepted forms:
 
 ```text
-@tech-debt
-@tech-debt codebase
-@tech-debt path/to/module
+tech-debt
+tech-debt codebase
+tech-debt path/to/module
 ```
 
 Empty arguments and `codebase` audit the whole project. A path is repository-relative and
@@ -73,7 +73,7 @@ Look for evidence in these categories:
 5. `reliability` — fragile error handling, retries/time/state assumptions, resource lifecycle, or
    observability gaps that make failures costly to diagnose. Route an immediate defect to `debug`.
 6. `test-debt` — a concrete difficult-to-change behavior whose test seam is absent or misleading.
-   Keep this high-level; route a deep test-value assessment to `@qa-review`.
+   Keep this high-level; route a deep test-value assessment to `qa-review`.
 7. `dependency-or-operability` — obsolete-looking compatibility shims, unowned configuration,
    manual runbooks, or dependency sprawl with static evidence of cost. Do not make freshness or
    vulnerability claims without verified external evidence.
@@ -174,4 +174,4 @@ Return the report path, verdict, counts by priority/category, and the recommende
 
 The terminal state is a single immutable technical-debt backlog report, or a clear no-report stop
 for invalid scope. `tech-debt` is on-demand and read-only. Select an item, then invoke
-`@feature-discuss`, `@generate-tasks`, or `@debug` as routed; do not implement from this audit.
+`feature-discuss`, `generate-tasks`, or `debug` as routed; do not implement from this audit.

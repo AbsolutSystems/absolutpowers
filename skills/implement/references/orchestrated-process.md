@@ -80,6 +80,15 @@ For the pending phase, spawn `implementation-worker`. Use the **exact** parent t
 > Codex: patrz `references/codex-tools.md` — dispatch generic przez `spawn_agent` z ciałem `agents/implementation-worker.md`, lub sekwencyjnie inline w tej sesji; nie literalny `Agent(subagent_type=...)`.
 > Grok: patrz `references/grok-tools.md` — `spawn_subagent` (general-purpose) + ciało `agents/implementation-worker.md`, lub inline; nie literalny `Agent(...)`.
 
+**Codex model translation:** the Claude tier names in the routing table above are not
+Codex model IDs. For Codex, `haiku` maps to `gpt-5.6-luna` + `reasoning_effort="medium"`,
+`sonnet` maps to `gpt-5.6-luna` + `reasoning_effort="high"`, and `opus` maps to
+`gpt-5.6-terra` + `reasoning_effort="high"`. Pass both overrides to `spawn_agent`; do not
+let an orchestrated worker inherit the session model. For `phase-review`, choose Luna/high
+for routine diffs or Terra/high for subtle diffs; `review-implementation` uses Sol/high.
+Reserve `xhigh` for an explicit escalation when the failure cost justifies the additional
+reasoning-token usage. Do not route to `gpt-5.5` unless the user explicitly requests it.
+
 If Risk is `high`:
 ```
 Agent(subagent_type="implementation-worker", model="opus", prompt="Implement this orchestrated phase. Parent tasks file: {parent-tasks-path}. Phase file: {phase-File-path-from-Phase-Overview}. Validate Context Contract Requires before starting. Follow the phase Write Scope, update only the phase file and implementation-context.md, run phase verification, and return PHASE_RESULT with contract check.")

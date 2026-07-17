@@ -9,6 +9,49 @@
 Skills speak in actions ("dispatch a subagent", "invoke a review gate", "run an
 orchestrated phase", "read a file"). On Codex these resolve to the primitives below.
 
+## Skill command syntax on Codex
+
+When a skill asks for a next-step command, Codex must render it as
+`$absolutpowers skill-name [args]`. Do not emit Claude's `/absolutpowers:skill-name`
+syntax and never emit the legacy `@skill-name` form. In shared skill prose, bare names such
+as `implement` or `review` identify the skill; this mapping supplies the executable prefix.
+
+## Codex model routing
+
+The shared implementation process names Claude tiers (`haiku`, `sonnet`, `opus`) so the
+Claude-only agent manifests remain readable. Those names must not be passed to Codex and
+must not be left to session inheritance for an orchestrated implementation. Translate them
+to explicit Codex overrides when calling `spawn_agent`:
+
+| Shared role/tier | Codex `model` | Codex `reasoning_effort` | Use |
+| --- | --- | --- | --- |
+| transcription / `haiku` | `gpt-5.6-luna` | `medium` | complete, mechanical phase file |
+| standard / `sonnet` | `gpt-5.6-luna` | `high` | normal integration and multi-file work |
+| most-capable / `opus` | `gpt-5.6-terra` | `high` | high-risk implementation work |
+
+For `phase-review`, use `gpt-5.6-luna` with `high` for a small or routine diff and
+`gpt-5.6-terra` with `high` for security, concurrency, migration, or otherwise subtle work.
+The final `review-implementation` gate uses `gpt-5.6-sol` with `high`; reserve `xhigh` for an
+explicit escalation when the failure cost justifies the additional reasoning-token usage.
+
+Pass these as `model=...` and `reasoning_effort=...` on `spawn_agent`. Do not silently fall
+back to `gpt-5.5`; use the `5.6` family unless the user explicitly pins another model. If the
+current Codex surface does not accept model overrides, report the inherited
+model and reasoning level instead of claiming that the requested routing was applied.
+
+The `model: sonnet` frontmatter in `agents/*.md` is Claude-only metadata. When passing one
+of those prompt bodies to a Codex generic worker, ignore that field and use the explicit
+Codex override. The shape is:
+
+```text
+spawn_agent(
+  agent_type="worker",
+  model="gpt-5.6-luna",
+  reasoning_effort="high",
+  message="<agents/implementation-worker.md body>\n\n<phase handoff>"
+)
+```
+
 **No `Agent(subagent_type=...)` on Codex.** `Agent(subagent_type="review-tasks", ...)`,
 `Agent(subagent_type="implementation-worker", ...)`, etc. are a **Claude Code plugin
 primitive**: they resolve a registered agent type from `agents/*.md`. Codex has **no

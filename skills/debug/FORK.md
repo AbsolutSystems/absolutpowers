@@ -21,4 +21,5 @@ after AbsolutPowers edits — do not bulk-overwrite from vendor without review.
 
 ## Session bootstrap
 
-`hooks/session-context.md` auto-triggers **`@debug` only** (not the vendored name).
+`hooks/session-context.md` auto-triggers **`debug` only** (not the vendored name); render its
+executable command using the active harness syntax.
