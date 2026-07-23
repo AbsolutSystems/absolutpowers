@@ -320,7 +320,7 @@ checkpoint is `pending-human-review` or `changes-requested`.
 - In orchestrated mode, let workers update CLAUDE.md, AGENTS.md, or create ADRs — the orchestrator handles this in Step O5.5
 - In orchestrated mode, reconstruct phase paths from a template instead of using the `**File:**` fields — this breaks epic-nested task sets
 - Start a later phase while the current phase is rejected, blocked, or unverified
-- Implement beyond task scope
+- Implement beyond task scope (except a strictly trivial one-liner under the Boy-scout rule below)
 - Leave task as pending if completed
 - Report overall completion if the final build/verification task failed or was skipped
 - Proceed to next task if current one fails
@@ -353,6 +353,27 @@ Do not implement the alternative without confirmation.
 
 ---
 
+## Boy-scout rule
+
+Leave touched code better than you found it. When you incidentally hit a problem outside the
+current task scope (a bug, dead code, a broken convention, a failing/compilation error):
+
+- **Strictly trivial one-liner** — a typo, a missing or dead import, an obvious null-check: one
+  line, no semantic risk, in a file you are already editing → fix it inline and note it in the
+  task's completion output. Do not ask first.
+- **Anything larger** → do NOT fix silently and do NOT stay quiet. Name the finding
+  (`file:line`, what is wrong) and ask the user whether to fix it, expand scope, or log a
+  follow-up. Proceed on the current task while waiting only if it is independent.
+
+Never sign off with "did my part, the errors aren't mine". Separate "my scope is clean" from "I
+see a separate issue X — fix it?". Silence about a real adjacent problem is a defect.
+
+Mode note: in **single-file** mode you are the executor and ask the user inline as above. In
+**orchestrated** mode workers run headless and cannot ask — they log larger findings to
+`scout-findings.md` and the orchestrator reviews them once at Step O5.7 (see
+`references/orchestrated-process.md`), routing a separate concern to its own `feature-discuss`
+rather than folding it into the current change.
+
 ## Error Handling
 
 If you encounter a blocker:
@@ -362,9 +383,11 @@ If you encounter a blocker:
 
 If tests fail after implementation:
 1. Analyze failure reason
-2. Fix the implementation
-3. Re-run tests
-4. Only mark completed when tests pass
+2. Determine ownership: did **this change** cause the failure, or is it pre-existing / unrelated?
+3. **Own failures** → fix the implementation, re-run tests, mark completed only when green.
+4. **Pre-existing / unrelated failures** → report them separately (`file:line`, symptom); a
+   strictly trivial one-liner you may fix inline (Boy-scout rule), otherwise ask the user
+   whether to fix. Never report your work as "done, but there are errors — not mine".
 
 ---
 
@@ -384,6 +407,7 @@ Completed Task [N]: [Title]
 - Verification commands: [executed/not applicable/failed]
 - CLAUDE.md / AGENTS.md: [updated + synced/no changes needed]
 - Memory: [no durable lesson/candidate created at .../promoted to project-memory]
+- Scout: [none / fixed trivial one-liner at file:line / found file:line — awaiting user decision]
 ```
 
 When all tasks are complete (Step 7B), include the AC Fulfillment section if ACs were found:

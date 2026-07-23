@@ -85,6 +85,7 @@ Output:
 - `./absolutpowers/feature/tasks-{slug}/implementation-context.md` - concise shared handoff between phase workers
 - `./absolutpowers/feature/tasks-{slug}/NN-{phase-slug}.md` - phase files
 - `./absolutpowers/feature/tasks-{slug}/99-final-verification.md` - final verification phase
+- `./absolutpowers/feature/tasks-{slug}/scout-findings.md` - Boy-scout findings ledger; not created here, workers append it at runtime and `implement` reviews it at Step O5.7
 
 For orchestrated mode, group work into phases of 1-3 tightly related tasks. Each phase must have a narrow Read Scope, Write Scope, Phase Verification, and Completion Criteria. Prefer a module/layer write scope, but keep the phase small enough for one fresh worker subagent.
 
