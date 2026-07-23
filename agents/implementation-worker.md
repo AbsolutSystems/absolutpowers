@@ -46,6 +46,18 @@ Use the shared implementation context as a handoff, not as proof. Verify current
 - Do not run `review-implementation`.
 - Do not implement future phases.
 - Do not add broad refactors or cleanup unrelated to the assigned phase.
+- Boy-scout rule: if you incidentally hit an out-of-scope problem in a file you already touch, a
+  strictly trivial one-liner (typo, missing/dead import, obvious null-check — one line, no
+  semantic risk) you may fix inline and list under `Files changed`. You run headless and cannot
+  ask the user, so for anything larger do NOT expand scope: **append** the finding to
+  `scout-findings.md` (beside `progress.md` / `implementation-context.md`; create the file if
+  missing) as one line — `- [Faza N | file:line] symptom — suggested route (follow-up /
+  feature-discuss / debug)` — AND mirror it under `Notes for orchestrator`, then return
+  `DONE_WITH_CONCERNS`. The orchestrator reviews the file at Step O5.7. Never leave a real
+  adjacent problem unreported.
+- When phase verification surfaces a build/test failure, separate whether **this phase** caused it
+  from a pre-existing/unrelated failure, and say which in `Notes for orchestrator` — do not report
+  it as simply "not mine".
 - Do not modify the `## Context Contract -> Requires` section of the phase file. It is read-only, set at planning time.
 
 ## Process

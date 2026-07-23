@@ -19,6 +19,18 @@ Orchestrated runs must survive context compaction and interrupted sessions. Thre
 | Phase file (`NN-{slug}.md`) | Full spec + code for one phase | Complete task detail |
 | `implementation-context.md` | Narrow cross-phase handoff | ≤10 lines per phase |
 | `progress.md` (the ledger) | Git-anchored recovery map | 1 line per phase |
+| `scout-findings.md` | Boy-scout findings ledger | 1 line per finding (created on first append) |
+
+**`scout-findings.md`** sits beside `progress.md` (same directory). Workers run headless and
+cannot ask the user, so any out-of-scope finding they cannot fix as a trivial one-liner is
+**appended** here (create the file on the first finding) and mirrored under `Notes for
+orchestrator`. It is a tracked artifact — it must survive compaction and resume. One line per
+finding:
+```
+- [Faza N | file:line] symptom — suggested route (inline fix / follow-up / feature-discuss / debug)
+```
+The orchestrator reads it once at Step O5.7 and routes with the user; it never blocks the current
+work's final gate.
 
 **Path:** `progress.md` sits beside the phase directory, at the same level as `implementation-context.md` — for a normal feature `./absolutpowers/feature/tasks-{slug}/progress.md`, for an epic phase `./absolutpowers/feature/{epic-slug}/tasks-{slug}/progress.md` (see Path Resolution). This is the absolutpowers convention, NOT `.superpowers/sdd/`.
 
@@ -117,6 +129,7 @@ Read the worker result and inspect:
 - relevant git diff
 - reported verification commands
 - contract check (all Requires satisfied, all Provides fulfilled)
+- any Boy-scout finding: confirm the worker appended it to `scout-findings.md`; if a `Notes for orchestrator` finding is missing from the file, append it yourself. Do not act on findings mid-run — they are collected for Step O5.7.
 
 Handle each of the four `PHASE_RESULT` values on its own path — never fall back to one shared "stop and report" branch:
 
@@ -184,6 +197,23 @@ After all phases and final verification pass, the orchestrator runs Steps 4-6 on
 - Step 6: Review all completed phases for memory candidates. Propose inline if found.
 
 Workers never execute Steps 4-6.
+
+### Step O5.7: Review Scout Findings (Orchestrator Only)
+
+Read `scout-findings.md` (beside `progress.md`). If it is absent or empty, skip this step
+silently. If it has entries, they are out-of-scope problems the workers surfaced but did not fix —
+present the consolidated list to the user once and route each, do NOT silently swallow or
+auto-fix:
+
+- **Trivial one-liner** still open → offer to fix inline now.
+- **Larger, but within this feature's spirit** → propose `generate-tasks` (fix tasks) or a direct fix with approval.
+- **A separate concern / its own scope** → propose a separate `feature-discuss` (emit the full native command per `references/harness-command-contract.md`); do not fold it into the current change.
+- **A latent bug needing root cause** → propose `debug`.
+- The user may also defer (keep as a logged follow-up) or dismiss.
+
+Mark each finding's disposition in `scout-findings.md` (e.g. `→ fixed`, `→ feature-discuss`,
+`→ deferred`, `→ dismissed`) so a resumed session does not re-surface it. This step never blocks
+Step O6: findings are separate scope from the current work's review gate.
 
 ### Step O6: Final Review Gate
 

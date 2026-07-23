@@ -287,8 +287,11 @@ Do NOT implement the fix inline. Stop here and let the pipeline take over.
 2. **Implement Single Fix**
    - Address the root cause identified
    - ONE change at a time
-   - No "while I'm here" improvements
    - No bundled refactoring
+   - Boy-scout rule for anything you spot nearby: a strictly trivial one-liner (typo,
+     missing/dead import, obvious null-check — one line, no semantic risk) fix inline and note
+     it; anything larger, name it (`file:line`, what is wrong) and ask the user whether to fix
+     rather than silently patching or staying quiet. Keep it out of the root-cause fix itself.
 
 3. **Verify Fix**
    - Test passes now?
