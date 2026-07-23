@@ -231,7 +231,10 @@ Accepted
 ### Step 6: Project Memory Candidate (if applicable)
 Follow `references/project-memory.md`. After all tasks/verification: no durable lesson → silent;
 simple → inline ask + promote; complex → candidate file then promote. Source:
-`implement / tasks-{slug}.md (Task N)`.
+`implement / tasks-{slug}.md (Task N)`. First apply **Scope routing**: a package-local trap goes
+to that package's `CLAUDE.md` → `## Gotchas` (synced to `AGENTS.md` in the Step 4 pass, creating
+`{package}/CLAUDE.md` if absent), NOT to global `project-memory.md`; only cross-cutting lessons go
+global. State the destination when asking for approval.
 
 ### Step 7: Continue or Stop
 - If there are more pending tasks: proceed to next pending task (go to **Step 2** — skip Steps 4-6 until all tasks are done).

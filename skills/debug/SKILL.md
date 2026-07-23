@@ -396,7 +396,9 @@ Available in this directory:
 ## Memory Capture at the End
 
 Follow `references/project-memory.md`. If a durable lesson was found: write candidate
-and ask about promotion; if none, do nothing.
+and ask about promotion; if none, do nothing. Apply **Scope routing** first — a package-local
+trap is promoted to that package's `CLAUDE.md` → `## Gotchas` (+ `AGENTS.md` mirror), not to
+global `project-memory.md`; state the destination when asking.
 
 ## Terminal state
 
