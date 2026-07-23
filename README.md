@@ -451,7 +451,9 @@ Learned skills are project-local callable procedures extracted by `try-learn-ski
 
 Skills discover durable lessons (recurring traps, non-obvious workarounds, failure patterns) and capture them as candidates in `absolutpowers/memory-candidates/`. Promotion to `absolutpowers/project-memory.md` requires your explicit approval; the candidate is then deleted. One-off notes, branch status, and facts that belong in `patterns.md`/`rules.md`/ADRs do **not** belong in project memory.
 
-Formats, promotion rules, and "write the lesson generally" guidance are shared in **`references/project-memory.md`** (used by `debug`, `review`, `implement`, `problem-discuss`) so skills do not drift.
+Scope routing keeps root context clean: a **package-local** trap is promoted to that package's `CLAUDE.md` under a `## Gotchas` section (mirrored to `AGENTS.md`, creating the file if absent) so it surfaces only when the AI works in that package, while only **cross-cutting** lessons go to the global `project-memory.md`.
+
+Formats, promotion rules, scope routing, and "write the lesson generally" guidance are shared in **`references/project-memory.md`** (used by `debug`, `review`, `implement`, `problem-discuss`) so skills do not drift.
 
 ### PreBoot skill
 
@@ -633,6 +635,7 @@ Versioning is SemVer, kept in sync across all manifests
 - Dropped the "did my part, the errors aren't mine" sign-off: `implement`/worker now separate own vs pre-existing build/test failures and offer to fix
 - Added `scout-findings.md`, a tracked orchestrated ledger: headless workers append out-of-scope findings, and the orchestrator reviews them once at new **Step O5.7**, routing each (inline fix / `generate-tasks` / a separate `feature-discuss` / `debug` / defer / dismiss) without folding a separate concern into the current change
 - Applies to `feature-discuss` (planning), `implement` + `implementation-worker`, and `debug`; `review` stays read-only
+- Project-memory scope routing: a package-local trap is promoted to that package's `CLAUDE.md` `## Gotchas` section (mirrored to `AGENTS.md`, created if absent) instead of the global `project-memory.md`, keeping root context clean; only cross-cutting lessons go global
 - Version **5.7.0** across all plugin manifests
 
 ### 5.6.4 — Native command handoff contract

@@ -8,8 +8,39 @@ do not reinvent formats per skill.
 
 | Artifact | Path |
 |----------|------|
-| Permanent memory | `./absolutpowers/project-memory.md` |
+| Permanent memory (cross-cutting) | `./absolutpowers/project-memory.md` |
+| Package-local trap | `{package}/CLAUDE.md` → `## Gotchas` (+ `AGENTS.md` mirror) |
 | Candidate (complex) | `./absolutpowers/memory-candidates/memory-candidates-YYYY-MM-DD-{slug}.md` |
+
+## Scope routing — package-local vs global (decide BEFORE writing)
+
+Global `project-memory.md` is loaded as root context. Do not clutter it with facts that only
+matter inside one package. Before creating or promoting, classify the lesson's scope:
+
+- **Package-local** — the trap only matters when working inside one package/module. Destination:
+  that package's `CLAUDE.md`, under a dedicated `## Gotchas` section (compact format below), then
+  refresh the sibling `AGENTS.md` mirror. Do **NOT** also add it to global `project-memory.md`.
+  This surfaces the trap only when the AI enters that package and keeps root context clean.
+  - If the package has no `CLAUDE.md`, create `{package}/CLAUDE.md` (+ `AGENTS.md`) to host it.
+    Creation is still gated by the same promotion approval.
+- **Cross-cutting / root** — spans multiple packages, or has no single package owner. Destination:
+  global `./absolutpowers/project-memory.md` (permanent-entry format below).
+
+**Decision test:** "Would someone need this only when editing files under package P?" → package-local.
+"Does it warn across modules or at the repo level?" → global. When genuinely unsure, prefer
+package-local (cheaper to promote later than to unclutter root).
+
+Package-local `## Gotchas` entry is a living-doc note, not a status-tracked record — keep it compact
+and edit in place (no `Added`/`Last verified`/`Status` churn):
+
+```markdown
+## Gotchas
+
+### Short title of the trap
+- Warning signs: ...
+- Example: `path/to/file` — what goes wrong
+- Resolution / workaround: ...
+```
 
 ## When reading
 
@@ -126,6 +157,7 @@ Candidate — YYYY-MM-DD
 ## Promotion rules
 
 - Promotion requires **explicit user approval**
+- Route first (see **Scope routing**): a package-local trap is promoted to `{package}/CLAUDE.md` → `## Gotchas` (+ `AGENTS.md` mirror), never to global `project-memory.md`; only cross-cutting/root lessons go global. State the proposed destination when asking for approval.
 - Prefer updating an existing matching entry over duplicating
 - When promoting: set `Added`, `Source`, `Last verified`, `Status: active`
 - If conflicting with an existing active entry: mark the old one
