@@ -288,6 +288,7 @@ Do NOT implement the fix inline. Stop here and let the pipeline take over.
    - Address the root cause identified
    - ONE change at a time
    - No bundled refactoring
+   - Identify code in comments by symbol name, not line number — see `references/code-reference-style.md`.
    - Boy-scout rule for anything you spot nearby: a strictly trivial one-liner (typo,
      missing/dead import, obvious null-check — one line, no semantic risk) fix inline and note
      it; anything larger, name it (`file:line`, what is wrong) and ask the user whether to fix

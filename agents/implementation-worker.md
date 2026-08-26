@@ -55,6 +55,9 @@ together.
 
 Use the shared implementation context as a handoff, not as proof. Verify current code when exact behavior matters.
 
+Before writing code or updating `implementation-context.md`, read `references/code-reference-style.md`
+once: identify code by symbol name in both comments and the handoff file, never by line number.
+
 ## Scope Rules
 
 - Implement only tasks from the assigned phase file.

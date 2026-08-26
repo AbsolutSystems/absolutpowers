@@ -296,6 +296,7 @@ The final verification phase file `99-final-verification.md` must contain the sa
 - Exact method signatures with types
 - Exact exception/error types to use
 - Reference files for patterns: "follow pattern in X"
+- Identify code by symbol name (class/method/field/constant), not line number — see `references/code-reference-style.md`.
 - `**Example:**` shows real code, a concrete signature, or an actual configuration snippet — never a sketch, ellipsis, or placeholder (see `## No Placeholders` below); the signature shown must be consistent with the task's own `**Produces:**`/`**Consumes:**` fields. Note: code in the plan is unverified — the planner does not run it — it is a signature contract for the implementer, not a pre-tested implementation.
 
 **What to include:**

@@ -163,6 +163,7 @@ For the task:
    - Marker absent (older tasks doc) → decide yourself using the legacy rule: test-first for business logic, transformations, validation, pure functions; skip for configuration, simple wiring, scaffolding.
    - When a test covers a traced AC, embed the literal `AC-N` token in the test name / display name (e.g. `shouldRejectEmptyQuery_AC4`, `@DisplayName("rejects empty query [AC-4]")`) — the AC fulfillment check greps for these tokens.
    - Deviating from the marker is allowed ONLY with a reason recorded in **Implementation decisions / remarks** (e.g. "Test-first skipped: scaffold must exist before the test harness compiles"). A silent deviation is a review blocker.
+   - Identify code by symbol name in comments and in any handoff artifact you fill during this task (remarks, ADR, `implementation-context.md`) — never by line number; see `references/code-reference-style.md`.
 
 3. **Verify completion**
    - All files created/modified as specified

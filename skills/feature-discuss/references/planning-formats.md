@@ -2,6 +2,9 @@
 
 _Extracted from `feature-discuss`. **Read this file** before writing planning / epic main / phase docs._
 
+> Identify code by symbol name (class/method/field/constant) in every section below, not by line
+> number — see `references/code-reference-style.md`.
+
 ## Format: standardowy planning doc
 
 ```markdown
