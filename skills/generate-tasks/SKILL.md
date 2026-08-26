@@ -427,7 +427,7 @@ Agent(subagent_type="review-tasks", prompt="Re-review tasks document: ./absolutp
 
 **Jeśli VERDICT: REJECTED (2. raz — czyli w werdykcie są pozycje NOT-FIXED lub `[NEW]` blockery):**
 - Pokaż użytkownikowi: "Review odrzucił taski po raz drugi (NOT-FIXED / nowe blockery). Opcje: (a) popraw ponownie, (b) override review i kontynuuj, (c) zatrzymaj się i zbadaj ręcznie."
-- Jeśli (a): popraw i uruchom `review-tasks` ostatni raz
+- Jeśli (a): popraw i uruchom `review-tasks` ostatni raz, tym samym re-dispatchem jak w rundzie 1. raz (`Previous verdict:` / `Applied fixes:` z szablonu wyżej) — zaktualizowanym do werdyktu i poprawek z TEJ rundy, nie z pierwszej
 - Jeśli (b): kontynuuj jak przy PASS, dodaj notatkę `**Review override:** [data]` w nagłówku tasks doc
 - Jeśli (c): zatrzymaj się
 

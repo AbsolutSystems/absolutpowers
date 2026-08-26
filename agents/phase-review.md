@@ -72,6 +72,19 @@ Issues to address:
 
 Categories: SCOPE, COMPLETENESS, TESTS, HANDOFF, CONTRACT, CORRECTNESS, GARBAGE, RULES
 
+## Re-review Protocol (2nd+ iteration)
+
+If the invocation prompt includes a previous verdict and the list of applied fixes, you are
+re-reviewing — do NOT review from scratch:
+1. FIRST account for every previously reported issue, one line each:
+   `#N: FIXED` or `#N: NOT-FIXED — [what is still missing]`.
+2. Only AFTER that, report new findings, each explicitly marked `[NEW]`. If a `[NEW]` issue was
+   plainly discoverable in the previous pass, add one clause explaining why it surfaces only now.
+3. The verdict follows exclusively from NOT-FIXED issues and `[NEW]` issues.
+
+This is the convergence contract: the author must be able to reach PASS by fixing the
+reported list — never by chasing a fresh top-list each iteration.
+
 ## Rules
 
 - Be strict about Write Scope violations and failed or missing phase verification.

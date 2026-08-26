@@ -290,6 +290,7 @@ Agent(subagent_type="review-implementation", prompt="Re-review implementation fo
 
 **Jeśli VERDICT: REJECTED (2. raz — pozycje NOT-FIXED lub `[NEW]` blockery):**
 - Pokaż: "Review odrzucił implementację po raz drugi (NOT-FIXED / nowe blockery). Opcje: (a) popraw ponownie, (b) override review i kontynuuj, (c) zatrzymaj się i zbadaj ręcznie."
+- Jeśli (a): popraw i uruchom `review-implementation` ponownie tym samym re-dispatchem jak w rundzie 1. raz (`Previous verdict:` / `Applied fixes:` z szablonu wyżej) — zaktualizowanym do werdyktu i poprawek z TEJ rundy, nie z pierwszej
 - Jeśli (b): kontynuuj jak przy PASS, dodaj notatkę `**Review override:** [data]` w tasks doc
 
 **Jeśli VERDICT: REJECTED (3. raz):**

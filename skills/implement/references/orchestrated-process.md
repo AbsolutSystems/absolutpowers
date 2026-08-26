@@ -173,10 +173,15 @@ If `VERDICT: PASS`:
 
 If `VERDICT: REJECTED` (1st time):
 - send the issues back to `implementation-worker` for the same phase, or spawn a fix worker
-- rerun `phase-review`
+- regenerate the review package to cover the fix commits, then rerun `phase-review` PASSING the previous verdict and the fix list, so the gate accounts for old issues (FIXED/NOT-FIXED) and marks genuinely new findings `[NEW]`:
+
+```
+Agent(subagent_type="phase-review", model="<scaled-to-diff>", prompt="Re-review completed orchestrated phase. Parent tasks file: {parent-tasks-path}. Phase file: {phase-File-path-from-Phase-Overview}. Shared context: {shared-implementation-context-path}. Review package: {review-package-path}. Previous verdict:\n{full previous verdict}\nApplied fixes:\n{issue #N → what changed}")
+```
 
 If `VERDICT: REJECTED` (2nd time with similar issues):
 - show user: "Phase review rejected for the 2nd time with similar issues. Options: (a) attempt fix again, (b) override phase review and proceed to next phase, (c) stop and investigate manually."
+- If (a): regenerate the review package to cover the fix commits and rerun `phase-review` with the same re-dispatch shape as the 1st-time template above, updated to this round's verdict and fixes, not the first round's.
 
 If `VERDICT: REJECTED` (3rd time):
 - show remaining issues, same options (a/b/c)
@@ -249,6 +254,6 @@ If `VERDICT: REJECTED` (1st time): fix every `[BLOCKER]` issue (fix `[WARN]` onl
 Agent(subagent_type="review-implementation", model="opus", prompt="Re-review implementation for tasks: {parent-tasks-path}. Previous verdict:\n{full previous verdict}\nApplied fixes:\n{issue #N → what changed}\nReview package: {review-package-path}.")
 ```
 
-If `VERDICT: REJECTED` (2nd time — NOT-FIXED items or `[NEW]` blockers remain): show user options — (a) attempt fix again, (b) override review and proceed, (c) stop and investigate manually.
+If `VERDICT: REJECTED` (2nd time — NOT-FIXED items or `[NEW]` blockers remain): show user options — (a) attempt fix again, (b) override review and proceed, (c) stop and investigate manually. If (a): regenerate the review package to cover the fix commits and rerun `review-implementation` with the same re-dispatch shape as the 1st-time template above (`Previous verdict:` / `Applied fixes:`), updated to this round's verdict and fixes, not the first round's.
 
 If `VERDICT: REJECTED` (3rd time): show remaining issues, same options (a/b/c).
