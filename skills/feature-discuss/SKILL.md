@@ -499,7 +499,9 @@ W Trybie B po PASS **zaktualizuj status fazy w `planning-main.md`** (`Do zaplano
 
 Gdy raport powstał, poinformuj: "Faza {N} zaplanowana i zweryfikowana. Raport: `docs/onboarding/{nazwa}-YYYY-MM-DD.html`. Następny krok: wypisz jedną pełną natywną komendę `generate-tasks` na `{ścieżka phase doc}` zgodnie z `references/harness-command-contract.md` lub zaplanuj kolejną fazę." Bez raportu pomiń zdanie i link o raporcie, zachowując ten sam następny krok.
 
-Dla standardowego feature'a poinformuj o review PASS, warunkowo o utworzonym Explain i zawsze wypisz jedną pełną komendę `generate-tasks` w składni aktywnego harnessu. Nie zastępuj jej opisem i nie używaj prefiksu `@`; stosuj `references/harness-command-contract.md`.
+Dla standardowego feature'a przekaż wynik review PASS (wg zasady relay niżej), warunkowo poinformuj o utworzonym Explain i zawsze wypisz jedną pełną komendę `generate-tasks` w składni aktywnego harnessu. Nie zastępuj jej opisem i nie używaj prefiksu `@`; stosuj `references/harness-command-contract.md`.
+
+**Relay PASS bramki (obie ścieżki):** gdy werdykt nie ma sekcji `Warnings (non-blocking):`, część komunikatu informująca o werdykcie to jedna linia — `review-plan: PASS, warnings: 0` — bez streszczania tego, co bramka sprawdzała; resztę komunikatu (raport/Explain, następny krok) zachowaj jak wyżej. Gdy sekcja `Warnings (non-blocking):` jest obecna, wypisz ją użytkownikowi w całości — to samo dotyczy PASS osiągniętego po rundach REJECTED (patrz niżej) — PASS z warningami to miejsce, gdzie realny problem chowa się za zielonym werdyktem.
 
 **Jeśli VERDICT: REJECTED:**
 - Napraw WYŁĄCZNIE pozycje `[BLOCKER]` (adresując każdą). Pozycje `[WARN]` pokaż użytkownikowi — popraw, jeśli poprawka jest tania, ale nie blokuj na nich pętli.

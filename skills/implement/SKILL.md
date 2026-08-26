@@ -273,8 +273,12 @@ Po zakończeniu WSZYSTKICH tasków (włącznie z final verification), uruchom su
 Agent(subagent_type="review-implementation", prompt="Review implementation for tasks: {parent-tasks-path}")
 ```
 
-**Jeśli VERDICT: PASS:**
+**Jeśli VERDICT: PASS, bez sekcji `Warnings (non-blocking):`:**
+- Jedna linia: `review-implementation: PASS, warnings: 0 → Decision Review.` Nic więcej — zielony werdykt bez warningów nie wymaga streszczenia tego, co bramka sprawdzała.
+
+**Jeśli VERDICT: PASS z sekcją `Warnings (non-blocking):`:**
 - Raportuj completion summary użytkownikowi
+- Wypisz warningi z werdyktu — PASS z warningami to miejsce, gdzie realny problem chowa się za zielonym werdyktem
 - Implementacja gotowa
 
 **Jeśli VERDICT: REJECTED (1. raz):**

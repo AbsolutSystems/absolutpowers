@@ -408,12 +408,13 @@ Agent(subagent_type="review-tasks", prompt="Review tasks document: ./absolutpowe
 
 > Jeśli taski pochodzą z fazy epica: podaj pełną ścieżkę w podfolderze (`./absolutpowers/feature/{epic-slug}/tasks-{slug}.md`) i dodaj do promptu notkę: "This is one phase of an epic — cross-phase dependencies are declared in the phase Context Contract (Requires) and in the exact parent planning document recorded as `Epic context`; treat them as a contract, not as missing context." Dzięki temu review nie odrzuci planu za artefakty, które dostarczą wcześniejsze fazy.
 
-**Jeśli VERDICT: PASS:**
-- Poinformuj użytkownika: "Taski przeszły review. Następny krok:" i wypisz jedną pełną, copy-paste'owalną komendę `implement` z `absolutpowers/feature/tasks-{slug}.md` w składni aktywnego harnessu, zgodnie z `references/harness-command-contract.md`. Nie zastępuj komendy opisem i nie używaj prefiksu `@`.
-- (OPCJONALNIE, bez bramki) Możesz też wypisać jedną pełną natywną komendę `analyze {slug}`
-  zgodnie z `references/harness-command-contract.md` jako audyt spójności AC→task(→kod) przed
-  `implement` — weryfikuje, czy wszystkie AC mają pokrycie w taskach. Nie jest wymagany;
-  `implement` jest głównym następnym krokiem.
+**W obu przypadkach PASS poniżej (niezależnie od warningów, OPCJONALNIE, bez bramki):** możesz też wypisać jedną pełną natywną komendę `analyze {slug}` zgodnie z `references/harness-command-contract.md` jako audyt spójności AC→task(→kod) przed `implement` — weryfikuje, czy wszystkie AC mają pokrycie w taskach. Nie jest wymagany; `implement` jest głównym następnym krokiem.
+
+**Jeśli VERDICT: PASS, bez sekcji `Warnings (non-blocking):`:**
+- Jedna linia: `review-tasks: PASS, warnings: 0. Następny krok:` i wypisz jedną pełną, copy-paste'owalną komendę `implement` z `absolutpowers/feature/tasks-{slug}.md` w składni aktywnego harnessu, zgodnie z `references/harness-command-contract.md`. Nie zastępuj komendy opisem i nie używaj prefiksu `@`. Nic więcej — bez streszczania tego, co bramka sprawdzała.
+
+**Jeśli VERDICT: PASS z sekcją `Warnings (non-blocking):`:**
+- Poinformuj użytkownika: "Taski przeszły review." i wypisz warningi z werdyktu — PASS z warningami to miejsce, gdzie realny problem chowa się za zielonym werdyktem — potem "Następny krok:" i tę samą komendę `implement` jak wyżej.
 
 **Jeśli VERDICT: REJECTED (1. raz):**
 - Wyświetl użytkownikowi listę problemów z review

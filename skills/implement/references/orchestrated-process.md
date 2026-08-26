@@ -235,7 +235,13 @@ Agent(subagent_type="review-implementation", model="opus", prompt="Review implem
 > Codex: patrz `references/codex-tools.md` — dispatch generic z ciałem `agents/review-implementation.md`, lub review inline z advisory verdictem; nie literalny `Agent(subagent_type=...)`.
 > Grok: patrz `references/grok-tools.md` — `spawn_subagent` + ciało `agents/review-implementation.md`, lub inline advisory; nie literalny `Agent(...)`.
 
-If `VERDICT: PASS`, report completion.
+If `VERDICT: PASS` with no `Warnings (non-blocking):` section: one line —
+`review-implementation: PASS, warnings: 0` — then report completion, nothing else; a clean
+verdict does not need the checks it ran restated.
+
+If `VERDICT: PASS` with a `Warnings (non-blocking):` section: report completion in full and
+print the warnings — a PASS with warnings is exactly where a real finding hides behind a green
+verdict.
 
 If `VERDICT: REJECTED` (1st time): fix every `[BLOCKER]` issue (fix `[WARN]` only when cheap — warns never gate), rerun final verification if affected, regenerate the review package to cover the fix commits, then rerun `review-implementation` (`model="opus"`) PASSING the previous verdict and the fix list, so the gate accounts for old issues (FIXED/NOT-FIXED) and marks genuinely new findings `[NEW]`:
 
