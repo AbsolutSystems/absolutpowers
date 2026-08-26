@@ -143,6 +143,7 @@ reported list — never by chasing a fresh top-list each iteration.
 
 - Review ALL changed files, not just the ones listed in tasks.
 - If you run build or test commands yourself to verify completeness or test coverage, do not pipe the output through `tail`, `head`, or `grep`; redirect to a file and read it if it is long, or let it through unfiltered. Piping strips gradle's `actionable tasks: X executed, Y up-to-date, Z from-cache` summary and the `BUILD SUCCESSFUL in Xm Ys` line, so a cache replay is indistinguishable from a real run.
+- The same applies when your own re-run is killed by the shell tool's timeout before printing either `BUILD SUCCESSFUL` or `BUILD FAILED`: that is inconclusive, not a `[BLOCKER]` TESTS or COMPLETENESS finding. Narrow the scope and retry before concluding failure; if nothing finishes, report the check as inconclusive rather than as a failure the build never reported.
 - Be strict on safety issues — these are always blocking.
 - Be strict on correctness — bugs in new code are blocking.
 - Be lenient on minor style deviations that don't affect behavior.

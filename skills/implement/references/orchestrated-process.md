@@ -146,6 +146,17 @@ Handle each of the four `PHASE_RESULT` values on its own path — never fall bac
 
   Never ignore an escalation and never force the same model to retry without changing the input.
 
+  **Exception — `BLOCKED` because verification never produced a result.** If the worker reports
+  `Tests run: ... -> timeout`, the ladder above does not apply: all four rungs diagnose a defect in
+  the task (context gap, reasoning difficulty, size, plan quality), and a shell-tool timeout is none
+  of those. Rung 2 is actively wrong — a stronger model does not make a build finish faster, it just
+  burns another dispatch into the same wall. Instead: (i) rerun the worker's narrowest scoped target
+  in the background and read its completion before recording any verdict; (ii) if it is still
+  unresolved, split the **verification scope** further, which is a different operation from rung 3's
+  decomposition of implementation tasks; (iii) if no scoped or backgrounded run can produce a result,
+  escalate to the user to decide whether to verify out of band. This is an environment limit, not
+  evidence that the plan is wrong.
+
 ### Step O4: Run Phase Review
 
 After a worker reports `DONE`, generate the review package before dispatching `phase-review` — do not let the reviewer run its own `git diff`:
