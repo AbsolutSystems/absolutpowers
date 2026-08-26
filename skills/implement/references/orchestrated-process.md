@@ -185,6 +185,7 @@ If `VERDICT: REJECTED` (3rd time):
 
 When all implementation phases are completed, execute the final verification phase (the Final Verification `**File:**` recorded in the main tasks file, e.g. `99-final-verification.md`) in the current orchestrator session:
 - run the exact final verification commands listed in that phase file
+- do not pipe a command's output through `tail`, `head`, or `grep`; redirect to a file and read it if it is long, or let it through unfiltered — piping deletes gradle's `actionable tasks: X executed, Y up-to-date, Z from-cache` summary and the `BUILD SUCCESSFUL in Xm Ys` line, so a cache replay becomes indistinguishable from a real run
 - update that final verification file
 - update the Final Verification status in the parent main tasks file
 - do not continue if any required command fails

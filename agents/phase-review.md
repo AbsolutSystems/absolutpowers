@@ -76,6 +76,7 @@ Categories: SCOPE, COMPLETENESS, TESTS, HANDOFF, CONTRACT, CORRECTNESS, GARBAGE,
 
 - Be strict about Write Scope violations and failed or missing phase verification.
 - Be strict about missing handoff facts when later phases depend on them.
+- If you run build or test commands yourself to verify TESTS, do not pipe the output through `tail`, `head`, or `grep`; redirect to a file and read it if it is long, or let it through unfiltered. Piping strips gradle's `actionable tasks: X executed, Y up-to-date, Z from-cache` summary and the `BUILD SUCCESSFUL in Xm Ys` line, so a cache replay cannot be told apart from a real run.
 - Do not reject for minor wording differences in Markdown.
 - Every rejection reason must be specific and actionable.
 - Maximum 7 issues per review. If more exist, list the 7 most important.

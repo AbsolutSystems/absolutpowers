@@ -65,7 +65,7 @@ Use the shared implementation context as a handoff, not as proof. Verify current
 1. Read the phase requirements, tests, Write Scope, Phase Verification, and Completion Criteria.
 2. Before touching code for a task, set its status in the phase file from `pending` to `in-progress` (interruption marker for a future session). If a task is already `in-progress` at start, a previous worker died mid-task — compare its `Create:`/`Modify:` lists against repo state and report to the orchestrator instead of implementing blindly.
 3. Implement with TDD where useful for business logic, validation, transformations, or pure functions.
-4. Run the phase verification commands.
+4. Run the phase verification commands. Do not pipe the output through `tail`, `head`, or `grep` — redirect to a file and read it if the output is long, or let it through unfiltered. Piping deletes gradle's `actionable tasks: X executed, Y up-to-date, Z from-cache` summary and the `BUILD SUCCESSFUL in Xm Ys` line, so a cache replay becomes indistinguishable from a real run.
 5. Update task statuses inside the phase file from `in-progress` to `completed` only after verification passes.
 6. Fill `Implementation Decisions / Remarks` in the phase file with concise implementation notes.
 7. Update `implementation-context.md` with only durable handoff facts needed by later phases.
