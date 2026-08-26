@@ -401,17 +401,44 @@ When starting a task, briefly state:
 Starting Task [N]: [Title]
 ```
 
-When completing a task, briefly state:
+When completing a task in the **routine case** — verification passed or not applicable, changed
+files at or under the declared Write Scope, worker status `DONE`, no open scout finding — state a
+fixed receipt of at most four lines:
 ```
 Completed Task [N]: [Title]
-- Created: [files]
-- Modified: [files]
-- Tests: [pass/fail status]
-- Verification commands: [executed/not applicable/failed]
-- CLAUDE.md / AGENTS.md: [updated + synced/no changes needed]
-- Memory: [no durable lesson/candidate created at .../promoted to project-memory]
-- Scout: [none / fixed trivial one-liner at file:line / found file:line — awaiting user decision]
+- files changed <N> (Write Scope <M>)
+- verification: passed | failed | not applicable
+- scout: <file:line — finding> / memory candidate: <path or one-liner>
 ```
+`<N>` is the actual number of files changed for this task; `<M>` is the size of the task's declared
+Write Scope (the `Create` + `Modify` file lists in single-file mode, or the phase's `Write Scope` in
+orchestrated mode). Print both numbers even when they match — the mismatch that matters must be
+visible without reading prose, not inferred from missing prose. In practice `failed` never appears on
+a printed receipt: the escape below intercepts a failed verification before the receipt is chosen,
+but the value stays part of the line's contract.
+
+The fourth line is a marker, not a status update: print it only when a scout finding or a memory
+candidate is non-empty for this task — combine both onto the one line with `; ` if both apply. When
+both are empty, omit the line entirely; silence is the saving. Either one being non-empty must produce
+the line, because both route to a human decision later (scout findings at Step O5.7, memory
+candidates through the memory flow).
+
+**Escape — full narration, not the receipt.** The receipt is for the routine case only. Fall back to
+the full narration it replaces (Created / Modified / Tests / Verification commands / CLAUDE.md-AGENTS.md
+sync / Memory / Scout — one line each, as before) whenever any of the following holds:
+- verification failed;
+- the changed files exceed the declared Write Scope;
+- the worker returned `DONE_WITH_CONCERNS` or `BLOCKED`;
+- a scout finding is still open (not yet routed by the user, e.g. before Step O5.7).
+
+This is a rule, not a suggestion: narration is how a human catches an orchestrator's own error, so it
+is cut only where nothing is wrong.
+
+Mode note: `worker status DONE`, `DONE_WITH_CONCERNS`/`BLOCKED` and the Step O5.7 example above are
+orchestrated-mode vocabulary — single-file mode has no worker and uses `pending`/`in-progress`/`completed`.
+In single-file mode the routine case and the escape are decided by the remaining conditions alone:
+verification status, changed files against the declared `Create` + `Modify` lists, and whether a scout
+finding is still open.
 
 When all tasks are complete (Step 7B), include the AC Fulfillment section if ACs were found:
 ```
