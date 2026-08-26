@@ -20,10 +20,11 @@ Skills speak in actions ("dispatch a subagent", "invoke a review gate", "create 
 ## Triada review on Pi
 
 `triada-review` is a shared skill. If `pi-subagents` is installed, dispatch the active
-roles as independent generic agents (parallel when supported), feeding each the full body
-of its matching `agents/{name}.md` prompt plus the package context prepared by the skill.
-Without a subagent extension, run the perspectives inline and label the result
-`advisory (not fully isolated)`.
+roles as independent generic agents using its parallel workflow — issuing the role
+dispatches together rather than one at a time is what makes them run concurrently — feeding
+each the full body of its matching `agents/{name}.md` prompt plus the package context
+prepared by the skill. Without a parallel workflow, run the perspectives inline and label
+the result `advisory (not fully isolated)`.
 
 ## QA reviewer dispatch on Pi
 

@@ -200,8 +200,9 @@ Dla każdej paczki przygotuj mini-kontekst: nazwa, rola, lista plików, fragment
 ## KROK 3 — Deleguj do trzech agentów równolegle
 
 Każda paczka (lub cały diff w trybie pojedynczym) idzie do aktywnych ról. Każda ma
-**inny zakres** i nie wchodzi w cudzy. Dispatchuj role **równolegle**, jeśli harness
-to obsługuje, używając kontraktu dispatchu powyżej.
+**inny zakres** i nie wchodzi w cudzy. Dispatchuj role **równolegle**, konkretnym
+mechanizmem aktywnego harnessu z sekcji „Kontrakt dispatchu per harness" — fallback dla
+harnessu bez takiego mechanizmu jest opisany w tej samej sekcji.
 
 ### Co przekazać każdemu agentowi
 
