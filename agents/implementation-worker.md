@@ -33,7 +33,25 @@ Before editing code, read:
 3. The shared `implementation-context.md` referenced by the phase.
 4. The `## Context Contract -> Requires` section of the assigned phase file. Verify each Requires item against `implementation-context.md` and the current codebase. If ANY Requires item is not satisfied, return `PHASE_RESULT: NEEDS_CONTEXT` immediately with the list of unsatisfied items. Do not attempt partial implementation.
 5. `./absolutpowers/patterns.md`, `./absolutpowers/rules.md`, and `./absolutpowers/project-memory.md` if they exist. When reading `project-memory.md`, use only entries with `Status: active` as implementation hints. Ignore entries with `Status: superseded` or `Status: archived`.
-6. Only the project files needed by the phase Read Scope and requirements.
+6. Only the project files needed by the phase Read Scope and requirements. The Read Scope is an enumerated list of paths, known before you start reading.
+
+These reads take two messages, not six. Batch the paths you already have, issuing their `Read`
+calls in the same assistant message:
+
+- **First message:** items 1, 2 and 5. The dispatch prompt carries the parent tasks path and the
+  phase file path; item 5's three paths are a fixed project convention.
+- **Second message:** item 3 plus the whole Read Scope of item 6. Item 3's path arrives with the
+  first message — item 1's `**Shared implementation context:**` field, or item 2's
+  `## Shared Context` section.
+
+Evaluate item 4's Requires check after the second message resolves. A phase that turns out
+blocked will have read its Read Scope for nothing; that is the accepted trade for not spending a
+third message on every phase that is fine.
+
+Batching applies only to paths you already have. Where the next path depends on a previous
+result — chasing an import, or grepping to find out what to read at all — keep one call at a
+time. Several concrete paths that a single `Grep` already surfaced are known paths: read those
+together.
 
 Use the shared implementation context as a handoff, not as proof. Verify current code when exact behavior matters.
 
