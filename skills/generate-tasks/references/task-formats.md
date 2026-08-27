@@ -161,6 +161,17 @@ orchestrated
 - Each phase file contains a Context Contract. Workers validate Requires before starting; `phase-review` checks Provides on completion.
 ```
 
+**Field ownership — ordering vs. contract:** `Depends on` in `## Phase Overview` is the single
+source of truth for phase ordering — the phase's own declared dependency rationale. It is audited,
+not executed: the orchestrator itself sequences phases purely by `## Phase Overview` file order and
+phase status (see `skills/implement/references/orchestrated-process.md`, Step O1's "first pending
+phase"), and never consults `Depends on` at dispatch time. `Context Contract -> Requires` in the
+phase file is a readiness contract for the worker — concrete artifacts that must exist before the
+phase starts — and must never be read for ordering. The two must stay consistent: every phase that
+a `Requires` item's artifact directly comes from must also appear in that phase's `Depends on`.
+`review-tasks` is where this consistency is checked (see its Ordering & Dependencies criterion); a
+phase file itself does not reconcile a disagreement.
+
 Each phase file must follow this structure:
 
 ```markdown
@@ -179,8 +190,8 @@ Read before starting:
 ## Context Contract
 
 ### Requires (from previous phases)
-- [concrete item: file path, symbol, or `implementation-context.md` section that must exist before this phase starts]
-- [for Phase 1: "None (first phase)."]
+- [concrete item: file path, symbol, or `implementation-context.md` section that must exist before this phase starts — an artifact, never a phase number or "Phase N provides..." narration; ordering belongs to `Depends on`, not here]
+- [when this phase has no prerequisites: exactly `None.` — see the no-prerequisites rule below]
 
 ### Provides (for later phases)
 - [concrete item this phase commits to producing]
@@ -227,6 +238,20 @@ Run:
 ```
 
 Each Requires item must reference a concrete file, symbol, or `implementation-context.md` section — not vague descriptions. Each Provides item must be verifiable: a file path, a symbol name, or a specific section in `implementation-context.md`.
+
+**No-prerequisites wording:** when a phase has no prerequisites, `Requires` must read exactly
+`None.` — no parenthetical, no cross-reference, and never a phase mention such as "None
+(independent of Phase 1)." A reader or tool mining this field for dependency edges finds a phase
+number inside a sentence asserting there is none, and wrongly turns it into an edge.
+
+**Cross-document Requires:** when a `Requires` item is satisfied by a phase in a *different* tasks
+document (e.g. a phase belonging to another epic or another feature's tasks set), mark it external
+using the same labeled-path convention as `Epic context` above (an explicit label plus the exact
+path, never synthesized) — prefix the item with `External:` and the exact path to that document:
+`External: ./absolutpowers/feature/{other-slug}/tasks-{other-slug}/09-{phase-slug}.md — Phase 9
+provides [artifact].` Never phrase a cross-document dependency as a bare "Phase N"; without the
+`External:` marker it reads as a local edge in THIS document's phase graph and can fabricate a
+cycle where none exists.
 
 **Produces/Consumes ↔ Context Contract aggregation rule:** task-level `**Produces:**`/`**Consumes:**` and phase-level `Context Contract → Provides` are two levels of one mechanism, not a duplication. Phase `Provides` = the union of task `Produces` entries that cross the phase boundary (a later phase needs them) — nothing else. Do NOT repeat within-phase: when a `Produces` signature is consumed by another task inside the SAME phase, it stays in that task's `Consumes` field only and is never promoted to phase `Provides`. In `single-file` mode there are no phases: `Produces`/`Consumes` work task↔task with no rollup — do not look for a phase `Provides` section in single-file output. `Produces`/`Consumes` signatures are a separate field from the `AC-N` tokens embedded in test names (see AC Traceability above) — the two do not collide and both apply independently to the same task.
 
