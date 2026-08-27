@@ -27,12 +27,18 @@ writing that reference — never carried forward from an earlier draft.
 
 **Reviews, findings, and reports are a third zone this rule does not touch**: `file:line` keeps
 working there exactly as today. The dividing line between zone 2 and zone 3 is not an artifact's
-label ("audit", "report") but its lifecycle: a point-in-time record that a later run of the same
-kind replaces wholesale (a new timestamped review, audit, or debt report) is zone 3 even when it
-carries verification markers; a document with a standing identity that is regenerated or updated
-in place and consulted afterward as the current map of the code — a module architecture doc's
-`zweryfikowane`/`wnioskowane` markers included — is zone 2. Do not assume otherwise from the two
-zones above — see the full explanation and file list at the end of this document.
+label ("audit", "report") or how it gets superseded — that is at most a hint, and it points the
+wrong way for a report that reuses its filename. What decides is the artifact's role **when it is
+read**: consulted afterward as the current map of the code — navigated after further edits, expected
+to still describe the code as-is (a module architecture doc's `zweryfikowane`/`wnioskowane` markers
+included, an ADR read later as the binding reason the current design is the way it is) — is zone 2.
+Read once to route a decision and then superseded, archived, or otherwise consumed, never navigated
+as a map again — whether by overwriting the same path, versioning a new suffix, or dispositioning
+entries in place — is zone 3, whatever its path or lifespan. Either zone's document may carry an
+evidence/provenance trailer of what the author actually looked at (`file:line` is legitimate there,
+even inside a zone-2 document); the instructional body a reader executes later against
+by-then-changed code stays symbol-only. Do not assume otherwise from the two zones above — see the
+full explanation and file list at the end of this document.
 
 ## Rule 2 — a doc comment should not restate the signature
 
@@ -47,6 +53,6 @@ comment that actually carries information.
 Reviews, review findings, audit/QA/tech-debt/debug reports, and commit messages keep using
 `file:line` exactly as today — see `agents/review-implementation.md`, `agents/phase-review.md`,
 `skills/debug/SKILL.md`, `skills/qa-review/`, `skills/tech-debt/SKILL.md`, `skills/analyze/SKILL.md`,
-and `skills/try-learn-skill/SKILL.md`. Those are records of what was true at the moment of writing —
-a reviewer citing `file:line` is being precise about what they looked at, not building a map for
-someone else to navigate the codebase by later. Nothing here changes that convention.
+and, for the evidence trailer of its generated output, `skills/try-learn-skill/SKILL.md`. The
+criterion above is why: they are read to route a decision, not navigated as a map afterward. Nothing
+here changes that convention.

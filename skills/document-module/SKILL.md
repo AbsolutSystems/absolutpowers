@@ -70,11 +70,14 @@ Jeśli zakres pusty / moduł nie istnieje → zaraportuj i zakończ BEZ zapisu.
 Read/Grep/Glob po module. Skanuj kod, nie zgaduj z nazw. Wyciągnij:
 
 - **Publiczne API / powierzchnia** — eksporty, publiczne klasy/metody, endpointy (HTTP/RPC),
-  zdarzenia publikowane/konsumowane. Notuj nazwę symbolu i plik, bez numeru linii.
+  zdarzenia publikowane/konsumowane. Notuj nazwę symbolu i plik (bez numeru linii); przy
+  „zweryfikowane" dodaj dosłowny cytat sygnatury/deklaracji (patrz KROK 3).
 - **Komponenty wewnętrzne** — główne klasy/serwisy/warstwy modułu + ich odpowiedzialności.
 - **Zależności in/out:**
   - **Out** (moduł zależy od) — importy modułu na zewnątrz (inne moduły, biblioteki, bazy, serwisy).
-  - **In** (zależą od modułu) — kto importuje/woła moduł (`grep` po nazwie modułu/eksportach w repo).
+  - **In** (zależą od modułu) — kto importuje/woła moduł (`grep` po nazwie modułu/eksportach w
+    repo). Zapisz użyty wzorzec(-ce) grepa w `in-grep` w `doc-meta` (KROK 5) — inaczej dwie uczciwe
+    próby powtórzenia grepa mogą się nie zgodzić bez żadnej zmiany w kodzie.
 - **Persystencja / integracje zewnętrzne** — bazy, kolejki, zewnętrzne API, pliki.
 - **Kluczowe operacje / przepływy** — 1–3 najważniejsze ścieżki (np. „logowanie", „wystawienie faktury")
   od wejścia do efektu.
@@ -83,12 +86,46 @@ Read/Grep/Glob po module. Skanuj kod, nie zgaduj z nazw. Wyciągnij:
 
 Reguła naczelna (jak w `explain`): przy każdej istotnej relacji czytelnik musi wiedzieć, czy to
 fakt z kodu czy wniosek.
-- **Zweryfikowane** — „widać w kodzie" na commicie `last-commit` (SHA w `doc-meta`, KROK 5):
-  identyfikuj symbolem (klasa/metoda/endpoint/zdarzenie) i plikiem, nie numerem linii — świeżość
-  większości docu sprawdzasz jednym `git diff <last-commit>..HEAD -- <ścieżka modułu>`, nie
-  per-kotwica. Wyjątek: sekcja „In" w Zależnościach pochodzi z grepu PO CAŁYM repo (KROK 2) — ten
-  diff jej nie pokrywa, jej świeżość wymaga powtórzenia tego grepu.
+- **Zweryfikowane** — przy każdym takim claimie podaj symbol (klasa/metoda/endpoint/zdarzenie),
+  plik i — jeśli claim jest deklaracją (zakres niżej) — **dosłowny cytat** tej deklaracji
+  (sygnatury, route'a) dokładnie tak, jak brzmi w kodzie (cytat, nie parafraza; nadal bez numeru
+  linii). To dowód, którego nie da się wyprodukować bez przeczytania kodu i który czytelnik może
+  sfalsyfikować, otwierając wskazany plik — sama nazwa symbolu czy trafienie ścieżki pliku (np. z
+  Grepa w trybie domyślnym, bez tekstu dopasowanej linii) do tego nie wystarczy.
+  - **Cytat czytasz z pliku źródłowego**, nigdy z `CLAUDE.md`/`AGENTS.md`, `docs/`, changeloga
+    czy wygenerowanego klienta API. Tam też są sygnatury i route'y (moduł często ma je wypisane
+    we własnym `CLAUDE.md`, ze stemplem świeżości starszym niż kod), więc cytat z dokumentacji
+    wygląda identycznie jak cytat z kodu, a nie dowodzi niczego o kodzie — opisuje jakąś przeszłą
+    chwilę. Sygnatura znana tylko z dokumentacji → **wnioskowane**. `CLAUDE.md` z KROKU 1 wyznacza
+    granicę modułu; claimów nie dowodzi.
+  - Symbol bez nazwy (np. lambda) → identyfikuj przez najbliższego nazwanego przodka, np. „lambda
+    mapująca wiersz wewnątrz `findLookupByUserId`".
+  - Przed zacytowaniem symbolu potwierdź, że jego nazwa jest unikalna w pliku — bliskie sobie nazwy
+    (`RoutingAssignment` / `RegionalRoutingAssignmentVO` / `RoutingLookupEntry`) łatwo pomylić, a
+    pomyłka po cichu podstawia jeden realny symbol pod inny, zamiast się głośno wysypać.
+  - **Zakres cytatu:** cytujesz tam, gdzie claim JEST deklaracją — publiczna powierzchnia (eksport,
+    endpoint z route'em, sygnatura metody, typ zdarzenia), schemat persystencji, zestaw ról w
+    guardzie. Claim o relacji, przepływie albo odpowiedzialności komponentu nie ma jednej
+    deklaracji do zacytowania: tam „zweryfikowane" znaczy nazwanie symboli w łańcuchu (kto woła
+    kogo, co publikuje/konsumuje), nie cytat udający dowód. Nie cytuj w węzłach diagramów ani
+    per-konsument w liście „In" (tę odtwarza `in-grep`) — cytat, którego nie da się sfalsyfikować
+    otwarciem jednego pliku, jest balastem, nie dowodem.
 - **Wnioskowane** — „zakładam", „prawdopodobnie". Oznacz wprost, NIE podawaj jako fakt.
+
+**Świeżość:** `last-commit` (SHA w `doc-meta`, KROK 5) datuje skan — nie jest dowodem per-claimu
+(tym jest cytat wyżej). Sprawdzasz ją jednym `git diff <last-commit>..HEAD -- <ścieżki>`, gdzie
+`<ścieżki>` to KOMPLET ścieżek, które dokument cytuje jako źródło, nie tylko ścieżka modułu.
+Żeby ten zakres dał się wyprowadzić z samego dokumentu, **każdy claim oparty na pliku spoza
+ścieżki modułu musi mieć ten plik wpisany w `Mapa plików`** — inaczej diff jest po cichu niepełny.
+Dotyczy to m.in. definicji access-guarda (zestaw ról w `@PreAuthorize` bywa w `infrastructure/`),
+specu ArchUnit pilnującego odstępstwa (leży w katalogu testów innego modułu) i efektu przepływu
+z sekcji „Kluczowe operacje", jeśli ląduje w cudzym module. Wtedy zakres diffa czytasz mechanicznie
+z `Mapa plików`, bez listy wyjątkowych ścieżek do pamiętania.
+
+Jednego claimu nie pokryje żaden diff po ścieżkach: sekcji **„In"** w Zależnościach. Nowy konsument
+to plik, którego dokument nie wymienia, więc jego dodanie nie rusza ani jednej cytowanej ścieżki —
+diff wychodzi pusty, a lista jest już nieaktualna. Świeżość tej sekcji sprawdzasz, powtarzając
+`in-grep` z `doc-meta` (KROK 2), nie diffem.
 
 Przekonująco brzmiąca konfabulacja architektury jest gorsza niż luka. Czego nie ustaliłeś z kodu →
 oznacz jako założenie, nie wpisuj jako pewnik do diagramu.
@@ -113,8 +150,9 @@ jako pusty prostokąt. **Fallback:** gdy `C4*` syntax ryzykowny/nie waliduje —
 
 Zapisz `docs/modules/{slug}-architecture.md` wg szablonu niżej. Utwórz `docs/modules/` jeśli brak.
 Stempluj `doc-meta` w ciele (nie frontmatter): `last-updated` (dzisiejsza data), `last-commit`
-(`git rev-parse --short HEAD`), `source: code-scan`. Krzyżowy link do `docs/modules/{slug}.md`
-(proza z `document-feature`), jeśli istnieje.
+(`git rev-parse --short HEAD`), `source: code-scan`, `in-grep` (dosłowny wzorzec/wzorce grepa
+użyte dla sekcji „In" w Zależnościach, KROK 2 — żeby sprawdzenie dało się powtórzyć, nie odtworzyć
+z pamięci). Krzyżowy link do `docs/modules/{slug}.md` (proza z `document-feature`), jeśli istnieje.
 
 ## KROK 6: Zapis HTML (REGENEROWALNY)
 
@@ -124,6 +162,8 @@ Zapisz `docs/architecture/{slug}.html`. Utwórz `docs/architecture/` jeśli brak
   + `mermaid.initialize({startOnLoad:true})`. Te same diagramy co w markdown.
 - Czysty CSS inline, karty sekcji, `prefers-color-scheme` (jasny i ciemny), max-width ~900px.
 - Spis treści z kotwicami; legenda zweryfikowane vs wnioskowane (badge/kolor, konsekwentnie).
+  HTML prezentuje te same claimy co markdown i dziedziczy jego styl cytowania („zweryfikowane" =
+  symbol + plik + dosłowny cytat, KROK 3) — nie wprowadza własnego (np. `file:line`).
 - Stopka: data generowania, moduł, `last-commit`.
 - Język: polski.
 - **NADPISUJ** istniejący plik (≠ `explain` z sufiksem `-v2`). HTML to regenerowalny artefakt
@@ -140,6 +180,7 @@ Zapisz `docs/architecture/{slug}.html`. Utwórz `docs/architecture/` jeśli brak
 last-updated: YYYY-MM-DD
 last-commit: <sha>
 source: code-scan
+in-grep: <wzorzec(e) grepa użyte dla sekcji "In" w Zależnościach>
 -->
 
 ## Przegląd i granice
@@ -170,7 +211,9 @@ sequenceDiagram
 \`\`\`
 
 ## Publiczne API / kontrakty
-[Eksporty, endpointy, sygnatury — identyfikuj symbolem i plikiem, bez numeru linii. Oznacz zweryfikowane vs wnioskowane]
+[Eksporty, endpointy, sygnatury — identyfikuj symbolem i plikiem, bez numeru linii; przy
+„zweryfikowane" cytuj sygnaturę/route/deklarację dosłownie z kodu (KROK 3). Oznacz zweryfikowane
+vs wnioskowane]
 
 ## Zależności
 - **Out** (moduł zależy od): ...
@@ -178,6 +221,8 @@ sequenceDiagram
 
 ## Mapa plików
 - `ścieżka` — [rola]
+[Pliki modułu ORAZ każdy plik spoza ścieżki modułu, na którym opiera się jakiś claim — to z tej
+listy wyprowadza się zakres diffa świeżości (KROK 3).]
 
 ## Pułapki / na co uważać
 [Przy rozbudowie]
@@ -187,7 +232,8 @@ sequenceDiagram
 
 ### Reguła: `doc-meta` w CIELE, nie we frontmatter
 `doc-meta` MUSI być komentarzem HTML w ciele docu (zaraz pod nagłówkiem), jednolicie z
-`document-feature`/`try-learn-skill`. Pola: `last-updated`, `last-commit`, `source: code-scan`.
+`document-feature`/`try-learn-skill`. Pola: `last-updated`, `last-commit`, `source: code-scan`,
+`in-grep`.
 
 ### Uwaga parity (Codex)
 ### Uwaga harness
@@ -202,6 +248,8 @@ Jedno drzewo skilli (od 5.0.0). Pola `allowed-tools`/`argument-hint` są Claude-
 - **Źródło = skan kodu**, nie planning/diff (to `document-feature`).
 - **Jednostka = MODUŁ.** Jeden moduł na wywołanie (kilka → pętla).
 - **Audytowalność**: zweryfikowane vs wnioskowane, konsekwentnie.
+- **Odniesienia do kodu**: symbol + plik, nigdy numer linii — wspólna konwencja pipeline'u,
+  `references/code-reference-style.md` (ten dokument to jej druga strefa).
 - **C1–C3 + flow**; C4 code-level pomijamy (gnije, duplikuje kod).
 - **Write tylko do `docs/modules/` i `docs/architecture/`** target-projektu, NIE do repo AbsolutPowers.
 - **Brak materiału / pusty moduł → zakończ czysto** bez tworzenia plików.
