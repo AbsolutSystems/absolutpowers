@@ -70,7 +70,7 @@ Jeśli zakres pusty / moduł nie istnieje → zaraportuj i zakończ BEZ zapisu.
 Read/Grep/Glob po module. Skanuj kod, nie zgaduj z nazw. Wyciągnij:
 
 - **Publiczne API / powierzchnia** — eksporty, publiczne klasy/metody, endpointy (HTTP/RPC),
-  zdarzenia publikowane/konsumowane. Notuj `file:line`.
+  zdarzenia publikowane/konsumowane. Notuj nazwę symbolu i plik, bez numeru linii.
 - **Komponenty wewnętrzne** — główne klasy/serwisy/warstwy modułu + ich odpowiedzialności.
 - **Zależności in/out:**
   - **Out** (moduł zależy od) — importy modułu na zewnątrz (inne moduły, biblioteki, bazy, serwisy).
@@ -83,7 +83,11 @@ Read/Grep/Glob po module. Skanuj kod, nie zgaduj z nazw. Wyciągnij:
 
 Reguła naczelna (jak w `explain`): przy każdej istotnej relacji czytelnik musi wiedzieć, czy to
 fakt z kodu czy wniosek.
-- **Zweryfikowane** — „widać w kodzie", `file:line`.
+- **Zweryfikowane** — „widać w kodzie" na commicie `last-commit` (SHA w `doc-meta`, KROK 5):
+  identyfikuj symbolem (klasa/metoda/endpoint/zdarzenie) i plikiem, nie numerem linii — świeżość
+  większości docu sprawdzasz jednym `git diff <last-commit>..HEAD -- <ścieżka modułu>`, nie
+  per-kotwica. Wyjątek: sekcja „In" w Zależnościach pochodzi z grepu PO CAŁYM repo (KROK 2) — ten
+  diff jej nie pokrywa, jej świeżość wymaga powtórzenia tego grepu.
 - **Wnioskowane** — „zakładam", „prawdopodobnie". Oznacz wprost, NIE podawaj jako fakt.
 
 Przekonująco brzmiąca konfabulacja architektury jest gorsza niż luka. Czego nie ustaliłeś z kodu →
@@ -166,7 +170,7 @@ sequenceDiagram
 \`\`\`
 
 ## Publiczne API / kontrakty
-[Eksporty, endpointy, sygnatury — z `file:line`. Oznacz zweryfikowane vs wnioskowane]
+[Eksporty, endpointy, sygnatury — identyfikuj symbolem i plikiem, bez numeru linii. Oznacz zweryfikowane vs wnioskowane]
 
 ## Zależności
 - **Out** (moduł zależy od): ...

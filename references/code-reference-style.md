@@ -2,7 +2,7 @@
 
 **Read this file** before writing a comment or doc comment inside code, or before authoring/updating
 a handoff or planning artifact (planning doc, tasks doc, phase file, `implementation-context.md`,
-`progress.md`, ADR). Two related problems, governed as one rule.
+`progress.md`, ADR, module architecture doc). Two related problems, governed as one rule.
 
 ## Why
 
@@ -18,15 +18,21 @@ drifted.
 method, function, field, or constant by name — `// see calculateTotal()`, not `// see line 214`.
 
 **In handoff and planning artifacts** (planning docs, tasks docs, phase files,
-`implementation-context.md`, `progress.md`, ADRs): identify code by symbol name for the same
-reason — these are read again later, after further edits, as a map of where things are. A line
+`implementation-context.md`, `progress.md`, ADRs, module architecture docs from `document-module`):
+identify code by symbol name for the same reason — these are read again later, after further edits,
+as a map of where things are. A line
 number is permitted only when the referenced thing genuinely has no name (a specific line inside a
 long literal, a migration body, a config block), and then only measured fresh at the moment of
 writing that reference — never carried forward from an earlier draft.
 
 **Reviews, findings, and reports are a third zone this rule does not touch**: `file:line` keeps
-working there exactly as today. Do not assume otherwise from the two zones above — see the full
-explanation and file list at the end of this document.
+working there exactly as today. The dividing line between zone 2 and zone 3 is not an artifact's
+label ("audit", "report") but its lifecycle: a point-in-time record that a later run of the same
+kind replaces wholesale (a new timestamped review, audit, or debt report) is zone 3 even when it
+carries verification markers; a document with a standing identity that is regenerated or updated
+in place and consulted afterward as the current map of the code — a module architecture doc's
+`zweryfikowane`/`wnioskowane` markers included — is zone 2. Do not assume otherwise from the two
+zones above — see the full explanation and file list at the end of this document.
 
 ## Rule 2 — a doc comment should not restate the signature
 
