@@ -57,6 +57,8 @@ Use the shared implementation context as a handoff, not as proof. Verify current
 
 Before writing code or updating `implementation-context.md`, read `references/code-reference-style.md`
 once: identify code by symbol name in both comments and the handoff file, never by line number.
+Before writing any doc comment, also read `references/doc-comment-style.md`: one sentence by
+default, more lines only for a named reason.
 
 ## Scope Rules
 

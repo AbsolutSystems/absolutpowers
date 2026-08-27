@@ -40,13 +40,9 @@ even inside a zone-2 document); the instructional body a reader executes later a
 by-then-changed code stays symbol-only. Do not assume otherwise from the two zones above — see the
 full explanation and file list at the end of this document.
 
-## Rule 2 — a doc comment should not restate the signature
-
-The signature already states the parameter names and the return type. A doc comment that only
-repeats them in prose adds nothing and is one more thing that can go stale. Say what the signature
-cannot express instead: invariants, units, ownership, failure modes, or why a surprising choice is
-that way. This is not license to skip documenting — it redirects effort toward the part of a doc
-comment that actually carries information.
+Doc comment *content* — what a doc comment should say, including the default one-sentence shape
+and its named escapes — is a separate concern, owned by `references/doc-comment-style.md`; read
+that file, not this one, before writing a doc comment.
 
 ## This does not narrow reviews, findings, reports, or commit messages
 

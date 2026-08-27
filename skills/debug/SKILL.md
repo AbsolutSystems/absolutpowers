@@ -289,6 +289,7 @@ Do NOT implement the fix inline. Stop here and let the pipeline take over.
    - ONE change at a time
    - No bundled refactoring
    - Identify code in comments by symbol name, not line number — see `references/code-reference-style.md`.
+   - Before writing a doc comment, see `references/doc-comment-style.md` — one sentence by default, more lines only for a named reason.
    - Boy-scout rule for anything you spot nearby: a strictly trivial one-liner (typo,
      missing/dead import, obvious null-check — one line, no semantic risk) fix inline and note
      it; anything larger, name it (`file:line`, what is wrong) and ask the user whether to fix

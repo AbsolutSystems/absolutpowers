@@ -135,6 +135,7 @@ Sprawdź CAŁY plik (nie tylko diff) dla każdego zmienionego pliku:
 - Zakomentowany kod (nie komentarze dokumentacyjne)
 - TODO/FIXME dodane przez agenta
 - Stare nazwy w komentarzach po refaktorze
+- Doc comment z dodatkowymi liniami, których treść nie wskazuje żadnego z powodów z `references/doc-comment-style.md` (invariant, jednostka, ownership, failure mode, thread-safety, zaskakująca decyzja, deprecation+migracja, cross-reference do współzmieniającego się kodu, wymóg operacyjny) — powód musi być widoczny w samym tekście, nie domyślony; a zwłaszcza opis krok-po-kroku ciała metody, który duplikuje kod
 - Puste bloki catch
 
 ---
