@@ -237,6 +237,13 @@ Run:
 - [to be completed after phase completion]
 ```
 
+**Choosing the `## Phase Verification` command:** read `references/test-scope-policy.md` before
+filling in `[focused command for this phase]` — it owns the change-kind → scope table and the
+run-the-full-unit-suite-twice rule; do not restate either here. Size the command to the change's
+blast radius — what else could break — not to the phase's size or its `**Risk:**` field. A phase
+whose verification should be the full unit suite is the exception the policy names, not the
+default; check it there before writing one in.
+
 Each Requires item must reference a concrete file, symbol, or `implementation-context.md` section — not vague descriptions. Each Provides item must be verifiable: a file path, a symbol name, or a specific section in `implementation-context.md`.
 
 **No-prerequisites wording:** when a phase has no prerequisites, `Requires` must read exactly
@@ -386,6 +393,7 @@ Run the project's final verification commands against the fully integrated chang
 
 **Requirements:**
 - Run backend build/test command: `[exact command from project]`
+- Run the integration/container test command: `[exact command from project]` — closing the branch for review is the one moment that requires the full integration suite alongside the full unit suite; record `not applicable` with a reason only if the project has none
 - Run frontend build/typecheck command: `[exact command from project]`
 - Run lint or formatter check command: `[exact command from project]`
 - If the project uses formatter gates such as `spotlessCheck`, run them here instead of inventing a generic formatting command
@@ -395,6 +403,7 @@ Run the project's final verification commands against the fully integrated chang
 
 **Tests:**
 - Backend build/test exits with code 0
+- Integration/container tests exit with code 0, or are recorded `not applicable` because the project has none
 - Frontend build/typecheck exits with code 0
 - Lint / formatter check exits with code 0
 - Every traced `AC-N` token found in test sources (grep hit per token; skip when the planning doc has no AC section)

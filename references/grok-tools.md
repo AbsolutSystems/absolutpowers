@@ -124,7 +124,8 @@ On Grok, translate each dispatch through the two-tier fallback:
   0. Mark `pending` → `in-progress` in the parent.
   1. Follow the Read/Write scope in the phase file.
   2. Implement only the declared work.
-  3. Run verification.
+  3. Run verification, scoped per `references/test-scope-policy.md`; on a timeout, follow the
+     ladder in `agents/implementation-worker.md`, Process step 4.
   4. Update status and remarks inside the phase file only.
   5. Compact-update `implementation-context.md` (≤10 lines added).
   6. Mark the phase `completed` in the parent.

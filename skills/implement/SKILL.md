@@ -167,6 +167,7 @@ For the task:
    - Before writing a doc comment, see `references/doc-comment-style.md` — one sentence by default, more lines only for a named reason.
 
 3. **Verify completion**
+   - Before running a test command, read `references/test-scope-policy.md` — it owns test scope and timing; report elapsed time beside the exit code
    - All files created/modified as specified
    - All requirements met
    - All tests written and passing

@@ -141,12 +141,20 @@ Handle each of the four `PHASE_RESULT` values on its own path — never fall bac
   `Tests run: ... -> timeout`, the ladder above does not apply: all four rungs diagnose a defect in
   the task (context gap, reasoning difficulty, size, plan quality), and a shell-tool timeout is none
   of those. Rung 2 is actively wrong — a stronger model does not make a build finish faster, it just
-  burns another dispatch into the same wall. Instead: (i) rerun the worker's narrowest scoped target
-  in the background and read its completion before recording any verdict; (ii) if it is still
-  unresolved, split the **verification scope** further, which is a different operation from rung 3's
-  decomposition of implementation tasks; (iii) if no scoped or backgrounded run can produce a result,
-  escalate to the user to decide whether to verify out of band. This is an environment limit, not
-  evidence that the plan is wrong.
+  burns another dispatch into the same wall. Instead, apply the same breadth gate the worker
+  applies (`agents/implementation-worker.md`, Process step 4): check this phase's change against
+  `references/test-scope-policy.md` — the full-unit-suite row of its `What to run` table, plus the
+  `Requires the full unit suite` closed list that names the cases the table row leaves implicit.
+  Either one is enough to make breadth mandatory. Then:
+  (i) rerun in the background — the worker's narrowest scoped target when breadth is not mandatory;
+  when breadth **is** mandatory, the same broad target, but only if the worker's report does not
+  already show a backgrounded broad rerun that failed to finish. If it does, that attempt is spent —
+  go straight to (iii). Read the completion of whatever you rerun before recording any verdict.
+  (ii) If it is still unresolved **and breadth is not mandatory**, split the **verification scope**
+  further, which is a different operation from rung 3's decomposition of implementation tasks —
+  when breadth is mandatory there is nothing to split, so go straight to (iii).
+  (iii) If no scoped or backgrounded run can produce a result, escalate to the user to decide
+  whether to verify out of band. This is an environment limit, not evidence that the plan is wrong.
 
 ### Step O4: Run Phase Review
 
@@ -192,6 +200,7 @@ If `VERDICT: REJECTED` (3rd time):
 
 When all implementation phases are completed, execute the final verification phase (the Final Verification `**File:**` recorded in the main tasks file, e.g. `99-final-verification.md`) in the current orchestrator session:
 - run the exact final verification commands listed in that phase file
+- read `references/test-scope-policy.md`: this final verification phase is the second of the policy's two required full-unit-suite runs — it is not optional even when an earlier phase already ran the full suite once — and it is also the single point in the pipeline where the full integration suite runs alongside the unit suite, so a phase file that lists no integration command is incomplete rather than exempt
 - do not pipe a command's output through `tail`, `head`, or `grep`; redirect to a file and read it if it is long, or let it through unfiltered — piping deletes gradle's `actionable tasks: X executed, Y up-to-date, Z from-cache` summary and the `BUILD SUCCESSFUL in Xm Ys` line, so a cache replay becomes indistinguishable from a real run
 - update that final verification file
 - update the Final Verification status in the parent main tasks file

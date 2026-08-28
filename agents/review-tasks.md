@@ -89,6 +89,7 @@ If a cross-phase dependency is *consumed but not declared* anywhere (not in Requ
 - Verification task uses concrete project commands (not generic `npm test`)
 - Verification task matches commands from project context section
 - In orchestrated mode, `99-final-verification.md` exists and phase verification commands are concrete enough for focused validation
+- Each `## Phase Verification` command is scoped per `references/test-scope-policy.md`: a phase whose change requires the full unit suite — by the full-unit-suite row of the policy's `What to run` table or by its `Requires the full unit suite` closed list, either one being enough — is not verified by a narrower command, and a full-unit-suite run appears in at most two phases, the one where the changed behaviour first comes under existing callers and the closing phase, not in every phase that touches that behaviour
 
 ### 6. Code References
 - Referenced files actually exist in the codebase, OR are created within this tasks set, OR are a declared deliverable of an earlier epic phase (see the epic dependency section — do not flag these)

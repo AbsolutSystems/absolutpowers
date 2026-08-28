@@ -159,7 +159,8 @@ On Codex, translate each dispatch through the two-tier fallback above:
      marker).
   1. Follow the phase Read Scope and Write Scope.
   2. Implement only the tasks inside the phase file.
-  3. Run the phase verification commands.
+  3. Run the phase verification commands — read `references/test-scope-policy.md` first, and
+     on a timeout follow the ladder in `agents/implementation-worker.md`, Process step 4.
   4. Update task statuses inside the phase file only after verification passes.
   5. Fill `Implementation Decisions / Remarks` in the phase file.
   6. Update `implementation-context.md` with concise handoff facts (≤10 lines per phase).

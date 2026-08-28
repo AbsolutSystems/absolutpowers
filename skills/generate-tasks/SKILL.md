@@ -305,6 +305,7 @@ Run the project's final verification commands against the fully integrated chang
 
 **Requirements:**
 - Run backend build/test command: `[exact command from project]`
+- Run the integration/container test command: `[exact command from project]` — closing the branch for review is the one moment that requires the full integration suite alongside the full unit suite; record `not applicable` with a reason only if the project has none
 - Run frontend build/typecheck command: `[exact command from project]`
 - Run lint or formatter check command: `[exact command from project]`
 - If the project uses formatter gates such as `spotlessCheck`, run them here instead of inventing a generic formatting command
@@ -314,6 +315,7 @@ Run the project's final verification commands against the fully integrated chang
 
 **Tests:**
 - Backend build/test exits with code 0
+- Integration/container tests exit with code 0, or are recorded `not applicable` because the project has none
 - Frontend build/typecheck exits with code 0
 - Lint / formatter check exits with code 0
 - Every traced `AC-N` token found in test sources (grep hit per token; skip when the planning doc has no AC section)
