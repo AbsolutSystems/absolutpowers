@@ -84,9 +84,11 @@ the debt safer or narrower; they help avoid a backlog that overstates the proble
 ## Step 2 — Isolate large-area analysis
 
 For two or more independent areas, prefer fresh workers in parallel waves. First read
-`references/harness-dispatch.md` and the full `agents/tech-debt-auditor.md` prompt. Give each
-worker one strict area package: boundary, inventories, available context, omissions, and local
-conventions. Workers return `TechDebtWorkerResult` only and never write a report or expand scope.
+`references/harness-dispatch.md` and the full `agents/tech-debt-auditor.md` prompt. Dispatch each
+worker with explicit `model="opus"` and `effort="xhigh"` (`references/model-routing.md`, Gates and
+reviews table, `tech-debt-auditor` row). Give each worker one strict area package: boundary,
+inventories, available context, omissions, and local conventions. Workers return
+`TechDebtWorkerResult` only and never write a report or expand scope.
 
 On Claude use the registered `tech-debt-auditor` role. On Codex, Pi, and Grok dispatch a generic
 isolated worker with that prompt as described in the harness mapping. If isolation is unavailable,

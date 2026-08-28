@@ -428,12 +428,12 @@ Fix any gap found here before running Review Gate — cheaper to catch now than 
 
 ## Review Gate — Automatyczna weryfikacja tasków
 
-> **Harness dispatch:** before any gate/worker dispatch, read `references/harness-dispatch.md` (and the matching `references/{harness}-tools.md`).
+> **Harness dispatch:** before any gate/worker dispatch, read `references/harness-dispatch.md` (and the matching `references/{harness}-tools.md`) for *how* to dispatch, and `references/model-routing.md` for *what* `model`/`effort` to pass — both explicit, always.
 
-Po zapisaniu tasks doc, uruchom subagenta `review-tasks` żeby zweryfikować jakość planu implementacji. Dla `orchestrated` podaj mu main tasks file i poinformuj, że ma przeczytać wszystkie referenced phase files oraz `implementation-context.md`:
+Po zapisaniu tasks doc, uruchom subagenta `review-tasks` żeby zweryfikować jakość planu implementacji, z jawnym `model="opus"` `effort="xhigh"` (patrz `references/model-routing.md`, tabela „Gates and reviews"). Dla `orchestrated` podaj mu main tasks file i poinformuj, że ma przeczytać wszystkie referenced phase files oraz `implementation-context.md`:
 
 ```
-Agent(subagent_type="review-tasks", prompt="Review tasks document: ./absolutpowers/feature/tasks-{slug}.md. If Mode is orchestrated, also review all phase files referenced from Phase Overview and implementation-context.md.")
+Agent(subagent_type="review-tasks", model="opus", effort="xhigh", prompt="Review tasks document: ./absolutpowers/feature/tasks-{slug}.md. If Mode is orchestrated, also review all phase files referenced from Phase Overview and implementation-context.md.")
 ```
 
 > Jeśli taski pochodzą z fazy epica: podaj pełną ścieżkę w podfolderze (`./absolutpowers/feature/{epic-slug}/tasks-{slug}.md`) i dodaj do promptu notkę: "This is one phase of an epic — cross-phase dependencies are declared in the phase Context Contract (Requires) and in the exact parent planning document recorded as `Epic context`; treat them as a contract, not as missing context." Dzięki temu review nie odrzuci planu za artefakty, które dostarczą wcześniejsze fazy.
@@ -452,7 +452,7 @@ Agent(subagent_type="review-tasks", prompt="Review tasks document: ./absolutpowe
 - Zapisz poprawiony plik i uruchom `review-tasks` ponownie, PRZEKAZUJĄC poprzedni werdykt i listę poprawek (gate rozlicza stare issues jako FIXED/NOT-FIXED, nowe zgłasza tylko jako `[NEW]`):
 
 ```
-Agent(subagent_type="review-tasks", prompt="Re-review tasks document: ./absolutpowers/feature/tasks-{slug}.md. If Mode is orchestrated, also review all phase files referenced from Phase Overview and implementation-context.md. Previous verdict:\n{pełny poprzedni werdykt}\nApplied fixes:\n{lista: issue #N → co zmieniono}")
+Agent(subagent_type="review-tasks", model="opus", effort="xhigh", prompt="Re-review tasks document: ./absolutpowers/feature/tasks-{slug}.md. If Mode is orchestrated, also review all phase files referenced from Phase Overview and implementation-context.md. Previous verdict:\n{pełny poprzedni werdykt}\nApplied fixes:\n{lista: issue #N → co zmieniono}")
 ```
 
 **Jeśli VERDICT: REJECTED (2. raz — czyli w werdykcie są pozycje NOT-FIXED lub `[NEW]` blockery):**

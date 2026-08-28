@@ -2,7 +2,9 @@
 
 **Read this** before any `Agent(subagent_type=...)` call in AbsolutPowers
 skills (`feature-discuss`, `generate-tasks`, `implement`, `triada-review`, and any skill that
-dispatches registered agents).
+dispatches registered agents). This file owns *how* to dispatch on the active harness; it does not
+say which `model`/`effort` to pass — that answer lives in `references/model-routing.md`, and every
+dispatch still needs both explicit, whichever harness carries it out.
 
 | Harness | How to dispatch |
 |---------|-----------------|

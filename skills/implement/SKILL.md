@@ -32,7 +32,7 @@ Tasks documents can use two modes:
 - `single-file` or missing `## Mode` - legacy sequential task execution in this session
 - `orchestrated` - main tasks file delegates phase files to fresh worker subagents
 
-> **Harness dispatch:** before any worker/gate dispatch, read `references/harness-dispatch.md` (and the matching `references/{harness}-tools.md`). Roles: `implementation-worker`, `phase-review`, `review-implementation`.
+> **Harness dispatch:** before any worker/gate dispatch, read `references/harness-dispatch.md` (and the matching `references/{harness}-tools.md`) for *how* to dispatch, and `references/model-routing.md` for *what* `model`/`effort` to pass — both explicit, always. Roles: `implementation-worker`, `phase-review`, `review-implementation`.
 
 ## Path Resolution
 
@@ -269,10 +269,10 @@ In orchestrated mode: AC fulfillment report runs once after all phases are compl
 
 ### Step 8: Review Gate — Automatyczna weryfikacja implementacji
 
-Po zakończeniu WSZYSTKICH tasków (włącznie z final verification), uruchom subagenta `review-implementation`:
+Po zakończeniu WSZYSTKICH tasków (włącznie z final verification), uruchom subagenta `review-implementation` z jawnym `model="opus"` `effort="xhigh"` (final gate, zawsze najmocniejszy tier — patrz `references/model-routing.md`, tabela „Gates and reviews"):
 
 ```
-Agent(subagent_type="review-implementation", prompt="Review implementation for tasks: {parent-tasks-path}")
+Agent(subagent_type="review-implementation", model="opus", effort="xhigh", prompt="Review implementation for tasks: {parent-tasks-path}")
 ```
 
 **Jeśli VERDICT: PASS, bez sekcji `Warnings (non-blocking):`:**
@@ -287,7 +287,7 @@ Agent(subagent_type="review-implementation", prompt="Review implementation for t
 - Wyświetl listę problemów, napraw każdą pozycję `[BLOCKER]` (`[WARN]` tylko gdy tanie — warny nie bramkują), uruchom `review-implementation` ponownie PRZEKAZUJĄC poprzedni werdykt i listę poprawek:
 
 ```
-Agent(subagent_type="review-implementation", prompt="Re-review implementation for tasks: {parent-tasks-path}. Previous verdict:\n{pełny poprzedni werdykt}\nApplied fixes:\n{issue #N → co zmieniono}")
+Agent(subagent_type="review-implementation", model="opus", effort="xhigh", prompt="Re-review implementation for tasks: {parent-tasks-path}. Previous verdict:\n{pełny poprzedni werdykt}\nApplied fixes:\n{issue #N → co zmieniono}")
 ```
 
 **Jeśli VERDICT: REJECTED (2. raz — pozycje NOT-FIXED lub `[NEW]` blockery):**

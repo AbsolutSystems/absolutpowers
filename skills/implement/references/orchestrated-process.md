@@ -72,27 +72,18 @@ Faza N: complete (commits base7..head7, review clean)
 
 **Model routing by role (always explicit):**
 
-Every subagent dispatch in this Step — implementer, and (in Step O4/O6) `phase-review` and `review-implementation` — MUST carry an explicit `model=` parameter. Dispatching without one is an error under this rule: inheriting the orchestrator session's model is NOT an acceptable shortcut for any role. Note (turn count beats token price): reviewers and implementers working with prose, not code, need at least a mid-tier floor — a wrong/too-cheap model that costs an extra retry turn is more expensive than one correctly-tiered dispatch up front.
+Every subagent dispatch in this Step — implementer, and (in Step O4/O6) `phase-review` and `review-implementation` — MUST carry explicit `model=` and `effort=` parameters. Dispatching without them is an error under this rule: inheriting the orchestrator session's model is NOT an acceptable shortcut for any role. Note (turn count beats token price): reviewers and implementers working with prose, not code, need at least a mid-tier floor — a wrong/too-cheap model that costs an extra retry turn is more expensive than one correctly-tiered dispatch up front.
 
-| Role | Tier | Model | When |
-|---|---|---|---|
-| `implementation-worker` | transcription / cheapest | `haiku` | phase file contains complete, ready-to-transcribe code (e.g. `generate-tasks` already emitted full snippets) — implementation reduces to transcription + tests |
-| `implementation-worker` | standard | `sonnet` | integration / multi-file / pattern-matching work, `Risk: low|medium`; **also the fallback** when it is ambiguous whether the phase file's code is complete — never default to the cheapest tier when in doubt |
-| `implementation-worker` | most-capable | `opus` | `Risk: high` — security, migrations, shared core, design judgment |
-| `phase-review` | scaled | explicit, sized to the diff | a small mechanical diff does not need `opus`; a subtle concurrency/security diff does — the model is always passed explicitly, never inherited from the session |
-| `review-implementation` (final gate) | most-capable | `opus`, always | the final gate always dispatches with `model="opus"` regardless of phase risk |
+`model`/`effort` for every role dispatched from this Step come from `references/model-routing.md` — read it here, do not restate its tables.
 
-Read the phase's `**Risk:**` field from the Phase Overview in the parent tasks file, then read the phase file itself to judge whether it contains complete, ready-to-transcribe code:
-- phase file has complete code ready to transcribe (and Risk is not `high`) → `model="haiku"` (transcription tier)
-- `Risk: low|medium` (or unspecified), or it is unclear/ambiguous whether the code is complete → `model="sonnet"` (standard tier — the fallback for doubt, not the cheapest tier)
-- `Risk: high` → `model="opus"` (most-capable tier)
+Read the phase's `**Risk:**` field from the Phase Overview in the parent tasks file before picking a row — if the field is absent, treat the phase as the table's default row, not as a reason to guess. Also read the phase file itself to judge whether it contains complete, ready-to-transcribe code; `references/model-routing.md`'s Implementation table keys on both.
 
 For the pending phase, spawn `implementation-worker`. Use the **exact** parent tasks file path (the argument) and the **exact phase file path from the Phase Overview `**File:**` field** — do not reconstruct them from a template, so epic-nested paths stay correct.
 
 > Codex: patrz `references/codex-tools.md` — dispatch generic przez `spawn_agent` z ciałem `agents/implementation-worker.md`, lub sekwencyjnie inline w tej sesji; nie literalny `Agent(subagent_type=...)`.
 > Grok: patrz `references/grok-tools.md` — `spawn_subagent` (general-purpose) + ciało `agents/implementation-worker.md`, lub inline; nie literalny `Agent(...)`.
 
-**Codex model translation:** the Claude tier names in the routing table above are not
+**Codex model translation:** the Claude tier names in `references/model-routing.md` are not
 Codex model IDs. For Codex, `haiku` maps to `gpt-5.6-luna` + `reasoning_effort="medium"`,
 `sonnet` maps to `gpt-5.6-luna` + `reasoning_effort="high"`, and `opus` maps to
 `gpt-5.6-terra` + `reasoning_effort="high"`. Pass both overrides to `spawn_agent`; do not
@@ -101,19 +92,19 @@ for routine diffs or Terra/high for subtle diffs; `review-implementation` uses S
 Reserve `xhigh` for an explicit escalation when the failure cost justifies the additional
 reasoning-token usage. Do not route to `gpt-5.5` unless the user explicitly requests it.
 
-If Risk is `high`:
+If Risk is `high`, or the phase is on the expensive-if-wrong closed list in `references/model-routing.md` regardless of what `**Risk:**` says — the two are the same set seen from two sides, and either signal alone is enough:
 ```
-Agent(subagent_type="implementation-worker", model="opus", prompt="Implement this orchestrated phase. Parent tasks file: {parent-tasks-path}. Phase file: {phase-File-path-from-Phase-Overview}. Validate Context Contract Requires before starting. Follow the phase Write Scope, update only the phase file and implementation-context.md, run phase verification, and return PHASE_RESULT with contract check.")
+Agent(subagent_type="implementation-worker", model="opus", effort="xhigh", prompt="Implement this orchestrated phase. Parent tasks file: {parent-tasks-path}. Phase file: {phase-File-path-from-Phase-Overview}. Validate Context Contract Requires before starting. Follow the phase Write Scope, update only the phase file and implementation-context.md, run phase verification, and return PHASE_RESULT with contract check.")
 ```
 
 If Risk is not `high` and the phase file contains complete, ready-to-transcribe code (transcription tier):
 ```
-Agent(subagent_type="implementation-worker", model="haiku", prompt="Implement this orchestrated phase. Parent tasks file: {parent-tasks-path}. Phase file: {phase-File-path-from-Phase-Overview}. Validate Context Contract Requires before starting. Follow the phase Write Scope, update only the phase file and implementation-context.md, run phase verification, and return PHASE_RESULT with contract check.")
+Agent(subagent_type="implementation-worker", model="haiku", effort="high", prompt="Implement this orchestrated phase. Parent tasks file: {parent-tasks-path}. Phase file: {phase-File-path-from-Phase-Overview}. Validate Context Contract Requires before starting. Follow the phase Write Scope, update only the phase file and implementation-context.md, run phase verification, and return PHASE_RESULT with contract check.")
 ```
 
 If Risk is `low`, `medium`, unspecified, or it is ambiguous whether the phase file's code is complete (standard tier — the fallback):
 ```
-Agent(subagent_type="implementation-worker", model="sonnet", prompt="Implement this orchestrated phase. Parent tasks file: {parent-tasks-path}. Phase file: {phase-File-path-from-Phase-Overview}. Validate Context Contract Requires before starting. Follow the phase Write Scope, update only the phase file and implementation-context.md, run phase verification, and return PHASE_RESULT with contract check.")
+Agent(subagent_type="implementation-worker", model="sonnet", effort="high", prompt="Implement this orchestrated phase. Parent tasks file: {parent-tasks-path}. Phase file: {phase-File-path-from-Phase-Overview}. Validate Context Contract Requires before starting. Follow the phase Write Scope, update only the phase file and implementation-context.md, run phase verification, and return PHASE_RESULT with contract check.")
 ```
 
 Before spawning the worker:
@@ -167,10 +158,10 @@ AP_TASKS_DIR=<phase-directory-from-Path-Resolution> skills/implement/scripts/rev
 
 `AP_TASKS_DIR` is the phase directory resolved per **Path Resolution** (the directory beside the main tasks file that already holds `implementation-context.md` and `progress.md`) — set/export it before invoking the script, it is a hard error if unset. BASE is the commit recorded in Step O2 ("Before spawning the worker") for this phase, never `HEAD~1`. The script prints `wrote <package-path>: N commit(s), ...`; capture `<package-path>` for the dispatch prompt.
 
-Spawn `phase-review` with an explicit `model=` scaled to the size/risk of this phase's diff (see Step O2 model routing table — a small mechanical diff does not need `opus`; a subtle concurrency/security diff does). Pass the exact parent tasks path, the phase `**File:**` path, the `**Shared implementation context:**` path, and the review package path — the prompt carries the package path instead of any instruction to read `git diff` directly:
+Spawn `phase-review` with explicit `model=`/`effort=` scaled to the size/risk of this phase's diff (see `references/model-routing.md`'s Gates and reviews table — a small mechanical diff does not need `opus`/`xhigh`; a subtle concurrency/security diff does). Pass the exact parent tasks path, the phase `**File:**` path, the `**Shared implementation context:**` path, and the review package path — the prompt carries the package path instead of any instruction to read `git diff` directly:
 
 ```
-Agent(subagent_type="phase-review", model="<scaled-to-diff>", prompt="Review completed orchestrated phase. Parent tasks file: {parent-tasks-path}. Phase file: {phase-File-path-from-Phase-Overview}. Shared context: {shared-implementation-context-path}. Review package: {review-package-path}.")
+Agent(subagent_type="phase-review", model="<scaled-to-diff>", effort="<scaled-to-diff>", prompt="Review completed orchestrated phase. Parent tasks file: {parent-tasks-path}. Phase file: {phase-File-path-from-Phase-Overview}. Shared context: {shared-implementation-context-path}. Review package: {review-package-path}.")
 ```
 
 > Codex: patrz `references/codex-tools.md` — dispatch generic z ciałem `agents/phase-review.md`, lub review inline z advisory verdictem; nie literalny `Agent(subagent_type=...)`.
@@ -187,7 +178,7 @@ If `VERDICT: REJECTED` (1st time):
 - regenerate the review package to cover the fix commits, then rerun `phase-review` PASSING the previous verdict and the fix list, so the gate accounts for old issues (FIXED/NOT-FIXED) and marks genuinely new findings `[NEW]`:
 
 ```
-Agent(subagent_type="phase-review", model="<scaled-to-diff>", prompt="Re-review completed orchestrated phase. Parent tasks file: {parent-tasks-path}. Phase file: {phase-File-path-from-Phase-Overview}. Shared context: {shared-implementation-context-path}. Review package: {review-package-path}. Previous verdict:\n{full previous verdict}\nApplied fixes:\n{issue #N → what changed}")
+Agent(subagent_type="phase-review", model="<scaled-to-diff>", effort="<scaled-to-diff>", prompt="Re-review completed orchestrated phase. Parent tasks file: {parent-tasks-path}. Phase file: {phase-File-path-from-Phase-Overview}. Shared context: {shared-implementation-context-path}. Review package: {review-package-path}. Previous verdict:\n{full previous verdict}\nApplied fixes:\n{issue #N → what changed}")
 ```
 
 If `VERDICT: REJECTED` (2nd time with similar issues):
@@ -242,10 +233,10 @@ AP_TASKS_DIR=<phase-directory-from-Path-Resolution> skills/implement/scripts/rev
 
 `<branch-BASE>` is the `base7` of the earliest line in `progress.md` (the ledger) — the commit before Phase 1 started — so the package covers the full range of the orchestrated run, not just the last phase; if the ledger is empty or unavailable, fall back to `git merge-base HEAD main`. `AP_TASKS_DIR` is the same phase directory used in Step O4, set/export before invoking the script.
 
-Run the existing final gate with an explicit `model="opus"` (the final gate is always the most-capable tier, per Step O2 — regardless of phase risk). Pass the exact parent tasks path and the review package path:
+Run the existing final gate with explicit `model="opus"` `effort="xhigh"` (the final gate is always the most-capable tier, per `references/model-routing.md`'s Gates and reviews table — regardless of phase risk). Pass the exact parent tasks path and the review package path:
 
 ```
-Agent(subagent_type="review-implementation", model="opus", prompt="Review implementation for orchestrated tasks: {parent-tasks-path}. Read all phase files referenced from Phase Overview and the final verification phase. Review package: {review-package-path}.")
+Agent(subagent_type="review-implementation", model="opus", effort="xhigh", prompt="Review implementation for orchestrated tasks: {parent-tasks-path}. Read all phase files referenced from Phase Overview and the final verification phase. Review package: {review-package-path}.")
 ```
 
 > Codex: patrz `references/codex-tools.md` — dispatch generic z ciałem `agents/review-implementation.md`, lub review inline z advisory verdictem; nie literalny `Agent(subagent_type=...)`.
@@ -259,10 +250,10 @@ If `VERDICT: PASS` with a `Warnings (non-blocking):` section: report completion 
 print the warnings — a PASS with warnings is exactly where a real finding hides behind a green
 verdict.
 
-If `VERDICT: REJECTED` (1st time): fix every `[BLOCKER]` issue (fix `[WARN]` only when cheap — warns never gate), rerun final verification if affected, regenerate the review package to cover the fix commits, then rerun `review-implementation` (`model="opus"`) PASSING the previous verdict and the fix list, so the gate accounts for old issues (FIXED/NOT-FIXED) and marks genuinely new findings `[NEW]`:
+If `VERDICT: REJECTED` (1st time): fix every `[BLOCKER]` issue (fix `[WARN]` only when cheap — warns never gate), rerun final verification if affected, regenerate the review package to cover the fix commits, then rerun `review-implementation` (`model="opus"` `effort="xhigh"`) PASSING the previous verdict and the fix list, so the gate accounts for old issues (FIXED/NOT-FIXED) and marks genuinely new findings `[NEW]`:
 
 ```
-Agent(subagent_type="review-implementation", model="opus", prompt="Re-review implementation for tasks: {parent-tasks-path}. Previous verdict:\n{full previous verdict}\nApplied fixes:\n{issue #N → what changed}\nReview package: {review-package-path}.")
+Agent(subagent_type="review-implementation", model="opus", effort="xhigh", prompt="Re-review implementation for tasks: {parent-tasks-path}. Previous verdict:\n{full previous verdict}\nApplied fixes:\n{issue #N → what changed}\nReview package: {review-package-path}.")
 ```
 
 If `VERDICT: REJECTED` (2nd time — NOT-FIXED items or `[NEW]` blockers remain): show user options — (a) attempt fix again, (b) override review and proceed, (c) stop and investigate manually. If (a): regenerate the review package to cover the fix commits and rerun `review-implementation` with the same re-dispatch shape as the 1st-time template above (`Previous verdict:` / `Applied fixes:`), updated to this round's verdict and fixes, not the first round's.

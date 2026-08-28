@@ -466,7 +466,7 @@ Znalezione problemy **napraw inline**, edytując zapisany dokument bezpośrednio
 
 > Dotyczy: standardowych feature'ów oraz **phase doców w Trybie B**. NIE dotyczy: Lightweight tasks, `planning-main.md`, ani stubów faz.
 >
-> **Harness dispatch:** read `references/harness-dispatch.md` before dispatching `qa-enrichment` / `review-plan`.
+> **Harness dispatch:** read `references/harness-dispatch.md` before dispatching `qa-enrichment` / `review-plan`. `review-plan`'s `model`/`effort` come from `references/model-routing.md` and must be passed explicitly.
 
 Po zapisaniu planning doc uruchom subagenta `qa-enrichment`:
 
@@ -479,10 +479,10 @@ Po powrocie poinformuj: "QA enrichment dodał [N] Acceptance Criteria do planu. 
 ### Faza 6: Review Gate — Automatyczna weryfikacja planu
 
 #### Ścieżka standard / phase doc (Tryb B)
-Uruchom `review-plan` na planning/phase docu:
+Uruchom `review-plan` na planning/phase docu, z jawnym `model="opus"` `effort="xhigh"` (patrz `references/model-routing.md`, tabela „Gates and reviews"):
 
 ```
-Agent(subagent_type="review-plan", prompt="Review planning document: {ścieżka}")
+Agent(subagent_type="review-plan", model="opus", effort="xhigh", prompt="Review planning document: {ścieżka}")
 ```
 
 **Jeśli `review-plan: PASS` dla standardowego planu lub phase doca** — zadaj jedno jawne pytanie:
@@ -508,7 +508,7 @@ Dla standardowego feature'a przekaż wynik review PASS (wg zasady relay niżej),
 - Przy ponownym uruchomieniu gate'a PRZEKAŻ poprzedni werdykt i listę wykonanych poprawek — gate ma najpierw rozliczyć stare issues (FIXED/NOT-FIXED), a nowe zgłaszać tylko jako `[NEW]`:
 
 ```
-Agent(subagent_type="review-plan", prompt="Re-review planning document: {ścieżka}. Previous verdict:\n{pełny poprzedni werdykt}\nApplied fixes:\n{lista: issue #N → co zmieniono}")
+Agent(subagent_type="review-plan", model="opus", effort="xhigh", prompt="Re-review planning document: {ścieżka}. Previous verdict:\n{pełny poprzedni werdykt}\nApplied fixes:\n{lista: issue #N → co zmieniono}")
 ```
 
 - Powtarzaj do PASS (max 3 iteracje). Werdykt PASS z sekcją `Warnings (non-blocking):` traktuj jak PASS — pokaż warny użytkownikowi w podsumowaniu. Po 3 nieudanych — pokaż pozostałe NOT-FIXED/NEW blockery i zapytaj czy kontynuować mimo to.
