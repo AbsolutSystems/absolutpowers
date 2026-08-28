@@ -57,6 +57,11 @@ bieżącej fali, a następnie uruchom kolejną.
 Nigdy nie próbuj najpierw wywoływać nieistniejącego registered type na Codex, Pi lub
 Grok. Użyj od razu natywnej ścieżki z mappingu harnessu.
 
+**Model i effort:** dla każdej z trzech ról jawnie przekaż `model="opus"` i `effort="xhigh"` —
+patrz `references/model-routing.md`, tabela „Gates and reviews" (wiersz `triada-review roles`).
+Dotyczy to również generycznego subagenta na harnessach bez registered type, wszędzie tam,
+gdzie mechanizm dispatchu przyjmuje jawny model/effort.
+
 ---
 
 ## KROK 0 — Wczytaj konfigurację agentów
