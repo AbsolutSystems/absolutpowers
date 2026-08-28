@@ -192,7 +192,7 @@ Only document patterns used **3+ times** in the codebase. Each pattern MUST incl
 ### [Pattern Name]
 **What:** [one-line description]
 **Where:** [which layer/packages use this]
-**Example:** `path/to/file.ts:L15-45`
+**Example:** `ServiceName.methodName()` in `path/to/file.ts`
 **Convention:**
 - [specific rule 1]
 - [specific rule 2]
@@ -201,7 +201,7 @@ Only document patterns used **3+ times** in the codebase. Each pattern MUST incl
 
 ### [Pattern Name]
 **What:** [description]
-**Example:** `path/to/file.ts:L10-30`
+**Example:** `ClassName.handlerName()` in `path/to/file.ts`
 **Convention:**
 - [rules]
 
@@ -209,7 +209,7 @@ Only document patterns used **3+ times** in the codebase. Each pattern MUST incl
 
 ### [Pattern Name]
 **What:** [description]
-**Example:** `path/to/test.ts:L5-25`
+**Example:** `describe('scenario')` in `path/to/test.ts`
 **Convention:**
 - [rules]
 

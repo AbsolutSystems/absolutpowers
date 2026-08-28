@@ -57,6 +57,11 @@ bieżącej fali, a następnie uruchom kolejną.
 Nigdy nie próbuj najpierw wywoływać nieistniejącego registered type na Codex, Pi lub
 Grok. Użyj od razu natywnej ścieżki z mappingu harnessu.
 
+**Model i effort:** dla każdej z trzech ról jawnie przekaż `model="opus"` i `effort="xhigh"` —
+patrz `references/model-routing.md`, tabela „Gates and reviews" (wiersz `triada-review roles`).
+Dotyczy to również generycznego subagenta na harnessach bez registered type, wszędzie tam,
+gdzie mechanizm dispatchu przyjmuje jawny model/effort.
+
 ---
 
 ## KROK 0 — Wczytaj konfigurację agentów
@@ -200,8 +205,9 @@ Dla każdej paczki przygotuj mini-kontekst: nazwa, rola, lista plików, fragment
 ## KROK 3 — Deleguj do trzech agentów równolegle
 
 Każda paczka (lub cały diff w trybie pojedynczym) idzie do aktywnych ról. Każda ma
-**inny zakres** i nie wchodzi w cudzy. Dispatchuj role **równolegle**, jeśli harness
-to obsługuje, używając kontraktu dispatchu powyżej.
+**inny zakres** i nie wchodzi w cudzy. Dispatchuj role **równolegle**, konkretnym
+mechanizmem aktywnego harnessu z sekcji „Kontrakt dispatchu per harness" — fallback dla
+harnessu bez takiego mechanizmu jest opisany w tej samej sekcji.
 
 ### Co przekazać każdemu agentowi
 

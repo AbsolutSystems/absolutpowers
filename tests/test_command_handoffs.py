@@ -53,6 +53,16 @@ class NativeCommandHandoffContractTest(unittest.TestCase):
             with self.subTest(path=path):
                 self.assertIn("harness-command-contract.md", read_repo_text(path))
 
+    def test_code_writing_sites_reference_the_doc_comment_style_file(self) -> None:
+        paths = (
+            "agents/implementation-worker.md",
+            "skills/implement/SKILL.md",
+            "skills/debug/SKILL.md",
+        )
+        for path in paths:
+            with self.subTest(path=path):
+                self.assertIn("doc-comment-style.md", read_repo_text(path))
+
     def test_active_policy_and_adr_do_not_promote_legacy_skill_prefixes(self) -> None:
         for path in (
             "references/fork-policy.md",

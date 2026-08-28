@@ -32,9 +32,11 @@ This document describes the **native first-class path**.
 `triada-review` is a shared skill. Run it like any other plugin skill. For every active
 role, call `spawn_subagent` with `subagent_type: "general-purpose"` and the full body of
 the matching `agents/{name}.md` prompt plus the package context prepared by the skill.
-Spawn independent roles in parallel, collect their JSON results, and synthesize them in
-the parent session. Do not first probe Claude's registered type names — Grok cannot
-resolve them. If dispatch is unavailable, use the skill's explicit inline advisory path.
+Issue all of these `spawn_subagent` calls before waiting on any result — that is what runs
+the roles in parallel rather than one after another — then collect their JSON results and
+synthesize them in the parent session. Do not first probe Claude's registered type names —
+Grok cannot resolve them. If dispatch is unavailable, use the skill's explicit inline
+advisory path.
 
 ## QA reviewer dispatch on Grok
 
@@ -122,7 +124,8 @@ On Grok, translate each dispatch through the two-tier fallback:
   0. Mark `pending` → `in-progress` in the parent.
   1. Follow the Read/Write scope in the phase file.
   2. Implement only the declared work.
-  3. Run verification.
+  3. Run verification, scoped per `references/test-scope-policy.md`; on a timeout, follow the
+     ladder in `agents/implementation-worker.md`, Process step 4.
   4. Update status and remarks inside the phase file only.
   5. Compact-update `implementation-context.md` (≤10 lines added).
   6. Mark the phase `completed` in the parent.

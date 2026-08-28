@@ -87,14 +87,44 @@ Output:
 - `./absolutpowers/feature/tasks-{slug}/99-final-verification.md` - final verification phase
 - `./absolutpowers/feature/tasks-{slug}/scout-findings.md` - Boy-scout findings ledger; not created here, workers append it at runtime and `implement` reviews it at Step O5.7
 
-For orchestrated mode, group work into phases of 1-3 tightly related tasks. Each phase must have a narrow Read Scope, Write Scope, Phase Verification, and Completion Criteria. Prefer a module/layer write scope, but keep the phase small enough for one fresh worker subagent.
+For orchestrated mode, default to the coarsest grouping that still makes sense — a shared Write
+Scope, or one shared problem — and split only where a named reason forces it. Each phase must
+still have a narrow Read Scope, Write Scope, Phase Verification, and Completion Criteria, and
+must still fit one fresh worker subagent.
 
-**Phase sizing by risk:**
-- **High risk** (migrations, security, shared core, multi-tenancy): 1 task per phase.
-- **Medium risk** (new service integrating existing APIs, data model changes): 2 tasks per phase.
-- **Low risk** (new isolated module, tests, config, scaffolding): up to 3 tasks per phase.
+**Split only for a named reason:**
+1. **Review surface** — the merged phase would produce a diff too large to judge carefully in
+   one pass.
+2. **Independence** — two candidate phases have no dependency edge and disjoint Write Scope, so
+   the boundary buys concurrency.
+3. **A database migration** — always its own phase.
+4. **A change to a shared test base class or fixture** — always separate; it affects every other
+   spec and an incremental test run will not catch it.
+5. **A code-free audit whose output a later phase consumes** — its product is a document, not a
+   diff.
 
-Match the `**Risk:** low | medium | high` field in Phase Overview to this heuristic.
+**Governing idea:** a phase boundary buys either review granularity or parallelism, and only one
+at a time; if it buys neither, it should not exist. A boundary between two things that must run
+serially anyway buys only the former, so it needs the review-surface justification (reason 1).
+
+**Too small is a defect too:** a phase too small is a plan defect just as a phase too large is.
+
+**When a large phase must stay whole:** sometimes a phase is too large to review comfortably and
+yet must not be split, because its parts interact and each half would be unverifiable alone. Keep
+the phase, and note in the phase file that its review needs more than one pass — the same full
+diff reviewed repeatedly under different criteria, not the diff carved into pieces. Carving by
+symbol would blind each reviewer to exactly the interaction that made splitting impossible. This
+matters because a gate's issue budget is per review, not per line of diff, so a merged phase
+silently has less review capacity than the phases it replaces.
+
+**Set `**Risk:**` on every Phase Overview row.** It is not decoration: `implement` reads it to
+choose the worker's model tier, and a row left blank silently routes a dangerous phase to the
+standard tier. Grouping no longer determines it — a coarse phase can be low risk and a one-file
+phase can be high — so judge it on what the phase touches:
+- **high** — a database migration, anything security- or authorization-bearing, multi-tenancy, or
+  a change to shared core code many callers reach;
+- **medium** — a new service wired into existing APIs, or a data-model change;
+- **low** — an isolated new module, tests, config, scaffolding.
 
 ### Execution Handoff — rozstrzygnięcie (Mode = analog, nie luka)
 
@@ -275,6 +305,7 @@ Run the project's final verification commands against the fully integrated chang
 
 **Requirements:**
 - Run backend build/test command: `[exact command from project]`
+- Run the integration/container test command: `[exact command from project]` — closing the branch for review is the one moment that requires the full integration suite alongside the full unit suite; record `not applicable` with a reason only if the project has none
 - Run frontend build/typecheck command: `[exact command from project]`
 - Run lint or formatter check command: `[exact command from project]`
 - If the project uses formatter gates such as `spotlessCheck`, run them here instead of inventing a generic formatting command
@@ -284,6 +315,7 @@ Run the project's final verification commands against the fully integrated chang
 
 **Tests:**
 - Backend build/test exits with code 0
+- Integration/container tests exit with code 0, or are recorded `not applicable` because the project has none
 - Frontend build/typecheck exits with code 0
 - Lint / formatter check exits with code 0
 - Every traced `AC-N` token found in test sources (grep hit per token; skip when the planning doc has no AC section)
@@ -373,7 +405,7 @@ For `orchestrated`, generate:
 1. Main tasks index at `./absolutpowers/feature/tasks-{slug}.md`
 2. Phase directory at `./absolutpowers/feature/tasks-{slug}/`
 3. `implementation-context.md`
-4. One phase file per phase, with 1-3 related tasks each
+4. One phase file per phase, each holding the work the grouping rule above kept together
 5. `99-final-verification.md`
 
 > Reminder for epic phase docs: every path above is relative to the epic subfolder, i.e. `./absolutpowers/feature/{epic-slug}/tasks-{slug}.md` and `./absolutpowers/feature/{epic-slug}/tasks-{slug}/...`. Do not write to the `feature/` root.
@@ -398,22 +430,23 @@ Fix any gap found here before running Review Gate — cheaper to catch now than 
 
 ## Review Gate — Automatyczna weryfikacja tasków
 
-> **Harness dispatch:** before any gate/worker dispatch, read `references/harness-dispatch.md` (and the matching `references/{harness}-tools.md`).
+> **Harness dispatch:** before any gate/worker dispatch, read `references/harness-dispatch.md` (and the matching `references/{harness}-tools.md`) for *how* to dispatch, and `references/model-routing.md` for *what* `model`/`effort` to pass — both explicit, always.
 
-Po zapisaniu tasks doc, uruchom subagenta `review-tasks` żeby zweryfikować jakość planu implementacji. Dla `orchestrated` podaj mu main tasks file i poinformuj, że ma przeczytać wszystkie referenced phase files oraz `implementation-context.md`:
+Po zapisaniu tasks doc, uruchom subagenta `review-tasks` żeby zweryfikować jakość planu implementacji, z jawnym `model="opus"` `effort="xhigh"` (patrz `references/model-routing.md`, tabela „Gates and reviews"). Dla `orchestrated` podaj mu main tasks file i poinformuj, że ma przeczytać wszystkie referenced phase files oraz `implementation-context.md`:
 
 ```
-Agent(subagent_type="review-tasks", prompt="Review tasks document: ./absolutpowers/feature/tasks-{slug}.md. If Mode is orchestrated, also review all phase files referenced from Phase Overview and implementation-context.md.")
+Agent(subagent_type="review-tasks", model="opus", effort="xhigh", prompt="Review tasks document: ./absolutpowers/feature/tasks-{slug}.md. If Mode is orchestrated, also review all phase files referenced from Phase Overview and implementation-context.md.")
 ```
 
 > Jeśli taski pochodzą z fazy epica: podaj pełną ścieżkę w podfolderze (`./absolutpowers/feature/{epic-slug}/tasks-{slug}.md`) i dodaj do promptu notkę: "This is one phase of an epic — cross-phase dependencies are declared in the phase Context Contract (Requires) and in the exact parent planning document recorded as `Epic context`; treat them as a contract, not as missing context." Dzięki temu review nie odrzuci planu za artefakty, które dostarczą wcześniejsze fazy.
 
-**Jeśli VERDICT: PASS:**
-- Poinformuj użytkownika: "Taski przeszły review. Następny krok:" i wypisz jedną pełną, copy-paste'owalną komendę `implement` z `absolutpowers/feature/tasks-{slug}.md` w składni aktywnego harnessu, zgodnie z `references/harness-command-contract.md`. Nie zastępuj komendy opisem i nie używaj prefiksu `@`.
-- (OPCJONALNIE, bez bramki) Możesz też wypisać jedną pełną natywną komendę `analyze {slug}`
-  zgodnie z `references/harness-command-contract.md` jako audyt spójności AC→task(→kod) przed
-  `implement` — weryfikuje, czy wszystkie AC mają pokrycie w taskach. Nie jest wymagany;
-  `implement` jest głównym następnym krokiem.
+**W obu przypadkach PASS poniżej (niezależnie od warningów, OPCJONALNIE, bez bramki):** możesz też wypisać jedną pełną natywną komendę `analyze {slug}` zgodnie z `references/harness-command-contract.md` jako audyt spójności AC→task(→kod) przed `implement` — weryfikuje, czy wszystkie AC mają pokrycie w taskach. Nie jest wymagany; `implement` jest głównym następnym krokiem.
+
+**Jeśli VERDICT: PASS, bez sekcji `Warnings (non-blocking):`:**
+- Jedna linia: `review-tasks: PASS, warnings: 0. Następny krok:` i wypisz jedną pełną, copy-paste'owalną komendę `implement` z `absolutpowers/feature/tasks-{slug}.md` w składni aktywnego harnessu, zgodnie z `references/harness-command-contract.md`. Nie zastępuj komendy opisem i nie używaj prefiksu `@`. Nic więcej — bez streszczania tego, co bramka sprawdzała.
+
+**Jeśli VERDICT: PASS z sekcją `Warnings (non-blocking):`:**
+- Poinformuj użytkownika: "Taski przeszły review." i wypisz warningi z werdyktu — PASS z warningami to miejsce, gdzie realny problem chowa się za zielonym werdyktem — potem "Następny krok:" i tę samą komendę `implement` jak wyżej.
 
 **Jeśli VERDICT: REJECTED (1. raz):**
 - Wyświetl użytkownikowi listę problemów z review
@@ -421,12 +454,12 @@ Agent(subagent_type="review-tasks", prompt="Review tasks document: ./absolutpowe
 - Zapisz poprawiony plik i uruchom `review-tasks` ponownie, PRZEKAZUJĄC poprzedni werdykt i listę poprawek (gate rozlicza stare issues jako FIXED/NOT-FIXED, nowe zgłasza tylko jako `[NEW]`):
 
 ```
-Agent(subagent_type="review-tasks", prompt="Re-review tasks document: ./absolutpowers/feature/tasks-{slug}.md. If Mode is orchestrated, also review all phase files referenced from Phase Overview and implementation-context.md. Previous verdict:\n{pełny poprzedni werdykt}\nApplied fixes:\n{lista: issue #N → co zmieniono}")
+Agent(subagent_type="review-tasks", model="opus", effort="xhigh", prompt="Re-review tasks document: ./absolutpowers/feature/tasks-{slug}.md. If Mode is orchestrated, also review all phase files referenced from Phase Overview and implementation-context.md. Previous verdict:\n{pełny poprzedni werdykt}\nApplied fixes:\n{lista: issue #N → co zmieniono}")
 ```
 
 **Jeśli VERDICT: REJECTED (2. raz — czyli w werdykcie są pozycje NOT-FIXED lub `[NEW]` blockery):**
 - Pokaż użytkownikowi: "Review odrzucił taski po raz drugi (NOT-FIXED / nowe blockery). Opcje: (a) popraw ponownie, (b) override review i kontynuuj, (c) zatrzymaj się i zbadaj ręcznie."
-- Jeśli (a): popraw i uruchom `review-tasks` ostatni raz
+- Jeśli (a): popraw i uruchom `review-tasks` ostatni raz, tym samym re-dispatchem jak w rundzie 1. raz (`Previous verdict:` / `Applied fixes:` z szablonu wyżej) — zaktualizowanym do werdyktu i poprawek z TEJ rundy, nie z pierwszej
 - Jeśli (b): kontynuuj jak przy PASS, dodaj notatkę `**Review override:** [data]` w nagłówku tasks doc
 - Jeśli (c): zatrzymaj się
 

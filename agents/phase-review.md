@@ -72,10 +72,26 @@ Issues to address:
 
 Categories: SCOPE, COMPLETENESS, TESTS, HANDOFF, CONTRACT, CORRECTNESS, GARBAGE, RULES
 
+## Re-review Protocol (2nd+ iteration)
+
+If the invocation prompt includes a previous verdict and the list of applied fixes, you are
+re-reviewing — do NOT review from scratch:
+1. FIRST account for every previously reported issue, one line each:
+   `#N: FIXED` or `#N: NOT-FIXED — [what is still missing]`.
+2. Only AFTER that, report new findings, each explicitly marked `[NEW]`. If a `[NEW]` issue was
+   plainly discoverable in the previous pass, add one clause explaining why it surfaces only now.
+3. The verdict follows exclusively from NOT-FIXED issues and `[NEW]` issues.
+
+This is the convergence contract: the author must be able to reach PASS by fixing the
+reported list — never by chasing a fresh top-list each iteration.
+
 ## Rules
 
 - Be strict about Write Scope violations and failed or missing phase verification.
 - Be strict about missing handoff facts when later phases depend on them.
+- If you run build or test commands yourself to verify TESTS, do not pipe the output through `tail`, `head`, or `grep`; redirect to a file and read it if it is long, or let it through unfiltered. Piping strips gradle's `actionable tasks: X executed, Y up-to-date, Z from-cache` summary and the `BUILD SUCCESSFUL in Xm Ys` line, so a cache replay cannot be told apart from a real run.
+- Read `references/test-scope-policy.md` before trusting any test command, yours or the worker's: do not accept a narrowed run until you have checked what the test task actually includes and excludes — the policy explains why a filtered run can report success without running anything — and treat a green run reported with no elapsed time as unproven, since a suite replayed from cache also exits zero.
+- If your own re-run is killed by the shell tool's timeout before printing either `BUILD SUCCESSFUL` or `BUILD FAILED`, that is inconclusive — not a TESTS failure. Apply the same breadth gate as the worker (`agents/implementation-worker.md`, Process step 4): check this phase's change against `references/test-scope-policy.md` — the full-unit-suite row of its `What to run` table, plus the `Requires the full unit suite` closed list that names the cases the table row leaves implicit. Either one is enough to make breadth mandatory; when breadth is mandatory, rerun the same broad target in the background rather than narrowing, and otherwise narrow and retry once. If nothing finishes, say so instead of reporting a failure the build never reported.
 - Do not reject for minor wording differences in Markdown.
 - Every rejection reason must be specific and actionable.
 - Maximum 7 issues per review. If more exist, list the 7 most important.

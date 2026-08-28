@@ -65,7 +65,7 @@ If a cross-phase dependency is *consumed but not declared* anywhere (not in Requ
 - Each task is one logical unit of work — not too big (multiple features), not too small (rename a variable)
 - Tasks that would take an AI agent more than one focused session should be split
 - Tasks that are trivially small should be merged
-- In orchestrated mode, each phase should contain 1-3 tightly related tasks and be small enough for one fresh worker subagent
+- In orchestrated mode, phases are grouped coarsest-first per the "Split only for a named reason" list and governing idea in `skills/generate-tasks/SKILL.md` (Output Mode → `orchestrated`) — read that section for the exact five reasons before judging this criterion, rather than relying on a paraphrase here that can drift from it. Judge against that rule, not against a task count: **a phase too small is a plan defect just as a phase too large is.** A phase must still fit one fresh worker subagent and carry its own Read Scope, Write Scope, Phase Verification and Completion Criteria. Where a large phase is kept whole because its parts interact, the plan should say so — that is a correct outcome, not a granularity finding.
 
 ### 3. Ordering & Dependencies
 - Tasks are sequenced correctly — no task depends on something not yet built **within this tasks set** (cross-epic-phase dependencies declared per the section above are exempt)
@@ -74,6 +74,7 @@ If a cross-phase dependency is *consumed but not declared* anywhere (not in Requ
 - Every implementation task carries a `**Test-first:**` field: `yes`, or `no` with a short reason. Missing field → `[WARN]` TEST_FIRST (if NO task in the doc has the field, treat the doc as legacy format and skip this check silently). A `no` without a reason, or a `no` on a task that is clearly business logic / validation / transformation → `[WARN]` TEST_FIRST with the suggested correction.
 - In orchestrated mode, phase dependencies are explicit and the main phase order matches those dependencies
 - For an epic phase: dependencies on earlier epic phases must be declared (in the phase doc, the main map, or Context Contract Requires); an undeclared cross-phase dependency is an ORDERING issue
+- In orchestrated mode, a phase's `Depends on` (Phase Overview) and its own `Context Contract -> Requires` must agree on which phases it needs: if a `Requires` item names or clearly implies a specific phase as the DIRECT source of an artifact it needs (by number, or by citing that phase's own `Provides` item) — not a phase mentioned only as background lineage for how an already-covered phase's artifact came to exist — and that phase is absent from `Depends on`, or `Depends on` names a phase that no `Requires` item needs anything from, directly or transitively through a phase already in `Depends on`, that is a `[WARN]` ORDERING issue — a documentation disagreement, not an execution failure, since nothing currently reads `Depends on` at dispatch time — quote both fields verbatim in the finding
 
 ### 4. Specificity
 - File paths are exact and exist (or are clearly marked as new files to create, or are produced by an earlier epic phase per the contract)
@@ -88,6 +89,7 @@ If a cross-phase dependency is *consumed but not declared* anywhere (not in Requ
 - Verification task uses concrete project commands (not generic `npm test`)
 - Verification task matches commands from project context section
 - In orchestrated mode, `99-final-verification.md` exists and phase verification commands are concrete enough for focused validation
+- Each `## Phase Verification` command is scoped per `references/test-scope-policy.md`: a phase whose change requires the full unit suite — by the full-unit-suite row of the policy's `What to run` table or by its `Requires the full unit suite` closed list, either one being enough — is not verified by a narrower command, and a full-unit-suite run appears in at most two phases, the one where the changed behaviour first comes under existing callers and the closing phase, not in every phase that touches that behaviour
 
 ### 6. Code References
 - Referenced files actually exist in the codebase, OR are created within this tasks set, OR are a declared deliverable of an earlier epic phase (see the epic dependency section — do not flag these)

@@ -1,0 +1,208 @@
+/*
+  explain skill — shared report base.
+
+  USAGE: read this file in full and paste its content, verbatim, as the FIRST block inside the
+  single <style> element in the generated document's <head> — before any document-specific
+  rules. It supplies the reset, the light/dark/[data-theme] color tokens, base typography, and
+  the handful of components these reports repeat every time (cards, callouts, verified/inferred
+  badges, the before/after comparison table, table of contents, footer, and the overflow-x
+  scroll wrapper). Do not re-derive any of that from scratch.
+
+  What you may add after it: only what THIS document needs beyond the base (a one-off layout
+  tweak, an extra component variant) — reference the existing var(--color-...) tokens instead of
+  new hardcoded hex values. This file intentionally does not dictate page layout or force a
+  section structure: it is a base, not a design system, so the document's own structure and
+  extra components are free to differ.
+
+  Palette: the MIZ Client Portal ratified tokens (miz/CLAUDE.md, "Paleta kolorów" — Primary
+  #002652, Accent #FFCE00, Background #F9F9FA, Success #1AB759, Error #E93C3C, Warning #FF8C00,
+  Muted #A0A4A8, Muted text (AA) #5F6874, Border #E8E8E8, Header Main #183362; --color-muted is
+  border/icon/hover only, never text — secondary text uses --color-muted-foreground, which meets
+  WCAG AA on both --color-bg and --color-surface). If this plugin runs against a project without
+  a ratified palette, treat these as sensible neutral defaults rather than a hard requirement.
+  No dark palette is ratified anywhere in that source — the dark values below are this
+  template's own derivation, not a copied source of truth.
+*/
+
+*, *::before, *::after { box-sizing: border-box; }
+html, body { margin: 0; padding: 0; }
+
+body {
+  background: var(--color-bg);
+  color: var(--color-text);
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial,
+    sans-serif, "Apple Color Emoji", "Segoe UI Emoji";
+  line-height: 1.55;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* ===== THEME TOKENS — light (bare :root, the complete palette) ===== */
+:root {
+  --color-bg: #F9F9FA;
+  --color-surface: #FFFFFF;
+  --color-surface-raised: #FFFFFF;
+  --color-zebra: #F5F6F8;
+  --color-text: #1A1A2E;
+  --color-muted-foreground: #5F6874;
+  --color-muted: #A0A4A8;
+  --color-border: #E8E8E8;
+  --color-primary: #002652;
+  --color-header: #183362;
+  --color-link: #183362;
+  --color-accent: #FFCE00;
+  --color-accent-foreground: #002652;
+  --color-accent-tint: #FFF6D6;
+  --color-success: #1AB759;
+  --color-success-bg: #E6F7ED;
+  --color-error: #E93C3C;
+  --color-error-bg: #FDECEC;
+  --color-warning: #FF8C00;
+  --color-warning-bg: #FFF3E0;
+  --color-before-bg: #EEF3F8;
+  --color-after-bg: #EAF7EE;
+  --color-code-bg: #F2F2F2;
+}
+
+/* ===== THEME TOKENS — dark, OS preference, no explicit override ===== */
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --color-bg: #0F1720;
+    --color-surface: #182230;
+    --color-surface-raised: #1E2A3A;
+    --color-zebra: #16202C;
+    --color-text: #E7EAEE;
+    --color-muted-foreground: #A6AEB8;
+    --color-muted: #5B6472;
+    --color-border: #2C3846;
+    --color-primary: #6FA8DC;
+    --color-header: #8FB3E0;
+    --color-link: #8FB3E0;
+    --color-accent-tint: #3A2F00;
+    --color-success: #3DD68C;
+    --color-success-bg: #12301F;
+    --color-error: #F26B6B;
+    --color-error-bg: #3A1414;
+    --color-warning: #FFA940;
+    --color-warning-bg: #3A2600;
+    --color-before-bg: #1B2733;
+    --color-after-bg: #16301F;
+    --color-code-bg: #101820;
+  }
+}
+
+/* ===== THEME TOKENS — explicit dark override (host stamps [data-theme="dark"]) ===== */
+:root[data-theme="dark"] {
+  --color-bg: #0F1720;
+  --color-surface: #182230;
+  --color-surface-raised: #1E2A3A;
+  --color-zebra: #16202C;
+  --color-text: #E7EAEE;
+  --color-muted-foreground: #A6AEB8;
+  --color-muted: #5B6472;
+  --color-border: #2C3846;
+  --color-primary: #6FA8DC;
+  --color-header: #8FB3E0;
+  --color-link: #8FB3E0;
+  --color-accent-tint: #3A2F00;
+  --color-success: #3DD68C;
+  --color-success-bg: #12301F;
+  --color-error: #F26B6B;
+  --color-error-bg: #3A1414;
+  --color-warning: #FFA940;
+  --color-warning-bg: #3A2600;
+  --color-before-bg: #1B2733;
+  --color-after-bg: #16301F;
+  --color-code-bg: #101820;
+}
+
+/* ===== TYPOGRAPHY ===== */
+h1, h2, h3, h4 { color: var(--color-header); line-height: 1.25; margin: 1.75rem 0 0.75rem; }
+h1 { font-size: 1.75rem; margin-top: 0; }
+h2 { font-size: 1.35rem; border-bottom: 1px solid var(--color-border); padding-bottom: 0.4rem; }
+h3 { font-size: 1.1rem; }
+a { color: var(--color-link); }
+code, pre {
+  font-family: ui-monospace, "SFMono-Regular", Consolas, "Liberation Mono", Menlo, monospace;
+  background: var(--color-code-bg);
+  border-radius: 4px;
+}
+code { padding: 0.15em 0.35em; }
+pre { padding: 0.85rem 1rem; max-width: 100%; overflow-x: auto; }
+
+/* ===== LAYOUT ===== */
+.container { max-width: 900px; margin: 0 auto; padding: 2rem 1.25rem 4rem; }
+
+/* wide content (tables, code, diagrams) scrolls in its own box; the page body never does */
+.scroll-x { overflow-x: auto; }
+.diagram { overflow-x: auto; }
+
+/* ===== CARD (sections) ===== */
+.card {
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: 10px;
+  padding: 1.25rem 1.5rem;
+  margin-bottom: 1.5rem;
+}
+
+/* ===== TABLES ===== */
+table { border-collapse: collapse; width: 100%; font-variant-numeric: tabular-nums; }
+th, td { border: 1px solid var(--color-border); padding: 0.5rem 0.75rem; text-align: left; vertical-align: top; }
+th { background: var(--color-surface-raised); color: var(--color-header); }
+tbody tr:nth-child(even) { background: var(--color-zebra); }
+
+/* comparison ("Przed -> Po") tables */
+table.table-compare th.col-before, table.table-compare td.col-before { background: var(--color-before-bg); }
+table.table-compare th.col-after, table.table-compare td.col-after { background: var(--color-after-bg); }
+
+/* ===== BADGES — zweryfikowane vs wnioskowane ===== */
+.badge {
+  display: inline-flex; align-items: center; gap: 0.3em;
+  font-size: 0.75rem; font-weight: 600;
+  padding: 0.15em 0.6em; border-radius: 999px; border: 1px solid transparent;
+  white-space: nowrap;
+}
+.badge-verified { color: var(--color-success); border-color: var(--color-success); background: var(--color-success-bg); }
+.badge-verified::before { content: "\2713"; }
+.badge-inferred { color: var(--color-warning); border-color: var(--color-warning); background: var(--color-warning-bg); }
+.badge-inferred::before { content: "\2248"; }
+
+/* ===== CALLOUTS — pytania/decyzje + ryzyka wg poziomu ===== */
+.callout {
+  border-radius: 8px;
+  border: 1px solid var(--color-border);
+  border-left-width: 4px;
+  padding: 1rem 1.25rem;
+  margin: 1rem 0;
+}
+.callout-question { border-left-color: var(--color-accent); background: var(--color-accent-tint); }
+.callout-risk-high { border-left-color: var(--color-error); background: var(--color-error-bg); }
+.callout-risk-medium { border-left-color: var(--color-warning); background: var(--color-warning-bg); }
+.callout-risk-low { border-left-color: var(--color-success); background: var(--color-success-bg); }
+
+/* ===== TABLE OF CONTENTS ===== */
+.toc {
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: 10px;
+  padding: 1rem 1.5rem;
+  margin-bottom: 1.5rem;
+}
+.toc ol { margin: 0; padding-left: 1.25rem; }
+
+/* ===== FOOTER ===== */
+.report-footer {
+  margin-top: 2.5rem;
+  padding-top: 1rem;
+  border-top: 1px solid var(--color-border);
+  color: var(--color-muted-foreground);
+  font-size: 0.8rem;
+}
+
+/* ===== PRINT ===== */
+@media print {
+  body { background: #FFFFFF; color: #000000; }
+  .no-print { display: none !important; }
+  .card, .callout, .toc { box-shadow: none !important; border: 1px solid #CCCCCC; break-inside: avoid; }
+  .scroll-x, .diagram, pre { overflow: visible; }
+}

@@ -75,11 +75,13 @@ plugin-level registry for the three role types, so do not try
 `absolutpowers:tech-lead-agent`, `absolutpowers:codebase-auditor`, or
 `absolutpowers:ui-reviewer` as named `subagent_type` values.
 
-When `multi_agent=true`, spawn the active roles as independent generic agents, preferably
-in parallel. Feed each agent the full body of its matching prompt from `agents/` plus the
-package context prepared by the skill. Wait for all JSON results, then synthesize them in
-the root session. If multi-agent is unavailable, run the perspectives inline and label the
-final verdict `advisory (not fully isolated)`.
+When `multi_agent=true`, spawn the active roles as independent generic agents: issue all
+of their `spawn_agent` calls before calling `wait_agent` on any of them, rather than
+spawning and waiting one role at a time — the latter is sequential regardless of how the
+skill's prose asks for concurrency. Feed each agent the full body of its matching prompt
+from `agents/` plus the package context prepared by the skill. Wait for all JSON results,
+then synthesize them in the root session. If multi-agent is unavailable, run the
+perspectives inline and label the final verdict `advisory (not fully isolated)`.
 
 ## QA reviewer dispatch on Codex
 
@@ -157,7 +159,8 @@ On Codex, translate each dispatch through the two-tier fallback above:
      marker).
   1. Follow the phase Read Scope and Write Scope.
   2. Implement only the tasks inside the phase file.
-  3. Run the phase verification commands.
+  3. Run the phase verification commands — read `references/test-scope-policy.md` first, and
+     on a timeout follow the ladder in `agents/implementation-worker.md`, Process step 4.
   4. Update task statuses inside the phase file only after verification passes.
   5. Fill `Implementation Decisions / Remarks` in the phase file.
   6. Update `implementation-context.md` with concise handoff facts (≤10 lines per phase).

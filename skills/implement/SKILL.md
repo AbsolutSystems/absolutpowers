@@ -32,7 +32,7 @@ Tasks documents can use two modes:
 - `single-file` or missing `## Mode` - legacy sequential task execution in this session
 - `orchestrated` - main tasks file delegates phase files to fresh worker subagents
 
-> **Harness dispatch:** before any worker/gate dispatch, read `references/harness-dispatch.md` (and the matching `references/{harness}-tools.md`). Roles: `implementation-worker`, `phase-review`, `review-implementation`.
+> **Harness dispatch:** before any worker/gate dispatch, read `references/harness-dispatch.md` (and the matching `references/{harness}-tools.md`) for *how* to dispatch, and `references/model-routing.md` for *what* `model`/`effort` to pass — both explicit, always. Roles: `implementation-worker`, `phase-review`, `review-implementation`.
 
 ## Path Resolution
 
@@ -163,8 +163,11 @@ For the task:
    - Marker absent (older tasks doc) → decide yourself using the legacy rule: test-first for business logic, transformations, validation, pure functions; skip for configuration, simple wiring, scaffolding.
    - When a test covers a traced AC, embed the literal `AC-N` token in the test name / display name (e.g. `shouldRejectEmptyQuery_AC4`, `@DisplayName("rejects empty query [AC-4]")`) — the AC fulfillment check greps for these tokens.
    - Deviating from the marker is allowed ONLY with a reason recorded in **Implementation decisions / remarks** (e.g. "Test-first skipped: scaffold must exist before the test harness compiles"). A silent deviation is a review blocker.
+   - Identify code by symbol name in comments and in any handoff artifact you fill during this task (remarks, ADR, `implementation-context.md`) — never by line number; see `references/code-reference-style.md`.
+   - Before writing a doc comment, see `references/doc-comment-style.md` — one sentence by default, more lines only for a named reason.
 
 3. **Verify completion**
+   - Before running a test command, read `references/test-scope-policy.md` — it owns test scope and timing; report elapsed time beside the exit code
    - All files created/modified as specified
    - All requirements met
    - All tests written and passing
@@ -267,25 +270,30 @@ In orchestrated mode: AC fulfillment report runs once after all phases are compl
 
 ### Step 8: Review Gate — Automatyczna weryfikacja implementacji
 
-Po zakończeniu WSZYSTKICH tasków (włącznie z final verification), uruchom subagenta `review-implementation`:
+Po zakończeniu WSZYSTKICH tasków (włącznie z final verification), uruchom subagenta `review-implementation` z jawnym `model="opus"` `effort="xhigh"` (final gate, zawsze najmocniejszy tier — patrz `references/model-routing.md`, tabela „Gates and reviews"):
 
 ```
-Agent(subagent_type="review-implementation", prompt="Review implementation for tasks: {parent-tasks-path}")
+Agent(subagent_type="review-implementation", model="opus", effort="xhigh", prompt="Review implementation for tasks: {parent-tasks-path}")
 ```
 
-**Jeśli VERDICT: PASS:**
+**Jeśli VERDICT: PASS, bez sekcji `Warnings (non-blocking):`:**
+- Jedna linia: `review-implementation: PASS, warnings: 0 → Decision Review.` Nic więcej — zielony werdykt bez warningów nie wymaga streszczenia tego, co bramka sprawdzała.
+
+**Jeśli VERDICT: PASS z sekcją `Warnings (non-blocking):`:**
 - Raportuj completion summary użytkownikowi
+- Wypisz warningi z werdyktu — PASS z warningami to miejsce, gdzie realny problem chowa się za zielonym werdyktem
 - Implementacja gotowa
 
 **Jeśli VERDICT: REJECTED (1. raz):**
 - Wyświetl listę problemów, napraw każdą pozycję `[BLOCKER]` (`[WARN]` tylko gdy tanie — warny nie bramkują), uruchom `review-implementation` ponownie PRZEKAZUJĄC poprzedni werdykt i listę poprawek:
 
 ```
-Agent(subagent_type="review-implementation", prompt="Re-review implementation for tasks: {parent-tasks-path}. Previous verdict:\n{pełny poprzedni werdykt}\nApplied fixes:\n{issue #N → co zmieniono}")
+Agent(subagent_type="review-implementation", model="opus", effort="xhigh", prompt="Re-review implementation for tasks: {parent-tasks-path}. Previous verdict:\n{pełny poprzedni werdykt}\nApplied fixes:\n{issue #N → co zmieniono}")
 ```
 
 **Jeśli VERDICT: REJECTED (2. raz — pozycje NOT-FIXED lub `[NEW]` blockery):**
 - Pokaż: "Review odrzucił implementację po raz drugi (NOT-FIXED / nowe blockery). Opcje: (a) popraw ponownie, (b) override review i kontynuuj, (c) zatrzymaj się i zbadaj ręcznie."
+- Jeśli (a): popraw i uruchom `review-implementation` ponownie tym samym re-dispatchem jak w rundzie 1. raz (`Previous verdict:` / `Applied fixes:` z szablonu wyżej) — zaktualizowanym do werdyktu i poprawek z TEJ rundy, nie z pierwszej
 - Jeśli (b): kontynuuj jak przy PASS, dodaj notatkę `**Review override:** [data]` w tasks doc
 
 **Jeśli VERDICT: REJECTED (3. raz):**
@@ -401,17 +409,44 @@ When starting a task, briefly state:
 Starting Task [N]: [Title]
 ```
 
-When completing a task, briefly state:
+When completing a task in the **routine case** — verification passed or not applicable, changed
+files at or under the declared Write Scope, worker status `DONE`, no open scout finding — state a
+fixed receipt of at most four lines:
 ```
 Completed Task [N]: [Title]
-- Created: [files]
-- Modified: [files]
-- Tests: [pass/fail status]
-- Verification commands: [executed/not applicable/failed]
-- CLAUDE.md / AGENTS.md: [updated + synced/no changes needed]
-- Memory: [no durable lesson/candidate created at .../promoted to project-memory]
-- Scout: [none / fixed trivial one-liner at file:line / found file:line — awaiting user decision]
+- files changed <N> (Write Scope <M>)
+- verification: passed | failed | not applicable
+- scout: <file:line — finding> / memory candidate: <path or one-liner>
 ```
+`<N>` is the actual number of files changed for this task; `<M>` is the size of the task's declared
+Write Scope (the `Create` + `Modify` file lists in single-file mode, or the phase's `Write Scope` in
+orchestrated mode). Print both numbers even when they match — the mismatch that matters must be
+visible without reading prose, not inferred from missing prose. In practice `failed` never appears on
+a printed receipt: the escape below intercepts a failed verification before the receipt is chosen,
+but the value stays part of the line's contract.
+
+The fourth line is a marker, not a status update: print it only when a scout finding or a memory
+candidate is non-empty for this task — combine both onto the one line with `; ` if both apply. When
+both are empty, omit the line entirely; silence is the saving. Either one being non-empty must produce
+the line, because both route to a human decision later (scout findings at Step O5.7, memory
+candidates through the memory flow).
+
+**Escape — full narration, not the receipt.** The receipt is for the routine case only. Fall back to
+the full narration it replaces (Created / Modified / Tests / Verification commands / CLAUDE.md-AGENTS.md
+sync / Memory / Scout — one line each, as before) whenever any of the following holds:
+- verification failed;
+- the changed files exceed the declared Write Scope;
+- the worker returned `DONE_WITH_CONCERNS` or `BLOCKED`;
+- a scout finding is still open (not yet routed by the user, e.g. before Step O5.7).
+
+This is a rule, not a suggestion: narration is how a human catches an orchestrator's own error, so it
+is cut only where nothing is wrong.
+
+Mode note: `worker status DONE`, `DONE_WITH_CONCERNS`/`BLOCKED` and the Step O5.7 example above are
+orchestrated-mode vocabulary — single-file mode has no worker and uses `pending`/`in-progress`/`completed`.
+In single-file mode the routine case and the escape are decided by the remaining conditions alone:
+verification status, changed files against the declared `Create` + `Modify` lists, and whether a scout
+finding is still open.
 
 When all tasks are complete (Step 7B), include the AC Fulfillment section if ACs were found:
 ```

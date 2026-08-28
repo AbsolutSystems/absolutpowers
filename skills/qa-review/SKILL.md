@@ -128,7 +128,7 @@ Do not claim that tests pass, fail, are flaky, or achieve a coverage percentage.
 For one small logical area, analysis may be performed inline. For multiple independent areas, prefer isolated QA workers and synthesize their outputs:
 
 1. Read `references/harness-dispatch.md`, the active harness mapping when present, and the complete `agents/qa-reviewer.md` role prompt.
-2. Dispatch one fresh worker per independent area using the harness-native mechanism; use parallel waves within concurrency limits.
+2. Dispatch one fresh worker per independent area using the harness-native mechanism, with explicit `model="opus"` and `effort="xhigh"` (`references/model-routing.md`, Gates and reviews table, `qa-reviewer` row); use parallel waves within concurrency limits.
 3. Give each worker only its declared area, relevant intent, production/test inventory, omitted scope, and the rubric path. Do not let it expand scope or write a report.
 4. If isolated dispatch is unavailable, analyze areas sequentially/inline and record `advisory (not fully isolated)` in `Limitations`. Never omit areas silently because dispatch is unavailable.
 
