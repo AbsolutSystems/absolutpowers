@@ -56,3 +56,29 @@ is the mechanism, not a count.
 **Under-documenting is a failure too.** The one-sentence default is not license to drop an escape
 that actually applies — when one of the conditions above holds, write the extra line; skipping it
 is the failure mode this file is written against, just as much as padding is.
+
+## Rule 4 — where a doc comment belongs
+
+Rule 3 governs what a doc comment says. This one governs where it goes, because the two failures are
+different: a doc comment can be perfectly written and still be in a place that owed nobody anything.
+
+**A doc comment belongs on the surface a caller reaches.** A class gets a summary of what it is for.
+A public or protected member gets a doc comment. That is the default extent.
+
+**A non-public member gets one only when a Rule 3 escape actually applies** — an invariant, a unit,
+ownership, a failure mode, thread-safety, a surprising decision, a deprecation, a cross-reference, an
+operational prerequisite. A private helper whose name and body say the same thing twice gets nothing.
+The escape is the whole justification here: no caller outside the file can reach this member, so the
+only reason to write about it is knowledge the code cannot carry by itself.
+
+**A test spec does not get javadoc on its cases.** The case name is the documentation, and a spec
+whose name needs a paragraph underneath has the wrong name — fix the name. Two things stay allowed
+because they carry what a name cannot: a class-level note when the suite's scope is not evident from
+its name, and an inline comment recording *why a case exists* — that it pins current behaviour
+pending a decision, or which reported defect it guards against.
+
+**The checkable question**, and the reason this is a rule rather than a preference: *does this doc
+comment sit on a public declaration? If not, which named escape requires it? If it sits on a test
+spec's case, is it nothing more than a class-level scope note or a why-this-case-exists comment —
+the only two forms allowed there?* Every branch has an answer a reviewer can verify against the
+code. "Is this over-documented?" does not.
