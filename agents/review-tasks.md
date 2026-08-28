@@ -65,7 +65,7 @@ If a cross-phase dependency is *consumed but not declared* anywhere (not in Requ
 - Each task is one logical unit of work — not too big (multiple features), not too small (rename a variable)
 - Tasks that would take an AI agent more than one focused session should be split
 - Tasks that are trivially small should be merged
-- In orchestrated mode, each phase should contain 1-3 tightly related tasks and be small enough for one fresh worker subagent
+- In orchestrated mode, phases are grouped coarsest-first per the "Split only for a named reason" list and governing idea in `skills/generate-tasks/SKILL.md` (Output Mode → `orchestrated`) — read that section for the exact five reasons before judging this criterion, rather than relying on a paraphrase here that can drift from it. Judge against that rule, not against a task count: **a phase too small is a plan defect just as a phase too large is.** A phase must still fit one fresh worker subagent and carry its own Read Scope, Write Scope, Phase Verification and Completion Criteria. Where a large phase is kept whole because its parts interact, the plan should say so — that is a correct outcome, not a granularity finding.
 
 ### 3. Ordering & Dependencies
 - Tasks are sequenced correctly — no task depends on something not yet built **within this tasks set** (cross-epic-phase dependencies declared per the section above are exempt)

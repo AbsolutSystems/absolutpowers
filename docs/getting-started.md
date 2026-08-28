@@ -161,7 +161,7 @@ absolutpowers/feature/
     └── 99-final-verification.md
 ```
 
-W tym trybie główny plik jest indeksem faz, a konkretna implementacja jest w małych phase files po 1-3 powiązane taski. `implementation-context.md` jest krótkim handoffem między fazami, nie dziennikiem pracy.
+W tym trybie główny plik jest indeksem faz, a konkretna implementacja jest w phase files. Fazy grupuje się od najgrubszej: to, co dzieli Write Scope albo jeden problem, zostaje razem, a rozbija się je tylko z nazwanego powodu (powierzchnia review, niezależność dająca równoległość, migracja bazy, zmiana bazowej klasy testów, audyt bez kodu). `implementation-context.md` jest krótkim handoffem między fazami, nie dziennikiem pracy.
 
 Potem automatyczny review gate sprawdza jakość tasków.
 

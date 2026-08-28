@@ -87,14 +87,44 @@ Output:
 - `./absolutpowers/feature/tasks-{slug}/99-final-verification.md` - final verification phase
 - `./absolutpowers/feature/tasks-{slug}/scout-findings.md` - Boy-scout findings ledger; not created here, workers append it at runtime and `implement` reviews it at Step O5.7
 
-For orchestrated mode, group work into phases of 1-3 tightly related tasks. Each phase must have a narrow Read Scope, Write Scope, Phase Verification, and Completion Criteria. Prefer a module/layer write scope, but keep the phase small enough for one fresh worker subagent.
+For orchestrated mode, default to the coarsest grouping that still makes sense — a shared Write
+Scope, or one shared problem — and split only where a named reason forces it. Each phase must
+still have a narrow Read Scope, Write Scope, Phase Verification, and Completion Criteria, and
+must still fit one fresh worker subagent.
 
-**Phase sizing by risk:**
-- **High risk** (migrations, security, shared core, multi-tenancy): 1 task per phase.
-- **Medium risk** (new service integrating existing APIs, data model changes): 2 tasks per phase.
-- **Low risk** (new isolated module, tests, config, scaffolding): up to 3 tasks per phase.
+**Split only for a named reason:**
+1. **Review surface** — the merged phase would produce a diff too large to judge carefully in
+   one pass.
+2. **Independence** — two candidate phases have no dependency edge and disjoint Write Scope, so
+   the boundary buys concurrency.
+3. **A database migration** — always its own phase.
+4. **A change to a shared test base class or fixture** — always separate; it affects every other
+   spec and an incremental test run will not catch it.
+5. **A code-free audit whose output a later phase consumes** — its product is a document, not a
+   diff.
 
-Match the `**Risk:** low | medium | high` field in Phase Overview to this heuristic.
+**Governing idea:** a phase boundary buys either review granularity or parallelism, and only one
+at a time; if it buys neither, it should not exist. A boundary between two things that must run
+serially anyway buys only the former, so it needs the review-surface justification (reason 1).
+
+**Too small is a defect too:** a phase too small is a plan defect just as a phase too large is.
+
+**When a large phase must stay whole:** sometimes a phase is too large to review comfortably and
+yet must not be split, because its parts interact and each half would be unverifiable alone. Keep
+the phase, and note in the phase file that its review needs more than one pass — the same full
+diff reviewed repeatedly under different criteria, not the diff carved into pieces. Carving by
+symbol would blind each reviewer to exactly the interaction that made splitting impossible. This
+matters because a gate's issue budget is per review, not per line of diff, so a merged phase
+silently has less review capacity than the phases it replaces.
+
+**Set `**Risk:**` on every Phase Overview row.** It is not decoration: `implement` reads it to
+choose the worker's model tier, and a row left blank silently routes a dangerous phase to the
+standard tier. Grouping no longer determines it — a coarse phase can be low risk and a one-file
+phase can be high — so judge it on what the phase touches:
+- **high** — a database migration, anything security- or authorization-bearing, multi-tenancy, or
+  a change to shared core code many callers reach;
+- **medium** — a new service wired into existing APIs, or a data-model change;
+- **low** — an isolated new module, tests, config, scaffolding.
 
 ### Execution Handoff — rozstrzygnięcie (Mode = analog, nie luka)
 
@@ -373,7 +403,7 @@ For `orchestrated`, generate:
 1. Main tasks index at `./absolutpowers/feature/tasks-{slug}.md`
 2. Phase directory at `./absolutpowers/feature/tasks-{slug}/`
 3. `implementation-context.md`
-4. One phase file per phase, with 1-3 related tasks each
+4. One phase file per phase, each holding the work the grouping rule above kept together
 5. `99-final-verification.md`
 
 > Reminder for epic phase docs: every path above is relative to the epic subfolder, i.e. `./absolutpowers/feature/{epic-slug}/tasks-{slug}.md` and `./absolutpowers/feature/{epic-slug}/tasks-{slug}/...`. Do not write to the `feature/` root.

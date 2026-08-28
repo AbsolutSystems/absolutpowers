@@ -60,7 +60,17 @@ Draft — [data]
 ...
 
 ## Pliki do zmodyfikowania / utworzenia
-- `ścieżka/plik` — [co trzeba zrobić]
+
+> Przy każdym pliku podaj zmieniane metody, konstruktory, pola lub regiony — nie samą nazwę
+> pliku; identyfikuj je nazwą, nigdy numerem linii (patrz reguła na górze tego dokumentu i
+> `references/code-reference-style.md`). Gdy zmiana nie dotyczy żadnego nazwanego symbolu (nowy
+> plik tworzony w całości, blok konfiguracji, adnotacja na poziomie klasy) — napisz to wprost
+> zamiast zmyślać nazwę. Gdy nie ustalono jeszcze, który symbol się zmieni — też napisz to
+> wprost, zamiast zgadywać. Przed nadaniem dokumentowi statusu Gotowy sprawdź, że każdy plik
+> wymieniony w prozie (Wybrane rozwiązanie, Plan implementacji, Edge cases i ryzyka, Acceptance
+> Criteria) pojawia się też w tej sekcji.
+- `ścieżka/plik` — `NazwaKlasy.metoda()`, `NazwaKlasy.pole`: [co trzeba zrobić]
+- `ścieżka/nowy-plik` — cały plik, nowy (brak symbolu)
 
 ## Edge cases i ryzyka
 - [Edge case 1]
